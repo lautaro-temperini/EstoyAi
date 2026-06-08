@@ -38,6 +38,7 @@ function getDb(): Database.Database {
     ensureDataDirs();
     db = new Database(sqlitePath());
     db.pragma("journal_mode = WAL");
+    db.pragma("busy_timeout = 5000");
     db.exec(`
       CREATE TABLE IF NOT EXISTS informes (
         id TEXT PRIMARY KEY,
@@ -102,6 +103,8 @@ export function insertInformeRecibido(input: {
          estado = 'RECIBIDO',
          audio_path = excluded.audio_path,
          metadata = excluded.metadata,
+         informe_json = NULL,
+         campos = NULL,
          error = NULL,
          updated_at = excluded.updated_at`,
     )

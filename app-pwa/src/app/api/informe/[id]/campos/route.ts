@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { getInforme, setInformeCampos } from "@/lib/db/sqlite";
+import { getInforme, setInformeCampos, setInformeListo } from "@/lib/db/sqlite";
+import { assertValidId } from "@/lib/api/validate";
 import { normalizeCampos } from "@/lib/reports/campos";
 import { generarDocxParaInforme } from "@/lib/reports/generar-docx";
 
@@ -9,6 +10,11 @@ type Params = { params: Promise<{ id: string }> };
 
 export async function POST(request: Request, { params }: Params) {
   const { id } = await params;
+  try {
+    assertValidId(id);
+  } catch {
+    return NextResponse.json({ error: "id inválido" }, { status: 400 });
+  }
   const row = getInforme(id);
   if (!row) {
     return NextResponse.json({ error: "no encontrado" }, { status: 404 });
@@ -16,6 +22,7 @@ export async function POST(request: Request, { params }: Params) {
   if (!row.informeJson) {
     return NextResponse.json({ error: "extracción aún no disponible" }, { status: 409 });
   }
+  const estadoPrevio = row.estado;
 
   let body: unknown;
   try {
@@ -36,7 +43,10 @@ export async function POST(request: Request, { params }: Params) {
 
   const result = await generarDocxParaInforme(id, updated.informeJson!, campos);
   if (!result.ok) {
-    return NextResponse.json({ error: result.error }, { status: result.status });
+    if (estadoPrevio === "LISTO") {
+      setInformeListo(id);
+    }
+    return NextResponse.json({ error: result.error }, { status: 500 });
   }
 
   return NextResponse.json({ id, estado: "LISTO", campos });

@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { ensureDataDirs, audioPathFor } from "@/lib/db/paths";
 import { insertInformeRecibido } from "@/lib/db/sqlite";
 import { parseUploadMeta, toReportMetadata } from "@/lib/api/metadata";
+import { assertValidId } from "@/lib/api/validate";
 
 export const runtime = "nodejs";
 
@@ -27,34 +28,54 @@ async function triggerN8n(payload: { id: string; audioPath: string; metadata: un
 }
 
 export async function POST(request: Request) {
-  let form: FormData;
   try {
-    form = await request.formData();
+    let form: FormData;
+    try {
+      form = await request.formData();
+    } catch {
+      return NextResponse.json({ error: "multipart inválido" }, { status: 400 });
+    }
+
+    const audio = form.get("audio");
+    const metaRaw = form.get("meta");
+    if (!(audio instanceof Blob) || typeof metaRaw !== "string") {
+      return NextResponse.json({ error: "faltan campos audio y meta" }, { status: 400 });
+    }
+
+    const meta = parseUploadMeta(metaRaw);
+    if (!meta) {
+      return NextResponse.json({ error: "meta inválida" }, { status: 400 });
+    }
+
+    try {
+      assertValidId(meta.id);
+    } catch {
+      return NextResponse.json({ error: "id inválido" }, { status: 400 });
+    }
+
+    ensureDataDirs();
+    const audioPath = audioPathFor(meta.id);
+    const buf = Buffer.from(await audio.arrayBuffer());
+
+    try {
+      await fs.writeFile(audioPath, buf);
+    } catch {
+      return NextResponse.json({ error: "no se pudo guardar el audio" }, { status: 500 });
+    }
+
+    const metadata = toReportMetadata(meta);
+    try {
+      insertInformeRecibido({ id: meta.id, audioPath, metadata });
+    } catch {
+      await fs.unlink(audioPath).catch(() => {});
+      return NextResponse.json({ error: "no se pudo registrar el informe" }, { status: 500 });
+    }
+
+    // Fire-and-forget — the promoter gets 202 immediately.
+    void triggerN8n({ id: meta.id, audioPath, metadata });
+
+    return NextResponse.json({ id: meta.id }, { status: 202 });
   } catch {
-    return NextResponse.json({ error: "multipart inválido" }, { status: 400 });
+    return NextResponse.json({ error: "Error interno" }, { status: 500 });
   }
-
-  const audio = form.get("audio");
-  const metaRaw = form.get("meta");
-  if (!(audio instanceof Blob) || typeof metaRaw !== "string") {
-    return NextResponse.json({ error: "faltan campos audio y meta" }, { status: 400 });
-  }
-
-  const meta = parseUploadMeta(metaRaw);
-  if (!meta) {
-    return NextResponse.json({ error: "meta inválida" }, { status: 400 });
-  }
-
-  ensureDataDirs();
-  const audioPath = audioPathFor(meta.id);
-  const buf = Buffer.from(await audio.arrayBuffer());
-  await fs.writeFile(audioPath, buf);
-
-  const metadata = toReportMetadata(meta);
-  insertInformeRecibido({ id: meta.id, audioPath, metadata });
-
-  // Fire-and-forget — the promoter gets 202 immediately.
-  void triggerN8n({ id: meta.id, audioPath, metadata });
-
-  return NextResponse.json({ id: meta.id }, { status: 202 });
 }
