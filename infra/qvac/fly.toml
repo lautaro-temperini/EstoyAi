@@ -1,0 +1,40 @@
+# Fly.io GPU deployment for the QVAC OpenAI-compatible server.
+#
+# Deploy (from repo root):
+#   fly launch --no-deploy --copy-config --dockerfile infra/qvac/Dockerfile.gpu --name halketon-qvac
+#   fly volumes create qvac_data --size 10 --region ord            # warm model cache
+#   fly secrets set QVAC_API_KEY=<your-key>
+#   fly deploy --config infra/qvac/fly.toml --dockerfile infra/qvac/Dockerfile.gpu
+#
+# Then on Vercel point the proxy at it:
+#   QVAC_BASE_URL=https://halketon-qvac.fly.dev   QVAC_API_KEY=<same-key>
+#   (and drop QVAC_NGROK_URL — the Mac/ngrok fallback is no longer needed)
+
+app = "halketon-qvac"
+primary_region = "ord"   # pick a region with GPU availability (ord/iad/sjc/ams)
+
+[build]
+  dockerfile = "Dockerfile.gpu"
+
+[env]
+  PORT = "11434"
+
+# GPU is attached at deploy via `--vm-gpu-kind a10 --vm-gpus 1`. The a10 preset
+# provisions 8 CPU / 32GB — ample for whisper-base + a 1-4B Q4 LLM. Single GPU.
+
+[mounts]
+  source = "qvac_data"
+  destination = "/data"   # REGISTRY_STORAGE=/data/qvac -> persistent model cache
+
+[http_service]
+  internal_port = 11434
+  force_https = true
+  auto_stop_machines = "stop"   # scale-to-zero between demos (GPU has no suspend)
+  auto_start_machines = true
+  min_machines_running = 0
+
+  # First request after a cold start must wait for model preload; give it room.
+  [http_service.concurrency]
+    type = "requests"
+    soft_limit = 8
+    hard_limit = 16

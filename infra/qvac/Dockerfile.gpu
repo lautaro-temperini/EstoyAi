@@ -1,0 +1,67 @@
+# QVAC OpenAI-compatible server — GPU build (NVIDIA + Vulkan).
+#
+# QVAC's linux-x64 llama.cpp/whisper.cpp prebuilds have the Vulkan GGML backend
+# statically compiled in (verified: ggml_vulkan + GGML_VK_VISIBLE_DEVICES in the
+# .bare binaries). On a host with an NVIDIA GPU exposed via the NVIDIA Container
+# Toolkit, the same binary offloads to the GPU over Vulkan — no CUDA build needed.
+#
+# Why Railway "looked CPU-only": Railway has no GPU, so Vulkan enumerated zero
+# devices and fell back to CPU. The fix is a real GPU host, not a different build.
+#
+# Run on any NVIDIA GPU host that supports the NVIDIA Container Toolkit
+# (Fly.io GPU, RunPod, Lambda, a bare-metal box with `--gpus all`, etc.).
+FROM nvidia/cuda:12.4.1-runtime-ubuntu22.04
+
+WORKDIR /app
+
+# CRITICAL: the NVIDIA Container Toolkit only mounts the NVIDIA Vulkan ICD
+# (/usr/share/vulkan/icd.d/nvidia_icd.json + libGLX/libGLX_nvidia) into the
+# container when the requested driver capabilities include `graphics`. The
+# default (compute,utility) does NOT — Vulkan would then find no device and
+# silently fall back to CPU. `all` is the safe superset.
+ENV NVIDIA_VISIBLE_DEVICES=all \
+    NVIDIA_DRIVER_CAPABILITIES=all
+
+# Runtime deps:
+#   libvulkan1   -> Vulkan loader (libvulkan.so.1); the NVIDIA ICD is mounted by
+#                   the container toolkit at runtime, so we ship ONLY the loader.
+#   vulkan-tools -> vulkaninfo, for `vulkaninfo --summary` debugging.
+#   libatomic1 / libgomp1 -> shared libs the bare worker links against.
+#   ffmpeg       -> audio decode for whisper transcription.
+# We deliberately DO NOT install mesa-vulkan-drivers: a software (lavapipe)
+# device would otherwise appear as a Vulkan device and could shadow the GPU.
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+     ca-certificates curl gnupg \
+     libatomic1 libgomp1 libvulkan1 vulkan-tools ffmpeg \
+  && mkdir -p /etc/apt/keyrings \
+  && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key \
+       | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+  && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+       > /etc/apt/sources.list.d/nodesource.list \
+  && apt-get update \
+  && apt-get install -y --no-install-recommends nodejs \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install the QVAC CLI globally so `qvac` is on PATH.
+RUN npm i -g @qvac/cli
+
+# Model registry: maps friendly aliases -> QVAC model constants. The config
+# carries gpu_layers / use_gpu so the worker offloads to the GPU when one exists
+# (no-op on a CPU box).
+COPY infra/qvac/qvac.config.json /app/qvac.config.json
+
+# Persistent model cache (see CPU Dockerfile). Mount a volume at /data so the
+# ~GB weights survive restarts instead of re-downloading.
+ENV REGISTRY_STORAGE=/data/qvac
+RUN mkdir -p /data/qvac
+
+EXPOSE 11434
+
+# Shell-form CMD so $PORT / $QVAC_API_KEY expand. --api-key only added when set.
+CMD sh -c 'qvac serve openai \
+  --config /app/qvac.config.json \
+  -H 0.0.0.0 \
+  -p "${PORT:-11434}" \
+  --cors \
+  ${QVAC_API_KEY:+--api-key "$QVAC_API_KEY"}'

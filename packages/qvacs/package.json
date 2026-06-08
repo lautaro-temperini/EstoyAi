@@ -1,0 +1,16 @@
+{
+  "name": "@repo/qvacs",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@qvac/sdk": "^0.12.2",
+    "server-only": "^0.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

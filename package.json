@@ -1,0 +1,24 @@
+{
+  "name": "halketon",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "bun@1.3.10",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "dev:complete": "bash scripts/dev-complete.sh",
+    "qvac": "bash infra/qvac/start-local.sh",
+    "qvac:ngrok": "bash scripts/qvac-ngrok.sh",
+    "dev:qvac": "bash scripts/dev-qvac.sh",
+    "build": "turbo build",
+    "start": "turbo start",
+    "lint": "turbo lint"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.8",
+    "typescript": "^5"
+  }
+}

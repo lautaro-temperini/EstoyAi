@@ -1,0 +1,10 @@
+{
+  "serve": {
+    "models": {
+      "whisper-base": { "src": "WHISPER_BASE_Q8_0", "type": "whisper", "preload": true, "config": { "language": "es", "n_threads": 8, "use_gpu": true, "flash_attn": true } },
+      "llama-1b": { "src": "LLAMA_3_2_1B_INST_Q4_0", "type": "llm", "preload": true, "config": { "ctx_size": 4096, "gpu_layers": 99, "main-gpu": "dedicated" } },
+      "qwen3-1.7b": { "src": "QWEN3_1_7B_INST_Q4", "type": "llm", "preload": true, "config": { "ctx_size": 4096, "gpu_layers": 99, "main-gpu": "dedicated" } },
+      "qwen3-4b": { "src": "QWEN3_4B_INST_Q4_K_M", "type": "llm", "config": { "ctx_size": 4096, "gpu_layers": 99, "main-gpu": "dedicated" } }
+    }
+  }
+}
