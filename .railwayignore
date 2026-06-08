@@ -1,8 +1,0 @@
-node_modules
-.next
-.turbo
-.git
-.vercel
-.data
-.codex
-**/node_modules
