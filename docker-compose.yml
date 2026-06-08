@@ -1,0 +1,135 @@
+# ─── Pequeños Pasos — sede stack ──────────────────────────────────────────────
+# Uso:
+#   Primer arranque:  docker compose up -d
+#                     docker compose exec ollama ollama pull qwen3:4b
+#   Arranques diarios: docker compose up -d   (o usar scripts/arrancar-sede.bat)
+#
+# Variables de entorno: copiar .env.example → .env y ajustar.
+# SQLite vive en el volumen "data" (data/sqlite/informes.db) — no es un contenedor.
+# ──────────────────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── PWA / API ──────────────────────────────────────────────────────────────
+  app-pwa:
+    build:
+      context: ./app-pwa
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - DATA_DIR=/data
+      - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/registro}
+      - NEXT_PUBLIC_ASR_LANG=${NEXT_PUBLIC_ASR_LANG:-es}
+    volumes:
+      - data:/data
+    networks:
+      - sede-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # ── Orquestador n8n ────────────────────────────────────────────────────────
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:2.8.4
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      # Credenciales del editor — cambiar en producción.
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-cambiame}
+      # URLs internas de los servicios (deben coincidir con los nombres de servicio).
+      - APP_URL=${APP_URL:-http://app-pwa:3000}
+      - WHISPER_URL=${WHISPER_URL:-http://whisper:8000}
+      - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen3:4b}
+      # n8n internals
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=336
+      - GENERIC_TIMEZONE=America/Argentina/Buenos_Aires
+    volumes:
+      - n8n_data:/home/node/.n8n
+      # Workflow pre-cargado al iniciar n8n (lectura única en primer arranque).
+      - ./n8n/workflows:/home/node/workflows:ro
+    networks:
+      - sede-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # ── LLM local (Ollama) ─────────────────────────────────────────────────────
+  # Solo interno — no expone puerto al host.
+  # Primer uso: docker compose exec ollama ollama pull qwen3:4b
+  # Fallback CPU lento: docker compose exec ollama ollama pull qwen3:1.7b
+  ollama:
+    image: ollama/ollama:0.30.5
+    restart: unless-stopped
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - sede-net
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:11434/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+  # ── Transcripción de audio (faster-whisper) ────────────────────────────────
+  # Solo interno — no expone puerto al host.
+  # El modelo se pre-descarga en el build de la imagen (ver services/whisper/Dockerfile).
+  whisper:
+    build:
+      context: ./services/whisper
+      dockerfile: Dockerfile
+      args:
+        - WHISPER_MODEL=${WHISPER_MODEL:-base}
+    restart: unless-stopped
+    environment:
+      - WHISPER_MODEL=${WHISPER_MODEL:-base}
+      - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-es}
+      - DATA_DIR=/data
+    volumes:
+      - data:/data
+    networks:
+      - sede-net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      start_period: 120s
+      retries: 3
+
+# ── Volúmenes ──────────────────────────────────────────────────────────────────
+# "data" es compartido entre app-pwa y whisper (audio/, docx/, sqlite/).
+# Usar bind-mount en vez de named volume para acceso directo desde Windows:
+#   volumes:
+#     data:
+#       driver: local
+#       driver_opts:
+#         type: none
+#         o: bind
+#         device: C:\PequenhosPasos\data
+volumes:
+  data:
+  n8n_data:
+  ollama_data:
+
+# ── Red interna ────────────────────────────────────────────────────────────────
+networks:
+  sede-net:
+    driver: bridge

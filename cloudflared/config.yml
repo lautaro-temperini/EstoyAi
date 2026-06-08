@@ -1,0 +1,36 @@
+# ─── Cloudflare Tunnel — Pequeños Pasos ───────────────────────────────────────
+#
+# Este archivo se copia a:
+#   Windows: C:\Users\<usuario>\.cloudflared\config.yml
+#
+# Pasos previos (una sola vez):
+#   1. cloudflared tunnel login
+#   2. cloudflared tunnel create pequenos-pasos
+#   3. Copiar el UUID que aparece → reemplazar <TUNNEL_UUID> abajo
+#   4. En Cloudflare dashboard: DNS → agregar CNAME:
+#        registro.<tudominio.com>  →  <TUNNEL_UUID>.cfargotunnel.com
+#      (o usar: cloudflared tunnel route dns pequenos-pasos registro.<tudominio.com>)
+#   5. Copiar este archivo a C:\Users\<usuario>\.cloudflared\config.yml
+#   6. Instalar como servicio: cloudflared service install
+#
+# Para verificar el túnel manualmente antes de instalar el servicio:
+#   cloudflared tunnel --config cloudflared\config.yml run
+# ──────────────────────────────────────────────────────────────────────────────
+
+tunnel: <TUNNEL_UUID>
+credentials-file: C:\Users\<USUARIO>\.cloudflared\<TUNNEL_UUID>.json
+
+ingress:
+  # PWA — la app que usan los promotores en el celular.
+  - hostname: registro.<TUDOMINIO.COM>
+    service: http://localhost:3000
+
+  # n8n recibe webhooks SOLO desde app-pwa (red Docker interna) — no necesita túnel.
+  # El editor es accesible desde la sede en http://localhost:5678.
+  # Si en el futuro necesitás acceso remoto al editor, descomentá las dos líneas
+  # de abajo, agregá el CNAME en Cloudflare DNS y reiniciá cloudflared.
+  #- hostname: n8n.<TUDOMINIO.COM>
+  #  service: http://localhost:5678
+
+  # Regla por defecto: rechazar todo lo que no coincida con los hostnames.
+  - service: http_status:404
