@@ -5,6 +5,7 @@ import type { TipoRegistro } from "@/lib/reports/schema";
 
 export interface Beneficiario {
   nombre: string;
+  apellido: string;
   dni: string;
 }
 

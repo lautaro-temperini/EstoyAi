@@ -181,6 +181,9 @@ export default function EstadoPage() {
                   <span className="material-symbols-outlined">tune</span>
                   Editar campos del informe
                 </button>
+                <p className="font-caption text-caption text-yellow-600 text-center">
+                  Revisá el documento antes de usarlo — fue generado automáticamente.
+                </p>
               </div>
             )}
 

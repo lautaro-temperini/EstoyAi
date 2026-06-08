@@ -1,0 +1,301 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useParams, useRouter } from "next/navigation";
+import {
+  SECCION_IDS,
+  SECCION_TITULOS,
+  DEFAULT_CAMPOS,
+  type SeccionId,
+  type CamposConfig,
+} from "@/lib/reports/campos";
+import type { FieldReport, Prioridad } from "@/lib/reports/schema";
+
+// ── Tipos locales ────────────────────────────────────────────────────────────
+
+interface InformeData {
+  id: string;
+  estado: string;
+  informe: FieldReport | null;
+  campos: CamposConfig | null;
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+const PRIORIDAD_CLS: Record<Prioridad, string> = {
+  ALTA: "bg-error-container text-on-error-container",
+  MEDIA: "bg-tertiary-container text-on-tertiary-container",
+  BAJA: "bg-secondary-container text-on-secondary-container",
+};
+
+/** secciones that cannot be deselected */
+const LOCKED: SeccionId[] = ["identificacion"];
+
+// ── Page ─────────────────────────────────────────────────────────────────────
+
+export default function InformePage() {
+  const router = useRouter();
+  const { id } = useParams<{ id: string }>();
+
+  const [data, setData] = useState<InformeData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Local selection state — initialised from loaded campos, defaults to all.
+  const [secciones, setSecciones] = useState<Set<SeccionId>>(
+    new Set(DEFAULT_CAMPOS.secciones),
+  );
+
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  // ── Load informe ───────────────────────────────────────────────────────────
+
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      try {
+        const res = await fetch(`/api/informe/${id}`, { cache: "no-store" });
+        if (!res.ok) {
+          setFetchError(res.status === 404 ? "Informe no encontrado." : "Error al cargar el informe.");
+          return;
+        }
+        const d = (await res.json()) as InformeData;
+        if (!active) return;
+        setData(d);
+        if (d.campos?.secciones?.length) {
+          setSecciones(new Set(d.campos.secciones));
+        }
+      } catch {
+        if (active) setFetchError("No se pudo conectar con el servidor.");
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [id]);
+
+  // ── Toggle section ─────────────────────────────────────────────────────────
+
+  const toggle = useCallback((sec: SeccionId) => {
+    if (LOCKED.includes(sec)) return;
+    setSecciones((prev) => {
+      const next = new Set(prev);
+      if (next.has(sec)) next.delete(sec);
+      else next.add(sec);
+      return next;
+    });
+    setSaved(false);
+    setSaveError(null);
+  }, []);
+
+  // ── Save + regenerate ──────────────────────────────────────────────────────
+
+  const guardar = useCallback(async () => {
+    setSaving(true);
+    setSaveError(null);
+    setSaved(false);
+    try {
+      const body: CamposConfig = { secciones: [...secciones] };
+      const res = await fetch(`/api/informe/${id}/campos`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        setSaveError(err.error ?? `Error ${res.status}`);
+        return;
+      }
+      setSaved(true);
+    } catch {
+      setSaveError("No se pudo conectar con el servidor.");
+    } finally {
+      setSaving(false);
+    }
+  }, [id, secciones]);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="material-symbols-outlined text-primary text-[36px] animate-spin">
+          progress_activity
+        </span>
+      </div>
+    );
+  }
+
+  if (fetchError || !data) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 px-container-margin">
+        <span className="material-symbols-outlined text-error text-[48px]">error</span>
+        <p className="font-headline-sm text-headline-sm text-on-surface text-center">
+          {fetchError ?? "Informe no encontrado."}
+        </p>
+        <button
+          onClick={() => router.push(`/estado/${id}`)}
+          className="h-12 px-6 bg-primary text-on-primary rounded-lg font-label-md text-label-md"
+        >
+          Volver al estado
+        </button>
+      </div>
+    );
+  }
+
+  const informe = data.informe;
+  const titular =
+    informe?.datos?.demografia?.nombre ||
+    informe?.metadatos?.beneficiario?.nombre ||
+    (informe?.metadatos?.tipo === "grupal" ? "Actividad Grupal" : "Registro");
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      {/* Header */}
+      <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-3 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
+        <button
+          onClick={() => router.push(`/estado/${id}`)}
+          aria-label="Volver"
+          className="p-2 -ml-2 hover:bg-surface-container-low rounded-full text-primary"
+        >
+          <span className="material-symbols-outlined">arrow_back</span>
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="font-headline-sm text-headline-sm text-on-surface truncate">
+            Editar campos del informe
+          </h1>
+          {titular && (
+            <p className="font-caption text-caption text-on-surface-variant truncate">
+              {titular}
+            </p>
+          )}
+        </div>
+      </header>
+
+      <main className="flex-grow pt-20 pb-28 px-container-margin max-w-xl mx-auto w-full space-y-stack-md">
+
+        {/* Resumen del informe */}
+        {informe && (
+          <section className="anim-enter bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md space-y-stack-sm">
+            <div className="flex items-start justify-between gap-3">
+              <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
+                Resumen
+              </h2>
+              {informe.prioridad && (
+                <span
+                  className={`shrink-0 px-2 py-0.5 rounded text-[11px] font-bold ${PRIORIDAD_CLS[informe.prioridad]}`}
+                >
+                  {informe.prioridad}
+                </span>
+              )}
+            </div>
+            <p className="font-body-md text-body-md text-on-surface leading-relaxed">
+              {informe.resumen || "Sin resumen disponible."}
+            </p>
+            {informe.accionesPendientes?.length > 0 && (
+              <div>
+                <p className="font-label-sm text-label-sm text-on-surface-variant mb-1">
+                  Acciones pendientes
+                </p>
+                <ul className="space-y-1">
+                  {informe.accionesPendientes.map((a, i) => (
+                    <li key={i} className="flex items-start gap-2 font-body-sm text-body-sm text-on-surface">
+                      <span className="material-symbols-outlined text-[16px] text-primary mt-0.5">
+                        task_alt
+                      </span>
+                      {a}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Secciones a incluir */}
+        <section className="anim-enter bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md">
+          <div className="mb-stack-sm">
+            <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
+              Secciones del documento
+            </h2>
+            <p className="font-caption text-caption text-on-surface-variant mt-1">
+              Elegí qué secciones incluir en el .docx. &quot;Identificación&quot; siempre se incluye.
+            </p>
+          </div>
+
+          <ul className="divide-y divide-outline-variant">
+            {SECCION_IDS.map((sec) => {
+              const locked = LOCKED.includes(sec);
+              const checked = locked || secciones.has(sec);
+              return (
+                <li key={sec}>
+                  <label
+                    className={`flex items-center gap-3 py-3 ${locked ? "cursor-default" : "cursor-pointer hover:bg-surface-container-low rounded-lg px-2 -mx-2 transition-colors"}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={locked}
+                      onChange={() => toggle(sec)}
+                      className="w-5 h-5 accent-primary rounded shrink-0"
+                    />
+                    <span
+                      className={`font-body-md text-body-md ${locked ? "text-on-surface-variant" : checked ? "text-on-surface" : "text-on-surface-variant line-through"}`}
+                    >
+                      {SECCION_TITULOS[sec]}
+                    </span>
+                    {locked && (
+                      <span className="ml-auto font-caption text-caption text-on-surface-variant">
+                        Siempre
+                      </span>
+                    )}
+                  </label>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        {/* Feedback */}
+        {saveError && (
+          <p className="font-body-sm text-body-sm text-error px-1">{saveError}</p>
+        )}
+        {saved && (
+          <div className="flex items-center gap-2 text-secondary">
+            <span className="material-symbols-outlined text-[20px]">check_circle</span>
+            <p className="font-body-sm text-body-sm">Informe regenerado correctamente.</p>
+          </div>
+        )}
+      </main>
+
+      {/* Sticky bottom bar */}
+      <div className="fixed bottom-0 w-full bg-surface border-t border-outline-variant px-container-margin py-3 flex gap-3 max-w-xl mx-auto left-0 right-0">
+        <button
+          onClick={guardar}
+          disabled={saving}
+          className="flex-1 h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
+        >
+          {saving ? (
+            <span className="material-symbols-outlined text-[20px] animate-spin">
+              progress_activity
+            </span>
+          ) : (
+            <span className="material-symbols-outlined text-[20px]">save</span>
+          )}
+          {saving ? "Generando…" : "Guardar y regenerar"}
+        </button>
+
+        <a
+          href={`/api/informe/${id}/docx`}
+          className="h-14 px-4 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
+          title="Descargar .docx"
+        >
+          <span className="material-symbols-outlined text-[20px]">download</span>
+          .docx
+        </a>
+      </div>
+    </div>
+  );
+}

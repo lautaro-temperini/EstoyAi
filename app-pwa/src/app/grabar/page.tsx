@@ -39,9 +39,14 @@ export default function RecordingPage() {
         tipo: tipo ?? null,
         beneficiario:
           beneficiario?.nombre || beneficiario?.dni
-            ? { nombre: beneficiario?.nombre ?? "", dni: beneficiario?.dni ?? "" }
+            ? {
+                nombre: beneficiario?.nombre ?? "",
+                apellido: beneficiario?.apellido ?? "",
+                dni: beneficiario?.dni ?? "",
+              }
             : null,
       });
+      setSaving(false);
       router.push(`/estado/${id}`);
     } catch (e) {
       console.error("[grabar] enqueue failed:", e);
@@ -52,7 +57,11 @@ export default function RecordingPage() {
 
   const { recording, elapsedMs, error, start, stop } = useRecorder(MAX_MS, handleResult);
 
-  const showBeneficiary = tipo !== "grupal" && beneficiario?.nombre;
+  const nombreCompleto =
+    beneficiario?.apellido && beneficiario?.nombre
+      ? `${beneficiario.apellido} ${beneficiario.nombre}`
+      : beneficiario?.nombre ?? "";
+  const showBeneficiary = tipo !== "grupal" && nombreCompleto;
   const remainingMs = Math.max(0, MAX_MS - elapsedMs);
   const remainingSec = Math.ceil(remainingMs / 1000);
   const showCountdown = recording && remainingMs <= COUNTDOWN_FROM_MS;
@@ -93,7 +102,7 @@ export default function RecordingPage() {
             <div>
               <p className="font-label-md text-label-md text-on-surface-variant">Beneficiario</p>
               <p className="font-body-md text-body-md text-on-surface font-semibold">
-                {beneficiario!.nombre}
+                {nombreCompleto}
               </p>
             </div>
           </div>

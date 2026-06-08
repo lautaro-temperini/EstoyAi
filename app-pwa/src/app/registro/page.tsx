@@ -7,15 +7,23 @@ import { useFlow } from "../flow-context";
 export default function BeneficiaryPage() {
   const router = useRouter();
   const { beneficiario, setBeneficiario } = useFlow();
-  const [dni, setDni] = useState(beneficiario?.dni ?? "");
   const [nombre, setNombre] = useState(beneficiario?.nombre ?? "");
+  const [apellido, setApellido] = useState(beneficiario?.apellido ?? "");
+  const [dni, setDni] = useState(beneficiario?.dni ?? "");
 
-  const valid = dni.trim().length > 0 && nombre.trim().length > 0;
+  const valid =
+    nombre.trim().length > 0 &&
+    apellido.trim().length > 0 &&
+    dni.trim().length > 0;
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid) return;
-    setBeneficiario({ dni: dni.trim(), nombre: nombre.trim() });
+    setBeneficiario({
+      nombre: nombre.trim(),
+      apellido: apellido.trim(),
+      dni: dni.trim(),
+    });
     router.push("/grabar");
   };
 
@@ -41,12 +49,63 @@ export default function BeneficiaryPage() {
         </section>
 
         <form className="stagger space-y-stack-lg" id="beneficiary-form" onSubmit={onSubmit}>
+          {/* Nombre */}
+          <div className="group">
+            <label
+              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
+              htmlFor="nombre"
+            >
+              Nombre <span className="text-error">*</span>
+            </label>
+            <div className="relative">
+              <input
+                id="nombre"
+                name="nombre"
+                type="text"
+                placeholder="Ej: María"
+                value={nombre}
+                onChange={(e) => setNombre(e.target.value)}
+                required
+                className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
+              />
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                person
+              </span>
+            </div>
+          </div>
+
+          {/* Apellido */}
+          <div className="group">
+            <label
+              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
+              htmlFor="apellido"
+            >
+              Apellido <span className="text-error">*</span>
+            </label>
+            <div className="relative">
+              <input
+                id="apellido"
+                name="apellido"
+                type="text"
+                placeholder="Ej: García"
+                value={apellido}
+                onChange={(e) => setApellido(e.target.value)}
+                required
+                className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
+              />
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                badge
+              </span>
+            </div>
+          </div>
+
+          {/* DNI */}
           <div className="group">
             <label
               className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
               htmlFor="dni"
             >
-              DNI (Numérico)
+              DNI <span className="text-error">*</span>
             </label>
             <div className="relative">
               <input
@@ -62,30 +121,6 @@ export default function BeneficiaryPage() {
               />
               <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
                 fingerprint
-              </span>
-            </div>
-          </div>
-
-          <div className="group">
-            <label
-              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
-              htmlFor="fullname"
-            >
-              Nombre y Apellido (Texto)
-            </label>
-            <div className="relative">
-              <input
-                id="fullname"
-                name="fullname"
-                type="text"
-                placeholder="Ej: María García"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                required
-                className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
-              />
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                person
               </span>
             </div>
           </div>

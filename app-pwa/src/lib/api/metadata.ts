@@ -4,7 +4,7 @@ import type { ReportMetadata, TipoRegistro } from "@/lib/reports/schema";
 export interface UploadMeta {
   id: string;
   tipo: TipoRegistro | null;
-  beneficiario: { nombre: string; dni: string } | null;
+  beneficiario: { nombre: string; apellido: string; dni: string } | null;
   capturedAt: number;
   durationMs: number | null;
 }

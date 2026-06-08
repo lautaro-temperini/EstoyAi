@@ -34,8 +34,9 @@ const SYSTEM_PROMPT = [
   "- datos.metricas: peso y talla (antropométricos para nutrición), diagnosticos (lista de diagnósticos médicos específicos: oncología, discapacidad, VIH…), avanceObra (estado de una obra habitacional).",
   "- datos.socioeconomico: familia (condición familiar), ingresos, vivienda, vulnerabilidades (lista).",
   "- datos.intervencion: fecha exacta, lugar (clave en operativos móviles), tipoActividad (taller, consulta médica, asesoría legal, entrega…), profesionales (lista de profesionales o voluntarios presentes).",
-  "- datos.seguimiento: compromisos (lista: microcréditos, becas, cobros, devoluciones), situacionLaboral, desempenoAcademico.",
+  "- datos.seguimiento: compromisos (lista de compromisos concretos mencionados literalmente en el audio, por ejemplo pagos pendientes o acuerdos explícitos; si no se mencionan, []), situacionLaboral, desempenoAcademico.",
   "- datos.narrativa: detalles cualitativos sutiles pero valiosos (reacción emocional, percepción de una madre sobre su vivienda…). Si no hay, \"\".",
+  "Regla crítica para listas: si un campo de tipo array no se menciona explícitamente en la transcripción, devolvé [] sin excepción. Nunca uses los nombres de campos como ejemplos de valores. \"compromisos\", \"vulnerabilidades\", \"profesionales\" son etiquetas, no datos.",
   "Responde en español. /no_think",
 ].join("\n");
 
@@ -148,7 +149,7 @@ const transcript = (($json.text) || '').trim();
 const meta = $('init').item.json.metadata || {};
 const capturedAt = typeof meta.capturedAt === 'number' ? meta.capturedAt : Date.now();
 const userMessage = 'Fecha del registro: ' + fechaLarga(capturedAt) + '.\\n\\nTranscripción:\\n' + transcript;
-const model = $env.OLLAMA_MODEL || 'qwen3:4b';
+const model = $env.OLLAMA_MODEL || 'qwen3:1.7b';
 
 const ollamaBody = {
   model,

@@ -31,6 +31,7 @@ interface EnqueueInput {
 }
 
 function titularOf(tipo: TipoRegistro | null, b: Beneficiario | null): string {
+  if (b?.apellido && b?.nombre) return `${b.apellido} ${b.nombre}`;
   if (b?.nombre) return b.nombre;
   return tipo === "grupal" ? "Actividad grupal" : "Beneficiario";
 }

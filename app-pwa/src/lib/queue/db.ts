@@ -28,6 +28,7 @@ export type RegistroEstado =
 
 export interface Beneficiario {
   nombre: string;
+  apellido: string;
   dni: string;
 }
 

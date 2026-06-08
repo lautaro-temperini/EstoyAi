@@ -119,6 +119,20 @@ function buildDocumentFromContent(c: ReportContent): Document {
         }),
       ],
     }),
+    // Disclaimer — separado por línea horizontal, texto pequeño gris centrado.
+    new Paragraph({
+      spacing: { before: 280 },
+      border: { top: { style: BorderStyle.SINGLE, size: 4, color: "C3C6D6", space: 6 } },
+      alignment: AlignmentType.CENTER,
+      children: [
+        new TextRun({
+          text: "⚠ Este documento fue generado automáticamente a partir de un registro de voz y está sujeto a revisión por un profesional. Los datos deben ser verificados antes de su uso oficial.",
+          size: 14,
+          color: "9AA0B0",
+          italics: true,
+        }),
+      ],
+    }),
   ];
 
   return new Document({
