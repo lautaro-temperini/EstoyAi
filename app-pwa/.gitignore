@@ -1,7 +1,7 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies (any workspace)
-node_modules/
+# dependencies
+/node_modules
 /.pnp
 .pnp.*
 .yarn/*
@@ -11,23 +11,14 @@ node_modules/
 !.yarn/versions
 
 # testing
-coverage/
+/coverage
 
-# next.js (any workspace)
-.next/
-out/
-
-# turborepo
-.turbo/
-
-# local on-device report store
-.data/
-
-# sede volumes (audio, docx, sqlite)
-data/
+# next.js
+/.next/
+/out/
 
 # production
-build/
+/build
 
 # misc
 .DS_Store
@@ -40,7 +31,7 @@ yarn-error.log*
 .pnpm-debug.log*
 
 # env files (can opt-in for committing if needed)
-.env
+.env*
 
 # vercel
 .vercel
@@ -48,12 +39,3 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-
-.claude
-.gstack/
-
-# codex CLI config (contains API keys — keep local)
-.codex/
-
-# local env
-.env*.local

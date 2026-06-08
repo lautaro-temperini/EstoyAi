@@ -1,0 +1,25 @@
+import { NextResponse } from "next/server";
+import { getInforme } from "@/lib/db/sqlite";
+import { generarDocxParaInforme } from "@/lib/reports/generar-docx";
+
+export const runtime = "nodejs";
+
+type Params = { params: Promise<{ id: string }> };
+
+export async function POST(_request: Request, { params }: Params) {
+  const { id } = await params;
+  const row = getInforme(id);
+  if (!row) {
+    return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+  }
+  if (!row.informeJson) {
+    return NextResponse.json({ error: "extracción aún no disponible" }, { status: 409 });
+  }
+
+  const result = await generarDocxParaInforme(id, row.informeJson, row.campos);
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
+  }
+
+  return NextResponse.json({ id, estado: "LISTO" });
+}

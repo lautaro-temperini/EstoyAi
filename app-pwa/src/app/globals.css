@@ -1,0 +1,201 @@
+@import "tailwindcss";
+
+/*
+ * "Supportive Insight" design system. Tailwind v4 generates utilities from these
+ * theme vars: --color-* -> bg-/text-/border-, --font-* -> font-, --text-* ->
+ * text-, --spacing-* -> p-/m-/gap-/h-/w-.
+ */
+@theme {
+  /* Colors */
+  --color-primary: #0040a1;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #0056d2;
+  --color-on-primary-container: #ccd8ff;
+  --color-primary-fixed: #dae2ff;
+  --color-primary-fixed-dim: #b2c5ff;
+  --color-on-primary-fixed: #001847;
+  --color-on-primary-fixed-variant: #0040a1;
+  --color-inverse-primary: #b2c5ff;
+
+  --color-secondary: #006c49;
+  --color-on-secondary: #ffffff;
+  --color-secondary-container: #6cf8bb;
+  --color-on-secondary-container: #00714d;
+  --color-secondary-fixed: #6ffbbe;
+  --color-secondary-fixed-dim: #4edea3;
+  --color-on-secondary-fixed: #002113;
+  --color-on-secondary-fixed-variant: #005236;
+
+  --color-tertiary: #663f00;
+  --color-tertiary-container: #865400;
+  --color-on-tertiary: #ffffff;
+  --color-on-tertiary-container: #ffd29e;
+  --color-tertiary-fixed: #ffddb8;
+  --color-tertiary-fixed-dim: #ffb95f;
+  --color-on-tertiary-fixed: #2a1700;
+  --color-on-tertiary-fixed-variant: #653e00;
+
+  --color-error: #ba1a1a;
+  --color-on-error: #ffffff;
+  --color-error-container: #ffdad6;
+  --color-on-error-container: #93000a;
+
+  --color-background: #f8f9ff;
+  --color-on-background: #0d1c2e;
+  --color-surface: #f8f9ff;
+  --color-on-surface: #0d1c2e;
+  --color-surface-variant: #d5e3fc;
+  --color-on-surface-variant: #424654;
+  --color-surface-bright: #f8f9ff;
+  --color-surface-dim: #ccdbf3;
+  --color-surface-container-lowest: #ffffff;
+  --color-surface-container-low: #eff4ff;
+  --color-surface-container: #e6eeff;
+  --color-surface-container-high: #dce9ff;
+  --color-surface-container-highest: #d5e3fc;
+  --color-surface-tint: #0056d2;
+  --color-inverse-surface: #233144;
+  --color-inverse-on-surface: #eaf1ff;
+  --color-outline: #737785;
+  --color-outline-variant: #c3c6d6;
+
+  /* Font families */
+  --font-display-lg: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-headline-md: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-headline-sm: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-body-lg: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body-md: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-label-md: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-caption: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  /* Font sizes (with line-height / weight / tracking) */
+  --text-display-lg: 32px;
+  --text-display-lg--line-height: 40px;
+  --text-display-lg--letter-spacing: -0.02em;
+  --text-display-lg--font-weight: 700;
+  --text-headline-md: 24px;
+  --text-headline-md--line-height: 32px;
+  --text-headline-md--font-weight: 600;
+  --text-headline-sm: 20px;
+  --text-headline-sm--line-height: 28px;
+  --text-headline-sm--font-weight: 600;
+  --text-body-lg: 18px;
+  --text-body-lg--line-height: 28px;
+  --text-body-lg--font-weight: 400;
+  --text-body-md: 16px;
+  --text-body-md--line-height: 24px;
+  --text-body-md--font-weight: 400;
+  --text-label-md: 14px;
+  --text-label-md--line-height: 20px;
+  --text-label-md--letter-spacing: 0.01em;
+  --text-label-md--font-weight: 600;
+  --text-caption: 12px;
+  --text-caption--line-height: 16px;
+  --text-caption--font-weight: 500;
+
+  /* Spacing */
+  --spacing-unit: 8px;
+  --spacing-stack-sm: 8px;
+  --spacing-stack-md: 16px;
+  --spacing-stack-lg: 24px;
+  --spacing-gutter: 16px;
+  --spacing-container-margin: 20px;
+  --spacing-touch-target-min: 48px;
+
+  /* Radius (matches Stitch) */
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+}
+
+body {
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  font-family: var(--font-body-md);
+}
+
+/* Google Material Symbols (loaded via <link> in layout) */
+.material-symbols-outlined {
+  font-family: "Material Symbols Outlined";
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+.material-symbols-outlined.fill {
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+
+/* Tap feedback */
+.active-tap {
+  transform: scale(0.98);
+  transition: transform 0.1s ease;
+}
+
+/* Recording pulse rings (screen 3) */
+.recording-pulse {
+  animation: pulse 2s infinite ease-in-out;
+}
+@keyframes pulse {
+  0% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.4); opacity: 0; }
+  100% { transform: scale(1); opacity: 0; }
+}
+
+/* Live waveform bars (screen 3) */
+.wave-bar {
+  animation: wave 1.2s infinite ease-in-out;
+}
+@keyframes wave {
+  0%, 100% { height: 12px; }
+  50% { height: 48px; }
+}
+
+/* ── Motion system (Emil Kowalski) ───────────────────────────────────────
+   GPU-only (transform/opacity), strong ease-out, sub-300ms, never scale(0). */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+@keyframes enter-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes enter-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes enter-pop {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Content entrance (use on non-fixed elements — transform breaks fixed kids). */
+.anim-enter { animation: enter-up 280ms var(--ease-out) both; }
+/* Opacity-only entrance — safe on fixed headers/footers. */
+.anim-fade { animation: enter-fade 240ms var(--ease-out) both; }
+.anim-pop { animation: enter-pop 240ms var(--ease-out) both; }
+
+/* Stagger direct children (decorative, 50ms steps). */
+.stagger > * { animation: enter-up 300ms var(--ease-out) both; }
+.stagger > *:nth-child(1) { animation-delay: 40ms; }
+.stagger > *:nth-child(2) { animation-delay: 90ms; }
+.stagger > *:nth-child(3) { animation-delay: 140ms; }
+.stagger > *:nth-child(4) { animation-delay: 190ms; }
+.stagger > *:nth-child(5) { animation-delay: 240ms; }
+.stagger > *:nth-child(6) { animation-delay: 290ms; }
+
+/* Reduced motion: keep fades, drop movement (a11y). */
+@media (prefers-reduced-motion: reduce) {
+  .anim-enter, .anim-pop, .stagger > * {
+    animation: enter-fade 200ms ease both !important;
+  }
+  .recording-pulse, .wave-bar { animation: none !important; }
+}
