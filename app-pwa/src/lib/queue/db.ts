@@ -127,3 +127,9 @@ export async function updateRegistroEstado(
   if (!existing) return;
   await putRegistro({ ...existing, estado });
 }
+
+/** Permanently remove a registro from both the index and the upload queue. */
+export async function deleteRegistro(id: string): Promise<void> {
+  await tx(REGISTROS, "readwrite", (s) => s.delete(id));
+  await tx(PENDING, "readwrite", (s) => s.delete(id));
+}

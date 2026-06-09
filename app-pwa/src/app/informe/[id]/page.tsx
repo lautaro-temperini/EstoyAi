@@ -46,6 +46,8 @@ export default function InformePage() {
     new Set(DEFAULT_CAMPOS.secciones),
   );
 
+  const [showTranscript, setShowTranscript] = useState(false);
+
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
@@ -191,6 +193,11 @@ export default function InformePage() {
                 </span>
               )}
             </div>
+            {informe.motivoCriticidad && (
+              <p className="font-body-sm text-body-sm text-on-surface-variant italic">
+                {informe.motivoCriticidad}
+              </p>
+            )}
             <p className="font-body-md text-body-md text-on-surface leading-relaxed">
               {informe.resumen || "Sin resumen disponible."}
             </p>
@@ -209,6 +216,27 @@ export default function InformePage() {
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+
+            {informe.transcripcion && (
+              <div className="pt-1 border-t border-outline-variant">
+                <button
+                  onClick={() => setShowTranscript((v) => !v)}
+                  className="flex items-center gap-1.5 font-label-sm text-label-sm text-on-surface-variant hover:text-primary transition-colors"
+                >
+                  <span
+                    className={`material-symbols-outlined text-[16px] transition-transform duration-200 ${showTranscript ? "rotate-180" : ""}`}
+                  >
+                    expand_more
+                  </span>
+                  {showTranscript ? "Ocultar transcripción" : "Ver transcripción completa"}
+                </button>
+                {showTranscript && (
+                  <p className="mt-2 font-body-sm text-body-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">
+                    {informe.transcripcion}
+                  </p>
+                )}
               </div>
             )}
           </section>

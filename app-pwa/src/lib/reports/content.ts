@@ -23,6 +23,7 @@ export interface ReportContent {
   disclaimer: string;
   titular: string;
   prioridad: FieldReport["prioridad"];
+  motivoCriticidad: string;
   fecha: string;
   lugar: string;
   resumenEjecutivo: string;
@@ -154,6 +155,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
     disclaimer: REPORT_DISCLAIMER,
     titular,
     prioridad: report.prioridad,
+    motivoCriticidad: report.motivoCriticidad?.trim() ?? "",
     fecha,
     lugar,
     resumenEjecutivo: report.resumen,
@@ -180,6 +182,27 @@ export function reportFileBase(report: FieldReport): string {
     const d = new Date(report.createdAt);
     const date = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     return `${slug(b.apellido)}_${slug(b.nombre)}_${b.dni.trim()}_${date}`;
+  }
+  return `informe-${report.id}`;
+}
+
+/**
+ * Folder name for external storage (Cloudflare R2 / Podio): NombreApellidoDNI.
+ * Used as the per-beneficiario subfolder inside "En Revision" / "Revisados".
+ * Falls back to the informe id when beneficiario data is incomplete.
+ */
+export function beneficiarioFolder(report: FieldReport): string {
+  const b = report.metadatos?.beneficiario;
+  const cap = (s: string) => {
+    const c = s
+      .trim()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-zA-Z0-9]+/g, "");
+    return c ? c[0].toUpperCase() + c.slice(1) : "";
+  };
+  if (b?.apellido?.trim() && b?.nombre?.trim() && b?.dni?.trim()) {
+    return `${cap(b.nombre)}${cap(b.apellido)}${b.dni.trim()}`;
   }
   return `informe-${report.id}`;
 }

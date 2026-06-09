@@ -28,7 +28,11 @@ const REGLAS_ABSOLUTAS = [
 const ESTRUCTURA_CAMPOS = [
   "Campos de nivel superior:",
   "- resumen: RESUMEN EJECUTIVO de 1-2 frases que reflejen fielmente SOLO lo dicho.",
-  "- prioridad: ALTA solo si se menciona explícitamente una emergencia médica o de seguridad; MEDIA si hay acciones de seguimiento pendientes o se menciona una visita de control; BAJA solo si es informativo sin ninguna acción requerida.",
+  "- prioridad: clasificá en este orden de precedencia (revisá de ALTA a BAJA y aplicá el primer nivel que corresponda):",
+  "  ALTA — acción el mismo día: violencia física, abuso sexual o psicológico, violencia intrafamiliar aguda, daños físicos o psicológicos evidentes en niños/as o adolescentes, riesgo de vida inminente.",
+  "  MEDIA — acción en 24-72hs: falta de insumos del comedor o de primera necesidad (pañales, leche fórmula, botiquín); desnutrición leve o moderada; falta de controles médicos obligatorios; ausencias frecuentes sin justificación (2+ veces por semana); rotura de equipamiento clave que frena la actividad (heladera, bomba de agua, internet); conflictos o discusiones fuertes entre beneficiarios.",
+  "  BAJA — resolución semanal/mensual: falta de materiales no esenciales (témperas, hojas, juegos); reparaciones menores (foco, puerta, humedad estética); demoras en legajos que no impiden el seguimiento; baja de voluntario reemplazable. Si la transcripción es puramente informativa: BAJA.",
+  "- motivoCriticidad: una frase corta (máx 15 palabras) explicando por qué se asignó esa prioridad. Si es BAJA informativa, devolvé \"\".",
   "- entidades.nombres: nombres propios de personas dichos literalmente; si no hay, [].",
   "- entidades.fechas: fechas mencionadas; convierte las relativas (\"hoy\", \"el martes\") a fecha absoluta usando la \"Fecha del registro\"; si no hay, [].",
   "- accionesPendientes: tareas de seguimiento dichas literalmente; si no hay, [].",
@@ -69,6 +73,7 @@ const EXTRACTION_JSON_SCHEMA = {
   properties: {
     resumen: { type: "string" },
     prioridad: { type: "string", enum: ["ALTA", "MEDIA", "BAJA"] },
+    motivoCriticidad: { type: "string" },
     entidades: {
       type: "object",
       properties: { nombres: strArray, fechas: strArray },
@@ -146,7 +151,7 @@ const EXTRACTION_JSON_SCHEMA = {
       additionalProperties: false,
     },
   },
-  required: ["resumen", "prioridad", "entidades", "accionesPendientes", "datos"],
+  required: ["resumen", "prioridad", "motivoCriticidad", "entidades", "accionesPendientes", "datos"],
   additionalProperties: false,
 };
 

@@ -3,7 +3,6 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "./sw-register";
 import { QueueFlusher } from "./queue-flusher";
 import { FlowProvider } from "./flow-context";
-import { AuthGuard } from "./auth-guard";
 
 export const metadata: Metadata = {
   title: "Pequeños Pasos — Registro de campo",
@@ -52,7 +51,7 @@ export default function RootLayout({
         className="min-h-full bg-surface text-on-surface font-body-md antialiased"
       >
         <FlowProvider>
-          <AuthGuard>{children}</AuthGuard>
+          {children}
         </FlowProvider>
         <ServiceWorkerRegister />
         <QueueFlusher />

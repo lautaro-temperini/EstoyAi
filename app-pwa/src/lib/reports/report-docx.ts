@@ -156,6 +156,17 @@ function buildDocumentFromContent(c: ReportContent): Document {
           color: PRIORITY_COLOR[c.prioridad],
           font: FONT,
         }),
+        ...(c.motivoCriticidad
+          ? [
+              new TextRun({
+                text: `  —  ${c.motivoCriticidad}`,
+                italics: true,
+                size: SZ_META,
+                color: MUTED,
+                font: FONT,
+              }),
+            ]
+          : []),
       ],
     }),
 

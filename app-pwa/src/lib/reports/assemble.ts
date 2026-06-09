@@ -10,6 +10,14 @@ export { EXTRACTION_JSON_SCHEMA };
 
 export const ASR_LANGUAGE = process.env.NEXT_PUBLIC_ASR_LANG ?? "es";
 
+// CONFIG-PER-ORG: programas, system prompts y schema varían por organización.
+// Externalizar a config/ong.json cuando haya un segundo cliente.
+// Puntos de variación:
+//   - REGLAS_ABSOLUTAS: idioma, nombre de la ONG, tipo de intervención.
+//   - ESTRUCTURA_CAMPOS: campos relevantes al modelo de atención (ej. microcréditos, nutrición, escolaridad).
+//   - buildSystemPrompt(enfasis): énfasis por programa (ver SYSTEM_PROMPT_* más abajo).
+//   - systemPromptForPrograma(): catálogo de programas activos por organización.
+
 // SYNC: este prompt debe mantenerse idéntico en scripts/gen-n8n-workflow.mjs y assemble.ts
 const REGLAS_ABSOLUTAS = [
   "Convierte la transcripción de un mensaje de voz en un informe de campo estructurado para una ONG.",
@@ -20,7 +28,11 @@ const REGLAS_ABSOLUTAS = [
 const ESTRUCTURA_CAMPOS = [
   "Campos de nivel superior:",
   "- resumen: RESUMEN EJECUTIVO de 1-2 frases que reflejen fielmente SOLO lo dicho.",
-  "- prioridad: ALTA solo si se menciona explícitamente una emergencia médica o de seguridad; MEDIA si hay acciones de seguimiento pendientes o se menciona una visita de control; BAJA solo si es informativo sin ninguna acción requerida.",
+  "- prioridad: clasificá en este orden de precedencia (revisá de ALTA a BAJA y aplicá el primer nivel que corresponda):",
+  "  ALTA — acción el mismo día: violencia física, abuso sexual o psicológico, violencia intrafamiliar aguda, daños físicos o psicológicos evidentes en niños/as o adolescentes, riesgo de vida inminente.",
+  "  MEDIA — acción en 24-72hs: falta de insumos del comedor o de primera necesidad (pañales, leche fórmula, botiquín); desnutrición leve o moderada; falta de controles médicos obligatorios; ausencias frecuentes sin justificación (2+ veces por semana); rotura de equipamiento clave que frena la actividad (heladera, bomba de agua, internet); conflictos o discusiones fuertes entre beneficiarios.",
+  "  BAJA — resolución semanal/mensual: falta de materiales no esenciales (témperas, hojas, juegos); reparaciones menores (foco, puerta, humedad estética); demoras en legajos que no impiden el seguimiento; baja de voluntario reemplazable. Si la transcripción es puramente informativa: BAJA.",
+  "- motivoCriticidad: una frase corta (máx 15 palabras) explicando por qué se asignó esa prioridad. Si es BAJA informativa, devolvé \"\".",
   "- entidades.nombres: nombres propios de personas dichos literalmente; si no hay, [].",
   "- entidades.fechas: fechas mencionadas; convierte las relativas (\"hoy\", \"el martes\") a fecha absoluta usando la \"Fecha del registro\"; si no hay, [].",
   "- accionesPendientes: tareas de seguimiento dichas literalmente; si no hay, [].",
@@ -139,6 +151,7 @@ export function buildReport(
     transcripcion: transcript,
     resumen: extraction.resumen?.trim() || transcript,
     prioridad: extraction.prioridad ?? "MEDIA",
+    motivoCriticidad: extraction.motivoCriticidad ?? "",
     entidades: {
       nombres: extraction.entidades?.nombres ?? [],
       fechas: extraction.entidades?.fechas ?? [],

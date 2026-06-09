@@ -153,6 +153,12 @@ export function setInformeListo(id: string): InformeRow | null {
   return getInforme(id);
 }
 
+/** Permanently delete an informe row. Returns true if a row was removed. */
+export function deleteInforme(id: string): boolean {
+  const result = getDb().prepare(`DELETE FROM informes WHERE id = ?`).run(id);
+  return result.changes > 0;
+}
+
 export function setInformeError(id: string, error: string): InformeRow | null {
   const now = Date.now();
   const result = getDb()

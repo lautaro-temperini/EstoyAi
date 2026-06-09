@@ -7,6 +7,15 @@
  * extraction only organises, it must not replace the source of truth.
  */
 
+// CONFIG-PER-ORG: programas, system prompts y schema varían por organización.
+// Externalizar a config/ong.json cuando haya un segundo cliente.
+// Puntos de variación:
+//   - Prioridad: niveles y criterios de clasificación (hoy: ALTA/MEDIA/BAJA con definiciones de esta ONG).
+//   - DatosInforme: estructura interna varía según modelo de atención (ej. obra habitacional, microcrédito).
+//   - ReportExtraction: campos extraídos por el LLM; cada ONG puede necesitar campos distintos.
+//   - EXTRACTION_JSON_SCHEMA: grammar para Ollama; debe mantenerse en sync con ReportExtraction.
+//   - TipoRegistro / Programa: catálogos específicos de cada organización.
+
 export type Prioridad = "ALTA" | "MEDIA" | "BAJA";
 export type Estado = "PENDIENTE" | "CONFIRMADO";
 
@@ -67,6 +76,8 @@ export interface ReportExtraction {
   resumen: string;
   /** Visual triage class — ALTA for urgent medical/safety findings. */
   prioridad: Prioridad;
+  /** Por qué se asignó esa prioridad (≤ 15 palabras; "" si BAJA informativa). */
+  motivoCriticidad: string;
   /** Extracted entities for quick reference / follow-up. */
   entidades: {
     nombres: string[];
@@ -121,6 +132,7 @@ export const EXTRACTION_JSON_SCHEMA: Record<string, unknown> = {
   properties: {
     resumen: { type: "string" },
     prioridad: { type: "string", enum: ["ALTA", "MEDIA", "BAJA"] },
+    motivoCriticidad: { type: "string" },
     entidades: {
       type: "object",
       properties: { nombres: strArray, fechas: strArray },
@@ -198,6 +210,6 @@ export const EXTRACTION_JSON_SCHEMA: Record<string, unknown> = {
       additionalProperties: false,
     },
   },
-  required: ["resumen", "prioridad", "entidades", "accionesPendientes", "datos"],
+  required: ["resumen", "prioridad", "motivoCriticidad", "entidades", "accionesPendientes", "datos"],
   additionalProperties: false,
 };

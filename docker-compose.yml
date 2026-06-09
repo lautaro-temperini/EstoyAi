@@ -20,7 +20,10 @@ services:
       - "3000:3000"
     environment:
       - DATA_DIR=/data
+      - SITE_PASSWORD=${SITE_PASSWORD:-}
       - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/registro}
+      - N8N_R2_WEBHOOK_URL=${N8N_R2_WEBHOOK_URL:-}
+      - N8N_PODIO_WEBHOOK_URL=${N8N_PODIO_WEBHOOK_URL:-}
       - NEXT_PUBLIC_ASR_LANG=${NEXT_PUBLIC_ASR_LANG:-es}
     volumes:
       - data:/data
