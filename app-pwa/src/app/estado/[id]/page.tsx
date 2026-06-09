@@ -26,14 +26,18 @@ function mapServerEstado(s: string): RegistroEstado | null {
 
 const VIEW: Record<RegistroEstado, { icon: string; label: string; sub: string; spin?: boolean }> = {
   encolado: {
-    icon: "schedule",
-    label: "En cola",
-    sub: "Guardado en el dispositivo. Se enviará al recuperar señal.",
+    icon: "save",
+    label: "Guardado en este dispositivo",
+    sub: "",
   },
-  subiendo: { icon: "cloud_upload", label: "Subiendo", sub: "Enviando el audio a la sede…", spin: true },
+  subiendo: {
+    icon: "cloud_upload",
+    label: "Enviando a la sede…",
+    sub: "",
+  },
   procesando: {
     icon: "neurology",
-    label: "Procesando",
+    label: "En el servidor, generando informe",
     sub: "La sede está transcribiendo y generando el informe…",
     spin: true,
   },
@@ -123,6 +127,16 @@ export default function EstadoPage() {
 
   const v = estado ? VIEW[estado] : null;
 
+  // Estados "en el dispositivo": audio guardado localmente, sin conexión o subiendo.
+  const isOffline = estado === "encolado" || estado === "subiendo";
+
+  const iconColor =
+    estado === "error"
+      ? "text-error"
+      : estado === "listo" || isOffline
+      ? "text-secondary"
+      : "text-primary";
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="anim-fade fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
@@ -151,20 +165,45 @@ export default function EstadoPage() {
                 {titular}
               </p>
             )}
+
             <span
-              className={`material-symbols-outlined text-[72px] ${estado === "error" ? "text-error" : estado === "listo" ? "text-secondary" : "text-primary"} ${v.spin ? "animate-spin" : ""}`}
+              className={`material-symbols-outlined text-[72px] ${iconColor} ${v.spin ? "animate-spin" : ""}`}
             >
               {v.icon}
             </span>
-            <h1 className="font-headline-md text-headline-md text-on-surface">{v.label}</h1>
-            <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">{v.sub}</p>
 
-            {estado !== "listo" && estado !== "error" && (
-              <p className="font-caption text-caption text-on-surface-variant mt-stack-sm">
-                Podés cerrar la app. El registro queda guardado y lo vas a encontrar en “Mis registros”.
-              </p>
+            <h1 className="font-headline-md text-headline-md text-on-surface">{v.label}</h1>
+
+            {/* ── Guardado en dispositivo (encolado / subiendo) ─────────────── */}
+            {isOffline && (
+              <div className="w-full bg-secondary-container/30 border border-secondary/20 rounded-xl p-4 text-left">
+                <p className="font-body-md text-body-md text-on-surface leading-relaxed">
+                  Tu audio está guardado en este dispositivo y se enviará automáticamente cuando haya conexión. Podés cerrar la app — cuando esté listo vas a encontrar el informe en{" "}
+                  <button
+                    onClick={() => router.push("/registros")}
+                    className="font-semibold underline underline-offset-2 text-primary"
+                  >
+                    Mis registros
+                  </button>
+                  .
+                </p>
+                <p className="font-caption text-caption text-on-surface-variant mt-3">
+                  Si recuperaste señal y el estado no avanzó, reabrí la app.
+                </p>
+              </div>
             )}
 
+            {/* ── En el servidor (procesando) ───────────────────────────────── */}
+            {estado === "procesando" && (
+              <>
+                <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">{v.sub}</p>
+                <p className="font-caption text-caption text-on-surface-variant mt-stack-sm">
+                  Podés cerrar la app. El registro queda guardado y lo vas a encontrar en &quot;Mis registros&quot;.
+                </p>
+              </>
+            )}
+
+            {/* ── Listo ────────────────────────────────────────────────────── */}
             {estado === "listo" && (
               <div className="w-full grid grid-cols-1 gap-3 mt-stack-md">
                 <a
@@ -187,14 +226,18 @@ export default function EstadoPage() {
               </div>
             )}
 
+            {/* ── Error ────────────────────────────────────────────────────── */}
             {estado === "error" && (
-              <button
-                onClick={reintentar}
-                className="mt-stack-md h-14 px-8 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
-              >
-                <span className="material-symbols-outlined">refresh</span>
-                Reintentar subida
-              </button>
+              <>
+                <p className="font-body-md text-body-md text-on-surface-variant max-w-xs">{v.sub}</p>
+                <button
+                  onClick={reintentar}
+                  className="mt-stack-md h-14 px-8 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
+                >
+                  <span className="material-symbols-outlined">refresh</span>
+                  Reintentar subida
+                </button>
+              </>
             )}
           </div>
         )}

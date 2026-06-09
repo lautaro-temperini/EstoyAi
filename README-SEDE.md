@@ -81,6 +81,8 @@ copy .env.example .env
 Abrí `.env` con el Bloc de Notas y cambiá:
 - `N8N_PASSWORD` → una contraseña segura para el editor n8n
 
+> `N8N_API_KEY` se completa después, solo si vas a actualizar el workflow por línea de comandos (ver sección "Actualizar el workflow"). Dejala vacía por ahora.
+
 ### 4. Correr el script de primer arranque
 
 Hacé doble clic en `scripts\primer-arranque.bat`.
@@ -166,6 +168,23 @@ Para agregar al escritorio del celular como una app:
 1. Abrí la URL en Chrome.
 2. Menú (tres puntos) → "Agregar a la pantalla de inicio".
 3. Confirmar.
+
+---
+
+## Actualizar el workflow
+
+Si alguien modificó el prompt o el schema del informe (archivos `assemble.ts` o `schema.ts`), hay que aplicar el cambio a n8n. Corrés este script y listo:
+
+```
+scripts\update-workflow.bat
+```
+
+El script regenera el archivo del workflow, lo sube a n8n y lo deja activo. No hace falta abrir n8n ni hacer nada a mano.
+
+> **Solo la primera vez:** el script necesita una "API key" de n8n. Abrí `http://localhost:5678` → **Settings** → **API** → **Create API Key**, copiá la key y pegala en el archivo `.env` en la línea `N8N_API_KEY=`. Después de eso, el script funciona siempre sin pedir nada.
+
+> Si dice "No se pudo conectar", verificá que n8n esté corriendo con `estado.bat`.
+> Si dice "API key inválida", generá una nueva en n8n y actualizá `.env`.
 
 ---
 
