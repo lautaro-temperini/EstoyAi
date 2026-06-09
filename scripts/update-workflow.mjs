@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 /**
- * Regenera n8n/workflows/registro.json y lo sube a n8n vía REST API.
+ * Regenera n8n/workflows/registro.json y lo importa a n8n usando el CLI interno
+ * del contenedor (n8n import:workflow) — el mismo motor que "Import from file"
+ * de la UI. NO usa la REST API ni API key: corre `docker compose exec n8n ...`.
  *
- * Autenticación: la API pública de n8n (/api/v1/*) usa una API key en el
- * header X-N8N-API-KEY — NO el basic auth del editor. Generar la key en
- * n8n → Settings → API → Create API Key, y guardarla en .env como N8N_API_KEY.
- * Requiere Node 22 (fetch nativo).
+ * El archivo ya está montado en el contenedor vía docker-compose:
+ *   ./n8n/workflows  →  /home/node/workflows  (ro)
+ *
+ * Requiere Node 22, Docker Desktop corriendo y el contenedor n8n levantado.
  *
  * Uso directo:  node scripts/update-workflow.mjs
  * Desde script: scripts/update-workflow.sh  |  scripts\update-workflow.bat
@@ -18,161 +20,122 @@ import { execSync } from "node:child_process";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
 const WORKFLOW_NAME = "Pequeños Pasos — registro";
-const N8N_URL = "http://localhost:5678";
+const WORKFLOW_FILE = path.join(ROOT, "n8n", "workflows", "registro.json");
+// Ruta del mismo archivo VISTA DESDE DENTRO del contenedor (volumen montado).
+const WORKFLOW_IN_CONTAINER = "/home/node/workflows/registro.json";
 
-// ── Leer .env ────────────────────────────────────────────────────────────────
-function readEnv() {
-  const envPath = path.join(ROOT, ".env");
-  if (!fs.existsSync(envPath)) return {};
-  const env = {};
-  for (const raw of fs.readFileSync(envPath, "utf8").split(/\r?\n/)) {
-    const m = raw.match(/^([A-Z][A-Z0-9_]*)\s*=\s*(.*)/);
-    if (!m) continue;
-    // Quitar comentario inline y espacios
-    env[m[1]] = m[2].replace(/\s*#.*$/, "").trim();
-  }
-  return env;
-}
-
-// ── HTTP con API key (X-N8N-API-KEY) ─────────────────────────────────────────
-async function api(method, path, apiKey, body) {
-  const headers = {
-    "X-N8N-API-KEY": apiKey,
-    Accept: "application/json",
-    ...(body ? { "Content-Type": "application/json" } : {}),
-  };
-  const res = await fetch(`${N8N_URL}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : undefined,
+// Ejecuta un comando y devuelve stdout (string). `silent` oculta la salida.
+function run(cmd, { silent = false } = {}) {
+  return execSync(cmd, {
+    cwd: ROOT,
+    encoding: "utf8",
+    stdio: silent ? ["ignore", "pipe", "pipe"] : ["ignore", "pipe", "inherit"],
   });
-  const text = await res.text();
-  return {
-    ok: res.ok,
-    status: res.status,
-    json: () => JSON.parse(text),
-    text,
-  };
 }
 
-// La API pública rechaza propiedades read-only (id, active, tags, etc.) en el
-// body de POST/PUT. Mandamos solo lo que acepta el schema del endpoint.
-function cleanWorkflow(w) {
-  return {
-    name: w.name,
-    nodes: w.nodes,
-    connections: w.connections,
-    settings: w.settings ?? {},
-  };
+// Corre el CLI de n8n dentro del contenedor. -T = sin TTY (modo script).
+function n8nCli(args, opts) {
+  return run(`docker compose exec -T n8n n8n ${args}`, opts);
 }
 
-// ── Main ─────────────────────────────────────────────────────────────────────
-async function main() {
+// list:workflow imprime líneas "<id>|<nombre>". Devuelve el id por nombre, o null.
+function findWorkflowId() {
+  let out;
+  try {
+    out = n8nCli("list:workflow", { silent: true });
+  } catch {
+    return null; // sin workflows todavía, o el comando falló (se maneja afuera)
+  }
+  for (const line of out.split(/\r?\n/)) {
+    const i = line.indexOf("|");
+    if (i === -1) continue;
+    const id = line.slice(0, i).trim();
+    const name = line.slice(i + 1).trim();
+    if (name === WORKFLOW_NAME) return id;
+  }
+  return null;
+}
+
+// Inyecta un id estable en el JSON para que import:workflow ACTUALICE en vez de
+// duplicar. Escribe sobre el archivo del host (el contenedor lo lee por el mount).
+function injectId(id) {
+  const wf = JSON.parse(fs.readFileSync(WORKFLOW_FILE, "utf8"));
+  wf.id = id;
+  fs.writeFileSync(WORKFLOW_FILE, JSON.stringify(wf, null, 2) + "\n", "utf8");
+}
+
+function fail(msg, hint) {
+  console.error(`\n  ✗ ${msg}`);
+  if (hint) console.error(`    ${hint}`);
+  console.error();
+  process.exit(1);
+}
+
+function main() {
   console.log("\n══════════════════════════════════════════════");
   console.log("  Actualizar workflow n8n — Pequeños Pasos");
   console.log("══════════════════════════════════════════════\n");
 
-  const env = readEnv();
-  const N8N_API_KEY = env.N8N_API_KEY || process.env.N8N_API_KEY || "";
-  if (!N8N_API_KEY) {
-    console.error("  ✗ Falta N8N_API_KEY.");
-    console.error("    1. Abrí n8n: http://localhost:5678");
-    console.error("    2. Settings → API → Create API Key");
-    console.error("    3. Copiá la key al archivo .env:  N8N_API_KEY=...");
-    console.error();
-    process.exit(1);
-  }
-
   // ── Paso 1: Regenerar JSON ──────────────────────────────────────────────
-  console.log("1/3  Regenerando registro.json desde assemble.ts / schema.ts…");
+  console.log("1/4  Regenerando registro.json desde assemble.ts / schema.ts…");
   try {
-    execSync(`node "${path.join(__dirname, "gen-n8n-workflow.mjs")}"`, {
-      stdio: "inherit",
-      cwd: ROOT,
-    });
+    run(`node "${path.join(__dirname, "gen-n8n-workflow.mjs")}"`);
   } catch {
-    console.error("     ✗ Falló gen-n8n-workflow.mjs — revisá errores arriba.");
-    process.exit(1);
+    fail("Falló gen-n8n-workflow.mjs — revisá los errores de arriba.");
   }
-  const workflowJson = JSON.parse(
-    fs.readFileSync(path.join(ROOT, "n8n", "workflows", "registro.json"), "utf8"),
-  );
   console.log("     ✓ registro.json regenerado.\n");
 
-  // ── Paso 2: Buscar workflow existente por nombre ────────────────────────
-  console.log(`2/3  Conectando a n8n en ${N8N_URL}…`);
-  let listRes;
+  // ── Verificar que el contenedor n8n responda ────────────────────────────
+  console.log("2/4  Verificando que el contenedor n8n esté corriendo…");
   try {
-    listRes = await api("GET", "/api/v1/workflows", N8N_API_KEY);
-  } catch (e) {
-    console.error(`\n     ✗ No se pudo conectar a n8n.`);
-    console.error(`       ¿Está corriendo? →  docker compose ps n8n`);
-    console.error(`       Error: ${e.message}\n`);
-    process.exit(1);
+    n8nCli("--version", { silent: true });
+  } catch {
+    fail(
+      "No se pudo ejecutar el CLI de n8n en el contenedor.",
+      "¿Docker está abierto y n8n levantado?  →  docker compose ps n8n",
+    );
   }
+  console.log("     ✓ n8n responde.\n");
 
-  if (listRes.status === 401) {
-    console.error("\n     ✗ API key inválida o vencida.");
-    console.error("       Generá una nueva en n8n → Settings → API → Create API Key");
-    console.error("       y actualizá N8N_API_KEY en el archivo .env\n");
-    process.exit(1);
-  }
-  if (!listRes.ok) {
-    console.error(`\n     ✗ n8n respondió HTTP ${listRes.status}.`);
-    console.error(`       Verificá que el servicio esté sano: docker compose ps n8n\n`);
-    process.exit(1);
-  }
-
-  const list = listRes.json();
-  const arr = Array.isArray(list) ? list : (list.data || []);
-  const existing = arr.find((w) => w.name === WORKFLOW_NAME);
-  let wfId;
-
-  if (existing) {
-    wfId = existing.id;
-    console.log(`     Workflow encontrado (id=${wfId}). Actualizando…`);
-    const upRes = await api("PUT", `/api/v1/workflows/${wfId}`, N8N_API_KEY, cleanWorkflow(workflowJson));
-    if (!upRes.ok) {
-      console.error(`\n     ✗ Error al actualizar (HTTP ${upRes.status}).`);
-      console.error("       Importá a mano: n8n → Workflows → Import from file");
-      console.error("       Archivo: n8n/workflows/registro.json\n");
-      process.exit(1);
-    }
-    console.log("     ✓ Workflow actualizado.");
+  // ── Paso 2: Si ya existe, reusar su id para actualizar (no duplicar) ─────
+  const existingId = findWorkflowId();
+  if (existingId) {
+    console.log(`3/4  Workflow existente (id=${existingId}). Actualizando…`);
+    injectId(existingId);
   } else {
-    console.log("     Workflow no encontrado. Creando uno nuevo…");
-    const createRes = await api("POST", "/api/v1/workflows", N8N_API_KEY, cleanWorkflow(workflowJson));
-    if (!createRes.ok) {
-      console.error(`\n     ✗ Error al crear el workflow (HTTP ${createRes.status}).`);
-      console.error("       Importá a mano: n8n → Workflows → Import from file");
-      console.error("       Archivo: n8n/workflows/registro.json\n");
-      process.exit(1);
-    }
-    wfId = createRes.json().id;
-    console.log(`     ✓ Workflow creado (id=${wfId}).`);
+    console.log("3/4  Workflow nuevo. Importando por primera vez…");
   }
-  console.log();
+  try {
+    n8nCli(`import:workflow --input=${WORKFLOW_IN_CONTAINER}`);
+  } catch {
+    fail(
+      "Falló import:workflow.",
+      "Como alternativa, importá a mano: n8n → Workflows → Import from file → n8n/workflows/registro.json",
+    );
+  }
+  const wfId = existingId || findWorkflowId();
+  console.log("     ✓ Workflow importado.\n");
 
-  // ── Paso 3: Activar ─────────────────────────────────────────────────────
-  console.log("3/3  Activando el workflow…");
+  // ── Paso 3: Activar + reiniciar n8n para registrar el webhook ───────────
+  console.log("4/4  Activando el workflow y reiniciando n8n…");
   if (wfId) {
-    const actRes = await api("POST", `/api/v1/workflows/${wfId}/activate`, N8N_API_KEY);
-    if (actRes.ok) {
-      console.log("     ✓ Workflow activo y listo para recibir registros.");
-    } else {
-      console.log("     ⚠ No se pudo activar automáticamente.");
-      console.log("       Activalo a mano en n8n (toggle arriba a la derecha del workflow).");
+    try {
+      n8nCli(`update:workflow --id=${wfId} --active=true`, { silent: true });
+    } catch {
+      console.log("     ⚠ No se pudo activar por CLI — activalo a mano en la UI.");
     }
-  } else {
-    console.log("     ⚠ Activalo a mano en n8n (toggle arriba a la derecha del workflow).");
+  }
+  // n8n registra los webhooks al arrancar; un restart asegura que /webhook/registro quede vivo.
+  try {
+    run("docker compose restart n8n", { silent: true });
+  } catch {
+    console.log("     ⚠ No se pudo reiniciar n8n — reiniciá a mano: docker compose restart n8n");
   }
 
   console.log("\n══════════════════════════════════════════════");
-  console.log("  ✓ Listo.");
+  console.log("  ✓ Listo. El workflow está activo.");
+  console.log("    (n8n tarda ~30 s en volver a estar disponible)");
   console.log("══════════════════════════════════════════════\n");
 }
 
-main().catch((e) => {
-  console.error(`\n  ✗ Error inesperado: ${e.message}\n`);
-  process.exit(1);
-});
+main();

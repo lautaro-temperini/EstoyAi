@@ -81,8 +81,6 @@ copy .env.example .env
 Abrí `.env` con el Bloc de Notas y cambiá:
 - `N8N_PASSWORD` → una contraseña segura para el editor n8n
 
-> `N8N_API_KEY` se completa después, solo si vas a actualizar el workflow por línea de comandos (ver sección "Actualizar el workflow"). Dejala vacía por ahora.
-
 ### 4. Correr el script de primer arranque
 
 Hacé doble clic en `scripts\primer-arranque.bat`.
@@ -179,12 +177,10 @@ Si alguien modificó el prompt o el schema del informe (archivos `assemble.ts` o
 scripts\update-workflow.bat
 ```
 
-El script regenera el archivo del workflow, lo sube a n8n y lo deja activo. No hace falta abrir n8n ni hacer nada a mano.
+El script regenera el archivo del workflow, lo importa a n8n y lo deja activo. No hace falta abrir n8n ni configurar nada — usa el importador interno de n8n (el mismo de "Import from file"). Al terminar, reinicia n8n; tarda unos 30 segundos en volver.
 
-> **Solo la primera vez:** el script necesita una "API key" de n8n. Abrí `http://localhost:5678` → **Settings** → **API** → **Create API Key**, copiá la key y pegala en el archivo `.env` en la línea `N8N_API_KEY=`. Después de eso, el script funciona siempre sin pedir nada.
-
-> Si dice "No se pudo conectar", verificá que n8n esté corriendo con `estado.bat`.
-> Si dice "API key inválida", generá una nueva en n8n y actualizá `.env`.
+> Si dice "n8n no está corriendo", abrí Docker Desktop y verificá con `estado.bat`.
+> Si algo falla, siempre podés importar a mano: n8n → Workflows → Import from file → `n8n\workflows\registro.json`.
 
 ---
 

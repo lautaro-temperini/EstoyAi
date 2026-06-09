@@ -40,10 +40,11 @@ services:
     ports:
       - "5678:5678"
     environment:
-      # Credenciales del editor — cambiar en producción.
-      - N8N_BASIC_AUTH_ACTIVE=true
-      - N8N_BASIC_AUTH_USER=${N8N_USER:-admin}
-      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD:-cambiame}
+      # NOTA: n8n 2.x NO usa basic auth (removido desde n8n 1.0). El login del
+      # editor es la "cuenta de propietario" (email + password) que se crea en
+      # la UI en el primer arranque y queda guardada en el volumen n8n_data.
+      # Los valores N8N_USER / N8N_PASSWORD del .env son solo referencia de esa
+      # cuenta. La autenticación de la API REST usa N8N_API_KEY (header).
       # URLs internas de los servicios (deben coincidir con los nombres de servicio).
       - APP_URL=${APP_URL:-http://app-pwa:3000}
       - WHISPER_URL=${WHISPER_URL:-http://whisper:8000}

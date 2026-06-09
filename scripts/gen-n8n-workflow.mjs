@@ -155,7 +155,14 @@ const ollamaBody = {
   model,
   stream: false,
   format: EXTRACTION_JSON_SCHEMA,
-  options: { temperature: 0 },
+  // qwen3 es un modelo de RAZONAMIENTO: sin esto genera miles de tokens de
+  // "thinking" antes de responder (n_decoded 2000+), el pipeline tarda minutos
+  // y la UI queda colgada en "procesando". think:false lo desactiva de raíz.
+  think: false,
+  options: {
+    temperature: 0,
+    num_predict: 1024, // tope de seguridad anti-runaway (el JSON real ~300-500 tokens).
+  },
   messages: [
     { role: 'system', content: SYSTEM_PROMPT },
     { role: 'user', content: userMessage },
@@ -192,7 +199,11 @@ const nodes = [
     parameters: {
       httpMethod: "POST",
       path: "registro",
-      responseMode: "responseNode",
+      // Responder AL INSTANTE: el webhook es fire-and-forget. La PWA no espera
+      // el resultado acá — lo consulta por polling a /api/informe/[id]. Con
+      // "responseNode" n8n mantenía la conexión abierta todo el pipeline
+      // (whisper+ollama = minutos en CPU) → HeadersTimeoutError en la PWA.
+      responseMode: "onReceived",
       options: {},
     },
     id: "node-webhook",
@@ -292,19 +303,6 @@ const nodes = [
   },
   {
     parameters: {
-      respondWith: "json",
-      responseBody:
-        '={{ { "id": $(\'init\').item.json.id, "estado": "LISTO" } }}',
-      options: {},
-    },
-    id: "node-respond-ok",
-    name: "respond-ok",
-    type: "n8n-nodes-base.respondToWebhook",
-    typeVersion: 1.1,
-    position: [1600, 300],
-  },
-  {
-    parameters: {
       method: "POST",
       url: `${APP}/api/informe/${idExpr}/error`,
       sendBody: true,
@@ -319,20 +317,6 @@ const nodes = [
     typeVersion: 4.2,
     position: [720, 560],
     onError: "continueRegularOutput",
-  },
-  {
-    parameters: {
-      respondWith: "json",
-      responseCode: 500,
-      responseBody:
-        '={{ { "id": $(\'init\').item.json.id, "estado": "ERROR" } }}',
-      options: {},
-    },
-    id: "node-respond-error",
-    name: "respond-error",
-    type: "n8n-nodes-base.respondToWebhook",
-    typeVersion: 1.1,
-    position: [940, 560],
   },
   // --- Ganchos futuros (desconectados, NoOp) -------------------------------
   {
@@ -393,13 +377,11 @@ const connections = {
   },
   "generar-docx": {
     main: [
-      [{ node: "respond-ok", type: "main", index: 0 }],
+      [], // éxito = fin del pipeline (la PWA ya tiene el .docx vía polling)
       [{ node: "marcar-error", type: "main", index: 0 }],
     ],
   },
-  "marcar-error": {
-    main: [[{ node: "respond-error", type: "main", index: 0 }]],
-  },
+  // marcar-error es terminal: registra el error en SQLite y termina.
 };
 
 const workflow = {
@@ -407,7 +389,13 @@ const workflow = {
   nodes,
   connections,
   active: false,
-  settings: { executionOrder: "v1" },
+  settings: {
+    executionOrder: "v1",
+    // Guardar ejecuciones para poder debuggear en la pestaña Executions de n8n.
+    saveDataSuccessExecution: "all",
+    saveDataErrorExecution: "all",
+    saveManualExecutions: true,
+  },
   tags: [],
 };
 
