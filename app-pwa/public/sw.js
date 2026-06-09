@@ -91,6 +91,7 @@ async function uploadOne(p) {
         id: p.id,
         tipo: p.tipo,
         beneficiario: p.beneficiario,
+        programa: p.programa,
         capturedAt: p.capturedAt,
         durationMs: p.durationMs,
       }),

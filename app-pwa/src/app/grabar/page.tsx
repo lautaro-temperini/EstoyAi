@@ -3,23 +3,20 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFlow } from "../flow-context";
+import { Stepper } from "@/components/stepper";
 import { useRecorder, type RecordingResult } from "@/lib/use-recorder";
 import { enqueueRegistro } from "@/lib/queue/enqueue";
 
 const WAVE_DELAYS = ["0.1s", "0.3s", "0.2s", "0.5s", "0.4s", "0.6s", "0.2s"];
 const MAX_MS = 60_000;
-const COUNTDOWN_FROM_MS = 10_000; // show the "quedan Ns" counter for the last 10s
+const AMBER_FROM_MS = 10_000; // últimos 10 s: el ring vira a amber
 
-function fmt(ms: number): string {
-  const total = Math.floor(ms / 1000);
-  const m = Math.floor(total / 60).toString().padStart(2, "0");
-  const s = (total % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
-}
+const RING_R = 82;
+const RING_C = 2 * Math.PI * RING_R;
 
 export default function RecordingPage() {
   const router = useRouter();
-  const { tipo, beneficiario } = useFlow();
+  const { tipo, beneficiario, programa } = useFlow();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -37,6 +34,7 @@ export default function RecordingPage() {
         wavBlob: result.blob,
         durationMs: result.durationMs,
         tipo: tipo ?? null,
+        programa: programa ?? null,
         beneficiario:
           beneficiario?.nombre || beneficiario?.dni
             ? {
@@ -64,7 +62,8 @@ export default function RecordingPage() {
   const showBeneficiary = tipo !== "grupal" && nombreCompleto;
   const remainingMs = Math.max(0, MAX_MS - elapsedMs);
   const remainingSec = Math.ceil(remainingMs / 1000);
-  const showCountdown = recording && remainingMs <= COUNTDOWN_FROM_MS;
+  const progress = Math.min(1, elapsedMs / MAX_MS);
+  const amber = recording && remainingMs <= AMBER_FROM_MS;
 
   const onMicClick = async () => {
     if (saving) return;
@@ -94,6 +93,10 @@ export default function RecordingPage() {
       </header>
 
       <main className="flex-grow flex flex-col items-center justify-center px-container-margin pt-20 pb-24">
+        <div className="w-full max-w-md mb-stack-lg">
+          <Stepper current={3} />
+        </div>
+
         {showBeneficiary && (
           <div className="w-full max-w-md rounded-xl p-4 mb-stack-lg flex items-center gap-3 bg-surface-container-low">
             <div className="bg-primary/10 text-primary p-2 rounded-full">
@@ -123,6 +126,41 @@ export default function RecordingPage() {
                 />
               </>
             )}
+
+            {/* Ring de progreso: se llena durante los 60 s; vira a amber al final. */}
+            <svg
+              className="absolute z-0 -rotate-90"
+              width="176"
+              height="176"
+              viewBox="0 0 176 176"
+              aria-hidden="true"
+            >
+              <circle
+                cx="88"
+                cy="88"
+                r={RING_R}
+                fill="none"
+                strokeWidth="6"
+                className="stroke-surface-container-highest"
+              />
+              <circle
+                cx="88"
+                cy="88"
+                r={RING_R}
+                fill="none"
+                strokeWidth="6"
+                strokeLinecap="round"
+                strokeDasharray={RING_C}
+                strokeDashoffset={RING_C * (1 - progress)}
+                style={{
+                  stroke: amber
+                    ? "var(--color-tertiary-fixed-dim)"
+                    : "var(--color-primary)",
+                  transition: "stroke 700ms linear, stroke-dashoffset 200ms linear",
+                }}
+              />
+            </svg>
+
             <button
               onClick={onMicClick}
               disabled={saving}
@@ -144,6 +182,13 @@ export default function RecordingPage() {
             </button>
           </div>
 
+          {/* Segundos restantes — solo mientras graba, texto pequeño. */}
+          {recording && (
+            <span className="font-caption text-caption text-on-surface-variant tabular-nums">
+              {remainingSec} s
+            </span>
+          )}
+
           <div className="flex items-center gap-1.5 h-12">
             {WAVE_DELAYS.map((delay, i) => (
               <div
@@ -156,22 +201,6 @@ export default function RecordingPage() {
                 }
               />
             ))}
-          </div>
-
-          <div className="flex flex-col items-center gap-1">
-            <div className="flex items-center gap-2">
-              <div
-                className={`w-2 h-2 rounded-full bg-error ${recording ? "animate-pulse" : "opacity-30"}`}
-              />
-              <span className="font-display-lg text-display-lg text-on-surface tracking-wider">
-                {fmt(elapsedMs)}
-              </span>
-            </div>
-            {showCountdown && (
-              <span className="anim-fade font-caption text-caption text-error">
-                Se enviará en {remainingSec} s
-              </span>
-            )}
           </div>
 
           {(error || saveError) && (

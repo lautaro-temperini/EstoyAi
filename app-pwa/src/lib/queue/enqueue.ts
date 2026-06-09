@@ -19,7 +19,7 @@ import {
   type Beneficiario,
   type PendingUpload,
 } from "./db";
-import type { TipoRegistro } from "@/lib/reports/schema";
+import type { Programa, TipoRegistro } from "@/lib/reports/schema";
 
 export const SYNC_TAG = "upload-audio";
 
@@ -28,6 +28,7 @@ interface EnqueueInput {
   durationMs: number | null;
   tipo: TipoRegistro | null;
   beneficiario: Beneficiario | null;
+  programa: Programa | null;
 }
 
 function titularOf(tipo: TipoRegistro | null, b: Beneficiario | null): string {
@@ -47,6 +48,7 @@ export async function enqueueRegistro(input: EnqueueInput): Promise<string> {
     filename: `registro-${id}.wav`,
     tipo: input.tipo,
     beneficiario: input.beneficiario,
+    programa: input.programa,
     capturedAt: now,
     durationMs: input.durationMs,
     intentos: 0,
@@ -104,6 +106,7 @@ async function uploadOne(p: PendingUpload): Promise<void> {
         id: p.id,
         tipo: p.tipo,
         beneficiario: p.beneficiario,
+        programa: p.programa,
         capturedAt: p.capturedAt,
         durationMs: p.durationMs,
       }),

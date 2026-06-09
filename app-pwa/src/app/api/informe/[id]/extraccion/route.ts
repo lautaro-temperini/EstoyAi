@@ -11,6 +11,7 @@ type Params = { params: Promise<{ id: string }> };
 const FALLBACK_META: ReportMetadata = {
   tipo: null,
   beneficiario: null,
+  programa: null,
   sector: null,
   unidad: null,
   capturedAt: Date.now(),

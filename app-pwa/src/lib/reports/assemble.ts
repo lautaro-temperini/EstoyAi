@@ -10,26 +10,70 @@ export { EXTRACTION_JSON_SCHEMA };
 
 export const ASR_LANGUAGE = process.env.NEXT_PUBLIC_ASR_LANG ?? "es";
 
-export const SYSTEM_PROMPT = [
+// SYNC: este prompt debe mantenerse idéntico en scripts/gen-n8n-workflow.mjs y assemble.ts
+const REGLAS_ABSOLUTAS = [
   "Convierte la transcripción de un mensaje de voz en un informe de campo estructurado para una ONG.",
   "Regla absoluta: extrae EXCLUSIVAMENTE lo que se dice en la transcripción. No inventes datos, cifras, nombres, fechas ni diagnósticos. Si un campo no se menciona, deja \"\" (texto) o [] (lista). No uses vocabulario que no esté en el texto.",
   "Si la transcripción es una prueba o no contiene información real, dilo así en el resumen (p. ej. \"Mensaje de prueba sin información operativa\") y deja el resto vacío.",
+];
+
+const ESTRUCTURA_CAMPOS = [
   "Campos de nivel superior:",
   "- resumen: RESUMEN EJECUTIVO de 1-2 frases que reflejen fielmente SOLO lo dicho.",
-  "- prioridad: ALTA solo si se menciona explícitamente una emergencia médica o de seguridad; MEDIA si se menciona un seguimiento necesario; en cualquier otro caso BAJA.",
+  "- prioridad: ALTA solo si se menciona explícitamente una emergencia médica o de seguridad; MEDIA si hay acciones de seguimiento pendientes o se menciona una visita de control; BAJA solo si es informativo sin ninguna acción requerida.",
   "- entidades.nombres: nombres propios de personas dichos literalmente; si no hay, [].",
   "- entidades.fechas: fechas mencionadas; convierte las relativas (\"hoy\", \"el martes\") a fecha absoluta usando la \"Fecha del registro\"; si no hay, [].",
   "- accionesPendientes: tareas de seguimiento dichas literalmente; si no hay, [].",
   "Objeto datos (columna vertebral del registro; deja vacío lo no mencionado):",
   "- datos.demografia: nombre, edad, fechaNacimiento del beneficiario; esMenor=true SOLO si se indica o se deduce que es menor de edad.",
   "- datos.metricas: peso y talla (antropométricos para nutrición), diagnosticos (lista de diagnósticos médicos específicos: oncología, discapacidad, VIH…), avanceObra (estado de una obra habitacional).",
-  "- datos.socioeconomico: familia (condición familiar), ingresos, vivienda, vulnerabilidades (lista).",
+  "- datos.socioeconomico: familia (condición familiar), ingresos, vivienda, vulnerabilidades (lista de situaciones de riesgo mencionadas literalmente: violencia, situación de calle, sin documentación, etc.; si no se mencionan, []).",
   "- datos.intervencion: fecha exacta, lugar (clave en operativos móviles), tipoActividad (taller, consulta médica, asesoría legal, entrega…), profesionales (lista de profesionales o voluntarios presentes).",
-  "- datos.seguimiento: compromisos (lista de compromisos concretos mencionados literalmente en el audio, por ejemplo pagos pendientes o acuerdos explícitos; si no se mencionan, []), situacionLaboral, desempenoAcademico.",
+  "- datos.seguimiento: situacionLaboral, desempenoAcademico. No uses este campo para acciones pendientes — esas van en accionesPendientes.",
   "- datos.narrativa: detalles cualitativos sutiles pero valiosos (reacción emocional, percepción de una madre sobre su vivienda…). Si no hay, \"\".",
   "Regla crítica para listas: si un campo de tipo array no se menciona explícitamente en la transcripción, devolvé [] sin excepción. Nunca uses los nombres de campos como ejemplos de valores. \"compromisos\", \"vulnerabilidades\", \"profesionales\" son etiquetas, no datos.",
   "Responde en español. /no_think",
-].join("\n");
+];
+
+/** Compone un system prompt: reglas absolutas → énfasis del programa → estructura. */
+function buildSystemPrompt(enfasis: string[] = []): string {
+  return [...REGLAS_ABSOLUTAS, ...enfasis, ...ESTRUCTURA_CAMPOS].join("\n");
+}
+
+/** Prompt genérico — usado cuando no hay programa seleccionado o es desconocido. */
+export const SYSTEM_PROMPT = buildSystemPrompt();
+
+/** Primera Infancia (0-5 años) — el beneficiario es el niño/a; habla la familia. */
+export const SYSTEM_PROMPT_PRIMERA_INFANCIA = buildSystemPrompt([
+  "CONTEXTO DEL PROGRAMA — Primera Infancia (0 a 5 años): el beneficiario es el niño o niña; el interlocutor en el audio es la familia (madre, padre o cuidador). esMenor es siempre true.",
+  "Presta especial atención y prioriza extraer, si se mencionan: peso, talla, percentiles de crecimiento, hitos de desarrollo psicomotor, diagnósticos nutricionales (desnutrición, bajo peso, anemia…), entrega de bolsón de alimentos, fecha de la próxima consulta pediátrica y observaciones sobre el vínculo madre-hijo/a.",
+]);
+
+/** Niñez y Adolescencia (6-18 años) — eje escolar y socioemocional. */
+export const SYSTEM_PROMPT_NINEZ_ADOLESCENCIA = buildSystemPrompt([
+  "CONTEXTO DEL PROGRAMA — Niñez y Adolescencia (6 a 18 años): el beneficiario es un niño, niña o adolescente. esMenor es true salvo que se diga lo contrario.",
+  "Presta especial atención y prioriza extraer, si se mencionan: desempeño escolar (en datos.seguimiento.desempenoAcademico), asistencia a la escuela, actividades en las que participa (fútbol, talleres, apoyo escolar), situación familiar, riesgo de deserción escolar, conductas de riesgo y vínculos con pares.",
+]);
+
+/** Oficios — adultos en capacitación laboral; NUNCA esMenor. */
+export const SYSTEM_PROMPT_OFICIOS = buildSystemPrompt([
+  "CONTEXTO DEL PROGRAMA — Oficios: el beneficiario es una persona ADULTA en capacitación laboral. esMenor es SIEMPRE false; nunca lo marques true.",
+  "Presta especial atención y prioriza extraer, si se mencionan: el oficio que está aprendiendo, asistencia al taller de capacitación, situación laboral actual (en datos.seguimiento.situacionLaboral), ingresos (en datos.socioeconomico.ingresos), compromisos de pago si hay un microcrédito (en datos.seguimiento.compromisos) y el progreso en la capacitación.",
+]);
+
+/** Selecciona el system prompt según el programa; genérico si es null/desconocido. */
+export function systemPromptForPrograma(programa: string | null | undefined): string {
+  switch (programa) {
+    case "primera-infancia":
+      return SYSTEM_PROMPT_PRIMERA_INFANCIA;
+    case "ninez-adolescencia":
+      return SYSTEM_PROMPT_NINEZ_ADOLESCENCIA;
+    case "oficios":
+      return SYSTEM_PROMPT_OFICIOS;
+    default:
+      return SYSTEM_PROMPT;
+  }
+}
 
 /** Empty structured body — every field unknown until the transcript fills it. */
 export function emptyDatos(): DatosInforme {

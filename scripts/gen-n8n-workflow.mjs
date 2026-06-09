@@ -18,27 +18,49 @@ import { fileURLToPath } from "node:url";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const OUT = path.join(__dirname, "..", "n8n", "workflows", "registro.json");
 
-// --- Verbatim desde assemble.ts -------------------------------------------
-const SYSTEM_PROMPT = [
+// SYNC: este prompt debe mantenerse idéntico en scripts/gen-n8n-workflow.mjs y assemble.ts
+const REGLAS_ABSOLUTAS = [
   "Convierte la transcripción de un mensaje de voz en un informe de campo estructurado para una ONG.",
-  'Regla absoluta: extrae EXCLUSIVAMENTE lo que se dice en la transcripción. No inventes datos, cifras, nombres, fechas ni diagnósticos. Si un campo no se menciona, deja "" (texto) o [] (lista). No uses vocabulario que no esté en el texto.',
-  'Si la transcripción es una prueba o no contiene información real, dilo así en el resumen (p. ej. "Mensaje de prueba sin información operativa") y deja el resto vacío.',
+  "Regla absoluta: extrae EXCLUSIVAMENTE lo que se dice en la transcripción. No inventes datos, cifras, nombres, fechas ni diagnósticos. Si un campo no se menciona, deja \"\" (texto) o [] (lista). No uses vocabulario que no esté en el texto.",
+  "Si la transcripción es una prueba o no contiene información real, dilo así en el resumen (p. ej. \"Mensaje de prueba sin información operativa\") y deja el resto vacío.",
+];
+
+const ESTRUCTURA_CAMPOS = [
   "Campos de nivel superior:",
   "- resumen: RESUMEN EJECUTIVO de 1-2 frases que reflejen fielmente SOLO lo dicho.",
-  "- prioridad: ALTA solo si se menciona explícitamente una emergencia médica o de seguridad; MEDIA si se menciona un seguimiento necesario; en cualquier otro caso BAJA.",
+  "- prioridad: ALTA solo si se menciona explícitamente una emergencia médica o de seguridad; MEDIA si hay acciones de seguimiento pendientes o se menciona una visita de control; BAJA solo si es informativo sin ninguna acción requerida.",
   "- entidades.nombres: nombres propios de personas dichos literalmente; si no hay, [].",
-  '- entidades.fechas: fechas mencionadas; convierte las relativas ("hoy", "el martes") a fecha absoluta usando la "Fecha del registro"; si no hay, [].',
+  "- entidades.fechas: fechas mencionadas; convierte las relativas (\"hoy\", \"el martes\") a fecha absoluta usando la \"Fecha del registro\"; si no hay, [].",
   "- accionesPendientes: tareas de seguimiento dichas literalmente; si no hay, [].",
   "Objeto datos (columna vertebral del registro; deja vacío lo no mencionado):",
   "- datos.demografia: nombre, edad, fechaNacimiento del beneficiario; esMenor=true SOLO si se indica o se deduce que es menor de edad.",
   "- datos.metricas: peso y talla (antropométricos para nutrición), diagnosticos (lista de diagnósticos médicos específicos: oncología, discapacidad, VIH…), avanceObra (estado de una obra habitacional).",
-  "- datos.socioeconomico: familia (condición familiar), ingresos, vivienda, vulnerabilidades (lista).",
+  "- datos.socioeconomico: familia (condición familiar), ingresos, vivienda, vulnerabilidades (lista de situaciones de riesgo mencionadas literalmente: violencia, situación de calle, sin documentación, etc.; si no se mencionan, []).",
   "- datos.intervencion: fecha exacta, lugar (clave en operativos móviles), tipoActividad (taller, consulta médica, asesoría legal, entrega…), profesionales (lista de profesionales o voluntarios presentes).",
-  "- datos.seguimiento: compromisos (lista de compromisos concretos mencionados literalmente en el audio, por ejemplo pagos pendientes o acuerdos explícitos; si no se mencionan, []), situacionLaboral, desempenoAcademico.",
+  "- datos.seguimiento: situacionLaboral, desempenoAcademico. No uses este campo para acciones pendientes — esas van en accionesPendientes.",
   "- datos.narrativa: detalles cualitativos sutiles pero valiosos (reacción emocional, percepción de una madre sobre su vivienda…). Si no hay, \"\".",
   "Regla crítica para listas: si un campo de tipo array no se menciona explícitamente en la transcripción, devolvé [] sin excepción. Nunca uses los nombres de campos como ejemplos de valores. \"compromisos\", \"vulnerabilidades\", \"profesionales\" son etiquetas, no datos.",
   "Responde en español. /no_think",
-].join("\n");
+];
+
+const buildSystemPrompt = (enfasis = []) =>
+  [...REGLAS_ABSOLUTAS, ...enfasis, ...ESTRUCTURA_CAMPOS].join("\n");
+
+const PROMPTS = {
+  generic: buildSystemPrompt(),
+  "primera-infancia": buildSystemPrompt([
+    "CONTEXTO DEL PROGRAMA — Primera Infancia (0 a 5 años): el beneficiario es el niño o niña; el interlocutor en el audio es la familia (madre, padre o cuidador). esMenor es siempre true.",
+    "Presta especial atención y prioriza extraer, si se mencionan: peso, talla, percentiles de crecimiento, hitos de desarrollo psicomotor, diagnósticos nutricionales (desnutrición, bajo peso, anemia…), entrega de bolsón de alimentos, fecha de la próxima consulta pediátrica y observaciones sobre el vínculo madre-hijo/a.",
+  ]),
+  "ninez-adolescencia": buildSystemPrompt([
+    "CONTEXTO DEL PROGRAMA — Niñez y Adolescencia (6 a 18 años): el beneficiario es un niño, niña o adolescente. esMenor es true salvo que se diga lo contrario.",
+    "Presta especial atención y prioriza extraer, si se mencionan: desempeño escolar (en datos.seguimiento.desempenoAcademico), asistencia a la escuela, actividades en las que participa (fútbol, talleres, apoyo escolar), situación familiar, riesgo de deserción escolar, conductas de riesgo y vínculos con pares.",
+  ]),
+  oficios: buildSystemPrompt([
+    "CONTEXTO DEL PROGRAMA — Oficios: el beneficiario es una persona ADULTA en capacitación laboral. esMenor es SIEMPRE false; nunca lo marques true.",
+    "Presta especial atención y prioriza extraer, si se mencionan: el oficio que está aprendiendo, asistencia al taller de capacitación, situación laboral actual (en datos.seguimiento.situacionLaboral), ingresos (en datos.socioeconomico.ingresos), compromisos de pago si hay un microcrédito (en datos.seguimiento.compromisos) y el progreso en la capacitación.",
+  ]),
+};
 
 // --- Verbatim desde schema.ts (EXTRACTION_JSON_SCHEMA) ---------------------
 const strArray = { type: "array", items: { type: "string" } };
@@ -142,11 +164,13 @@ const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábad
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function fechaLarga(ms){ const d = new Date(ms); return DIAS[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear(); }
 
-const SYSTEM_PROMPT = ${JSON.stringify(SYSTEM_PROMPT)};
+const PROMPTS = ${JSON.stringify(PROMPTS)};
 const EXTRACTION_JSON_SCHEMA = ${JSON.stringify(EXTRACTION_JSON_SCHEMA)};
 
 const transcript = (($json.text) || '').trim();
 const meta = $('init').item.json.metadata || {};
+// Selecciona el system prompt según el programa; genérico si null/desconocido.
+const SYSTEM_PROMPT = PROMPTS[meta.programa] || PROMPTS.generic;
 const capturedAt = typeof meta.capturedAt === 'number' ? meta.capturedAt : Date.now();
 const userMessage = 'Fecha del registro: ' + fechaLarga(capturedAt) + '.\\n\\nTranscripción:\\n' + transcript;
 const model = $env.OLLAMA_MODEL || 'qwen3:1.7b';
@@ -399,6 +423,69 @@ const workflow = {
   tags: [],
 };
 
+// ── Escribir archivo ────────────────────────────────────────────────────────
 fs.mkdirSync(path.dirname(OUT), { recursive: true });
 fs.writeFileSync(OUT, JSON.stringify(workflow, null, 2) + "\n", "utf8");
 console.log("Escrito:", OUT);
+
+// ── Upsert en n8n vía API REST ───────────────────────────────────────────────
+// Lee N8N_API_KEY del entorno (o de .env si existe). Si no hay key, termina sin error.
+// Para obtener la key: n8n UI → Settings → API → Create an API key.
+// Agregar al .env:  N8N_API_KEY=tu-key-aqui
+// Uso manual:       N8N_API_KEY=xxx node scripts/gen-n8n-workflow.mjs
+async function upsertInN8n() {
+  // Carga .env si existe (sin dependencias externas)
+  const envPath = path.join(__dirname, "..", ".env");
+  if (fs.existsSync(envPath)) {
+    for (const line of fs.readFileSync(envPath, "utf8").split("\n")) {
+      const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*)$/);
+      if (m && !process.env[m[1]]) process.env[m[1]] = m[2].trim();
+    }
+  }
+
+  const apiKey = process.env.N8N_API_KEY;
+  if (!apiKey) {
+    console.log("N8N_API_KEY no definida — saltando upsert. Importá el archivo manualmente o agregá la key al .env.");
+    return;
+  }
+
+  const base = (process.env.N8N_EDITOR_URL || "http://localhost:5678").replace(/\/$/, "");
+  const headers = { "Content-Type": "application/json", "X-N8N-API-KEY": apiKey };
+
+  // Buscar si ya existe el workflow por nombre
+  const listRes = await fetch(`${base}/api/v1/workflows?limit=100`, { headers });
+  if (!listRes.ok) {
+    console.error("n8n API error al listar workflows:", listRes.status, await listRes.text());
+    return;
+  }
+  const { data } = await listRes.json();
+  const existing = data?.find((w) => w.name === workflow.name);
+
+  let res;
+  if (existing) {
+    // PUT actualiza nodos y conexiones; active es read-only en la API (se maneja aparte).
+    const { active: _active, tags: _tags, ...workflowBody } = workflow;
+    void _tags;
+    void _active;
+    res = await fetch(`${base}/api/v1/workflows/${existing.id}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(workflowBody),
+    });
+    console.log(res.ok ? `Workflow actualizado en n8n (id: ${existing.id})` : `Error al actualizar: ${res.status} ${await res.text()}`);
+  } else {
+    res = await fetch(`${base}/api/v1/workflows`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(workflow),
+    });
+    if (res.ok) {
+      const created = await res.json();
+      console.log(`Workflow creado en n8n (id: ${created.id})`);
+    } else {
+      console.error(`Error al crear: ${res.status} ${await res.text()}`);
+    }
+  }
+}
+
+upsertInN8n().catch((e) => console.error("upsertInN8n falló:", e.message));

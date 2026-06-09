@@ -16,7 +16,11 @@ export type Section =
   | { kind: "bullets"; title: string; items: string[] }
   | { kind: "text"; title: string; body: string };
 
+export const REPORT_DISCLAIMER =
+  "⚠ Este documento fue generado automáticamente a partir de un registro de voz y está sujeto a revisión por un profesional. Los datos deben ser verificados antes de su uso oficial.";
+
 export interface ReportContent {
+  disclaimer: string;
   titular: string;
   prioridad: FieldReport["prioridad"];
   fecha: string;
@@ -45,11 +49,15 @@ const items = (a: string[] | undefined): string[] => {
   return r.length ? r : ["—"];
 };
 
+const listAsField = (a: string[] | undefined): string => {
+  const r = (a ?? []).filter((x) => x && x.trim());
+  return r.length ? r.join("; ") : "—";
+};
+
 export function buildReportContent(report: FieldReport): ReportContent {
   const d = report.datos;
   const meta = report.metadatos;
 
-  // Titular: prefer apellido + nombre from metadata, fall back to extracted name.
   const titular =
     meta.beneficiario?.apellido && meta.beneficiario?.nombre
       ? `${meta.beneficiario.apellido} ${meta.beneficiario.nombre}`
@@ -65,7 +73,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
 
   const sections: Section[] = [];
 
-  // 1) Identificación y Demografía — SIEMPRE presente.
+  // 4) Identificación y Demografía — SIEMPRE presente.
   sections.push({
     kind: "fields",
     title: "Identificación y Demografía",
@@ -80,29 +88,18 @@ export function buildReportContent(report: FieldReport): ReportContent {
       { label: "DNI", value: val(meta.beneficiario?.dni || "") },
       { label: "Fecha de nacimiento", value: val(d.demografia.fechaNacimiento) },
       { label: "Edad", value: val(d.demografia.edad) },
-      { label: "Condición", value: d.demografia.esMenor ? "Menor de edad" : "Mayor de edad" },
-    ],
-  });
-
-  // 2) Métricas Técnicas de Impacto — SIEMPRE presente.
-  sections.push({
-    kind: "fields",
-    title: "Métricas Técnicas de Impacto",
-    fields: [
       { label: "Peso", value: val(d.metricas.peso) },
       { label: "Talla", value: val(d.metricas.talla) },
-      { label: "Avance de obra habitacional", value: val(d.metricas.avanceObra) },
     ],
   });
 
-  // 3) Diagnósticos médicos — SIEMPRE presente.
   sections.push({
     kind: "bullets",
-    title: "Diagnósticos médicos",
+    title: "Diagnósticos",
     items: items(d.metricas.diagnosticos),
   });
 
-  // 4) Contexto Socioeconómico — SIEMPRE presente.
+  // 5) Contexto Socioeconómico — SIEMPRE presente (vulnerabilidades integradas).
   sections.push({
     kind: "fields",
     title: "Contexto Socioeconómico",
@@ -110,14 +107,8 @@ export function buildReportContent(report: FieldReport): ReportContent {
       { label: "Condición familiar", value: val(d.socioeconomico.familia) },
       { label: "Ingresos", value: val(d.socioeconomico.ingresos) },
       { label: "Situación de vivienda", value: val(d.socioeconomico.vivienda) },
+      { label: "Vulnerabilidades", value: listAsField(d.socioeconomico.vulnerabilidades) },
     ],
-  });
-
-  // 5) Vulnerabilidades — SIEMPRE presente.
-  sections.push({
-    kind: "bullets",
-    title: "Vulnerabilidades",
-    items: items(d.socioeconomico.vulnerabilidades),
   });
 
   // 6) Detalles de la Intervención — SIEMPRE presente.
@@ -131,48 +122,36 @@ export function buildReportContent(report: FieldReport): ReportContent {
         label: "Tipo de actividad",
         value: val(d.intervencion.tipoActividad || (meta.tipo === "grupal" ? "Actividad grupal" : "")),
       },
+      { label: "Profesionales / voluntarios", value: listAsField(d.intervencion.profesionales) },
     ],
   });
 
-  // 7) Profesionales / voluntarios presentes — SIEMPRE presente.
-  sections.push({
-    kind: "bullets",
-    title: "Profesionales / voluntarios presentes",
-    items: items(d.intervencion.profesionales),
-  });
-
-  // 8) Seguimiento de Compromisos — SIEMPRE presente.
+  // 7) Seguimiento — SIEMPRE presente.
   sections.push({
     kind: "fields",
-    title: "Seguimiento de Compromisos",
+    title: "Seguimiento",
     fields: [
       { label: "Situación laboral", value: val(d.seguimiento.situacionLaboral) },
       { label: "Desempeño académico", value: val(d.seguimiento.desempenoAcademico) },
     ],
   });
 
-  // 9) Compromisos — SIEMPRE presente.
-  sections.push({
-    kind: "bullets",
-    title: "Compromisos",
-    items: items(d.seguimiento.compromisos),
-  });
-
-  // 10) Acciones Pendientes — SIEMPRE presente.
+  // 8) Acciones Pendientes — SIEMPRE presente.
   sections.push({
     kind: "bullets",
     title: "Acciones Pendientes",
     items: items(report.accionesPendientes),
   });
 
-  // 11) Narrativa Cualitativa del Territorio — SIEMPRE presente.
+  // 9) Observaciones y Contexto — SIEMPRE presente.
   sections.push({
     kind: "text",
-    title: "Narrativa Cualitativa del Territorio",
+    title: "Observaciones y Contexto",
     body: d.narrativa?.trim() || "—",
   });
 
   return {
+    disclaimer: REPORT_DISCLAIMER,
     titular,
     prioridad: report.prioridad,
     fecha,

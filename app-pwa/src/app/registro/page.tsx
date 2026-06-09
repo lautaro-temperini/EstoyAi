@@ -1,145 +1,99 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFlow } from "../flow-context";
+import { Stepper } from "@/components/stepper";
+import type { Programa } from "@/lib/reports/schema";
 
-export default function BeneficiaryPage() {
+const PROGRAMAS: {
+  id: Programa;
+  titulo: string;
+  descripcion: string;
+  icon: string;
+}[] = [
+  {
+    id: "primera-infancia",
+    titulo: "Primera Infancia",
+    descripcion: "Niños y niñas de 0 a 5 años",
+    icon: "child_care",
+  },
+  {
+    id: "ninez-adolescencia",
+    titulo: "Niñez y Adolescencia",
+    descripcion: "Chicos y chicas de 6 a 18 años",
+    icon: "school",
+  },
+  {
+    id: "oficios",
+    titulo: "Oficios",
+    descripcion: "Adultos en capacitación laboral",
+    icon: "construction",
+  },
+];
+
+export default function ProgramaPage() {
   const router = useRouter();
-  const { beneficiario, setBeneficiario } = useFlow();
-  const [nombre, setNombre] = useState(beneficiario?.nombre ?? "");
-  const [apellido, setApellido] = useState(beneficiario?.apellido ?? "");
-  const [dni, setDni] = useState(beneficiario?.dni ?? "");
+  const { setPrograma, setTipo } = useFlow();
 
-  const valid =
-    nombre.trim().length > 0 &&
-    apellido.trim().length > 0 &&
-    dni.trim().length > 0;
-
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!valid) return;
-    setBeneficiario({
-      nombre: nombre.trim(),
-      apellido: apellido.trim(),
-      dni: dni.trim(),
-    });
-    router.push("/grabar");
+  const choose = (programa: Programa) => {
+    setPrograma(programa);
+    setTipo("individual");
+    router.push("/registro/beneficiario");
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
       <header className="anim-fade fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.back()}
-            aria-label="Volver"
-            className="p-2 -ml-2 hover:bg-surface-container-low transition-opacity active:opacity-80 rounded-full"
-          >
-            <span className="material-symbols-outlined text-primary">arrow_back</span>
-          </button>
-        </div>
+        <div className="flex items-center gap-2" />
+        <button
+          onClick={() => router.push("/registros")}
+          className="font-label-md text-label-md text-primary px-3 py-2 rounded-lg hover:bg-primary/10 flex items-center gap-1"
+        >
+          <span className="material-symbols-outlined text-[20px]">history</span>
+          Mis registros
+        </button>
       </header>
 
-      <main className="flex-grow pt-20 px-container-margin pb-32 max-w-xl mx-auto w-full">
-        <section className="anim-enter mb-stack-lg">
-          <h1 className="font-headline-md text-headline-md text-on-surface mb-2">
-            Datos del beneficiario
+      <main className="min-h-screen pt-24 pb-12 px-container-margin max-w-lg mx-auto flex flex-col items-center">
+        <div className="w-full mb-stack-lg">
+          <Stepper current={1} />
+        </div>
+
+        <section className="anim-enter w-full mb-stack-lg text-center">
+          <h1 className="font-display-lg text-display-lg text-on-surface mb-stack-sm">
+            ¿Qué programa vas a registrar?
           </h1>
         </section>
 
-        <form className="stagger space-y-stack-lg" id="beneficiary-form" onSubmit={onSubmit}>
-          {/* Nombre */}
-          <div className="group">
-            <label
-              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
-              htmlFor="nombre"
+        <div className="stagger w-full grid grid-cols-1 gap-gutter">
+          {PROGRAMAS.map((p) => (
+            <button
+              key={p.id}
+              onClick={() => choose(p.id)}
+              className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-lg flex flex-col items-start text-left hover:border-primary transition-[border-color,box-shadow,transform] duration-200 ease-out min-h-[140px] active:scale-[0.97]"
             >
-              Nombre <span className="text-error">*</span>
-            </label>
-            <div className="relative">
-              <input
-                id="nombre"
-                name="nombre"
-                type="text"
-                placeholder="Ej: María"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                required
-                className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
-              />
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                person
-              </span>
-            </div>
-          </div>
-
-          {/* Apellido */}
-          <div className="group">
-            <label
-              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
-              htmlFor="apellido"
-            >
-              Apellido <span className="text-error">*</span>
-            </label>
-            <div className="relative">
-              <input
-                id="apellido"
-                name="apellido"
-                type="text"
-                placeholder="Ej: García"
-                value={apellido}
-                onChange={(e) => setApellido(e.target.value)}
-                required
-                className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
-              />
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                badge
-              </span>
-            </div>
-          </div>
-
-          {/* DNI */}
-          <div className="group">
-            <label
-              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
-              htmlFor="dni"
-            >
-              DNI <span className="text-error">*</span>
-            </label>
-            <div className="relative">
-              <input
-                id="dni"
-                name="dni"
-                type="number"
-                inputMode="numeric"
-                placeholder="Ej: 12345678"
-                value={dni}
-                onChange={(e) => setDni(e.target.value)}
-                required
-                className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none appearance-none"
-              />
-              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
-                fingerprint
-              </span>
-            </div>
-          </div>
-        </form>
-      </main>
-
-      <footer className="fixed bottom-0 w-full bg-surface border-t border-outline-variant p-container-margin pb-8 z-50">
-        <div className="max-w-xl mx-auto">
-          <button
-            form="beneficiary-form"
-            type="submit"
-            disabled={!valid}
-            className="w-full h-14 bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-sm hover:opacity-90 active:scale-[0.97] transition-[transform,opacity] duration-150 ease-out flex items-center justify-center gap-2 disabled:opacity-50"
-          >
-            Continuar a Grabación
-            <span className="material-symbols-outlined">mic</span>
-          </button>
+              <div className="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center mb-stack-md group-hover:bg-primary-container transition-colors">
+                <span className="material-symbols-outlined text-primary group-hover:text-on-primary text-[32px]">
+                  {p.icon}
+                </span>
+              </div>
+              <div>
+                <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1">
+                  {p.titulo}
+                </h2>
+                <p className="font-body-md text-body-md text-on-surface-variant">
+                  {p.descripcion}
+                </p>
+              </div>
+              <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                <span className="material-symbols-outlined text-primary">
+                  arrow_forward
+                </span>
+              </div>
+            </button>
+          ))}
         </div>
-      </footer>
-    </div>
+      </main>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import type { TipoRegistro } from "@/lib/reports/schema";
+import type { Programa, TipoRegistro } from "@/lib/reports/schema";
 
 export interface Beneficiario {
   nombre: string;
@@ -11,11 +11,13 @@ export interface Beneficiario {
 
 interface FlowState {
   tipo: TipoRegistro | null;
+  programa: Programa | null;
   beneficiario: Beneficiario | null;
 }
 
 interface FlowContextValue extends FlowState {
   setTipo: (tipo: TipoRegistro) => void;
+  setPrograma: (programa: Programa) => void;
   setBeneficiario: (b: Beneficiario) => void;
   reset: () => void;
 }
@@ -23,7 +25,7 @@ interface FlowContextValue extends FlowState {
 const STORAGE_KEY = "ngo-flow";
 const FlowContext = createContext<FlowContextValue | null>(null);
 
-const EMPTY: FlowState = { tipo: null, beneficiario: null };
+const EMPTY: FlowState = { tipo: null, programa: null, beneficiario: null };
 
 export function FlowProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<FlowState>(EMPTY);
@@ -50,6 +52,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
   const value: FlowContextValue = {
     ...state,
     setTipo: (tipo) => persist({ ...state, tipo }),
+    setPrograma: (programa) => persist({ ...state, programa }),
     setBeneficiario: (beneficiario) => persist({ ...state, beneficiario }),
     reset: () => {
       try {

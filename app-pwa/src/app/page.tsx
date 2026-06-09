@@ -1,87 +1,84 @@
 "use client";
 
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useFlow } from "./flow-context";
 
-export default function RecordTypePage() {
+export default function LoginPage() {
   const router = useRouter();
-  const { setTipo } = useFlow();
+  const [usuario, setUsuario] = useState("");
+  const [password, setPassword] = useState("");
 
-  const choose = (tipo: "individual" | "grupal") => {
-    setTipo(tipo);
-    router.push(tipo === "individual" ? "/registro" : "/grabar");
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!usuario.trim() || !password) return;
+    try {
+      sessionStorage.setItem("autenticado", "true");
+    } catch {
+      /* ignore */
+    }
+    router.replace("/registro");
   };
 
   return (
-    <>
-      <header className="anim-fade fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
-        <div className="flex items-center gap-2" />
-        <button
-          onClick={() => router.push("/registros")}
-          className="font-label-md text-label-md text-primary px-3 py-2 rounded-lg hover:bg-primary/10 flex items-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[20px]">history</span>
-          Mis registros
-        </button>
-      </header>
-
-      <main className="min-h-screen pt-24 pb-12 px-container-margin max-w-lg mx-auto flex flex-col items-center">
-        <section className="anim-enter w-full mb-stack-lg text-center">
-          <h1 className="font-display-lg text-display-lg text-on-surface mb-stack-sm">
-            ¿Qué vas a registrar hoy?
-          </h1>
-        </section>
-
-        <div className="stagger w-full grid grid-cols-1 gap-gutter">
-          <button
-            onClick={() => choose("individual")}
-            className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-lg flex flex-col items-start text-left hover:border-primary transition-[border-color,box-shadow,transform] duration-200 ease-out min-h-[180px] active:scale-[0.97]"
-          >
-            <div className="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center mb-stack-md group-hover:bg-primary-container transition-colors">
-              <span className="material-symbols-outlined text-primary group-hover:text-on-primary text-[32px]">
-                person
-              </span>
-            </div>
-            <div>
-              <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1">
-                Beneficiario Individual
-              </h2>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                Registro, actualización de datos y evolución de la persona
-              </p>
-            </div>
-            <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="material-symbols-outlined text-primary">
-                arrow_forward
-              </span>
-            </div>
-          </button>
-
-          <button
-            onClick={() => choose("grupal")}
-            className="group relative overflow-hidden bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-lg flex flex-col items-start text-left hover:border-secondary transition-[border-color,box-shadow,transform] duration-200 ease-out min-h-[180px] active:scale-[0.97]"
-          >
-            <div className="w-14 h-14 rounded-full bg-secondary-container/20 flex items-center justify-center mb-stack-md group-hover:bg-secondary transition-colors">
-              <span className="material-symbols-outlined text-secondary group-hover:text-on-secondary text-[32px]">
-                groups
-              </span>
-            </div>
-            <div>
-              <h2 className="font-headline-sm text-headline-sm text-on-surface mb-1">
-                Actividad Grupal
-              </h2>
-              <p className="font-body-md text-body-md text-on-surface-variant">
-                Registro de talleres, entregas comunitarias o capacitaciones.
-              </p>
-            </div>
-            <div className="absolute bottom-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-              <span className="material-symbols-outlined text-secondary">
-                groups
-              </span>
-            </div>
-          </button>
+    <main className="min-h-screen flex flex-col items-center justify-center px-container-margin">
+      <div className="anim-enter w-full max-w-sm flex flex-col items-center">
+        <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center mb-stack-lg">
+          <span className="material-symbols-outlined text-on-primary text-[32px]">
+            volunteer_activism
+          </span>
         </div>
-      </main>
-    </>
+        <h1 className="font-display-lg text-display-lg text-on-surface mb-1 text-center">
+          Pequeños Pasos
+        </h1>
+        <p className="font-body-md text-body-md text-on-surface-variant mb-stack-lg text-center">
+          Ingresá para registrar
+        </p>
+
+        <form className="w-full space-y-stack-md" onSubmit={onSubmit}>
+          <div className="group">
+            <label
+              htmlFor="usuario"
+              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
+            >
+              Usuario
+            </label>
+            <input
+              id="usuario"
+              type="text"
+              autoComplete="username"
+              value={usuario}
+              onChange={(e) => setUsuario(e.target.value)}
+              className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
+            />
+          </div>
+
+          <div className="group">
+            <label
+              htmlFor="password"
+              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
+            >
+              Contraseña
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
+            />
+          </div>
+
+          <button
+            type="submit"
+            disabled={!usuario.trim() || !password}
+            className="w-full h-14 bg-primary text-on-primary font-label-md text-label-md rounded-lg shadow-sm hover:opacity-90 active:scale-[0.97] transition-[transform,opacity] duration-150 ease-out flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            Ingresar
+            <span className="material-symbols-outlined">login</span>
+          </button>
+        </form>
+      </div>
+    </main>
   );
 }

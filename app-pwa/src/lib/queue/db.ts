@@ -11,7 +11,7 @@
  * the audio, so device → server → status screen all key on the same id.
  */
 
-import type { TipoRegistro } from "@/lib/reports/schema";
+import type { Programa, TipoRegistro } from "@/lib/reports/schema";
 
 const DB_NAME = "pp-registros";
 const VERSION = 1;
@@ -39,6 +39,7 @@ export interface PendingUpload {
   filename: string;
   tipo: TipoRegistro | null;
   beneficiario: Beneficiario | null;
+  programa: Programa | null;
   capturedAt: number;
   durationMs: number | null;
   intentos: number;

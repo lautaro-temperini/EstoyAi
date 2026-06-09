@@ -80,12 +80,17 @@ export interface ReportExtraction {
 
 export type TipoRegistro = "individual" | "grupal";
 
+/** Programa de la ONG bajo el que se registra la intervención. */
+export type Programa = "primera-infancia" | "ninez-adolescencia" | "oficios";
+
 /** Auto-captured context for the report (provided by the device/frontend). */
 export interface ReportMetadata {
   /** What was registered: an individual beneficiary or a group activity. */
   tipo: TipoRegistro | null;
   /** Identified beneficiary (individual flow); null for group activities. */
   beneficiario: { nombre: string; apellido: string; dni: string } | null;
+  /** Programa seleccionado en el flujo de captura; orienta el system prompt. */
+  programa: Programa | null;
   sector: string | null;
   unidad: string | null;
   /** When the audio was captured on-device (epoch ms). */
