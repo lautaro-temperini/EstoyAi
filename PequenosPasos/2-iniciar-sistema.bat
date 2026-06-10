@@ -17,9 +17,21 @@ set "OLLAMA_MODEL=gemma3:4b"
 if exist "%INSTALL_DIR%.env" for /f "tokens=2 delims==" %%a in ('findstr /b /c:"OLLAMA_MODEL=" "%INSTALL_DIR%.env"') do set "OLLAMA_MODEL=%%a"
 
 echo ================================================
-echo    EstoyAi                          (build 1.4)
+echo    EstoyAi                          (build 1.5)
 echo ================================================
 echo.
+
+:: -- Red de seguridad: si la configuracion inicial nunca corrio (la tarea
+:: -- programada post-reinicio puede fallar), la corremos desde aca.
+:: -- El .env lo crea primera-vez.bat al detectar el hardware.
+if exist "%INSTALL_DIR%.env" goto config_ok
+if not exist "%INSTALL_DIR%primera-vez.bat" goto config_ok
+echo  La configuracion inicial no se completo todavia.
+echo  Se ejecuta ahora (acepta el permiso de administrador si aparece).
+timeout /t 3 /nobreak > nul
+call "%INSTALL_DIR%primera-vez.bat"
+exit /b
+:config_ok
 
 docker info > nul 2>&1
 if not errorlevel 1 goto ready
