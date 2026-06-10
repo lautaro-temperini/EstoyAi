@@ -1,0 +1,110 @@
+========================================
+   EstoyAi — Sistema de registro
+   Versión 1.4
+========================================
+
+QUÉ ES
+Sistema para registrar informes de campo por voz y generar
+documentos automáticamente. Funciona en esta PC sin necesidad
+de internet permanente (solo la primera instalación descarga
+los componentes).
+
+----------------------------------------
+PRIMERA INSTALACIÓN (una sola vez)
+----------------------------------------
+
+PASO PREVIO — Advertencia de Windows
+  Al abrir el instalador, Windows puede mostrar una pantalla
+  azul que dice "Windows protegió su PC". Esto es normal.
+
+  Si aparece esa pantalla:
+    1. Hacé clic en "Más información"
+    2. Hacé clic en "Ejecutar de todas formas"
+
+  Si no aparece, continuá normalmente.
+
+1. Hacé doble clic en "EstoyAi-Installer-1.4.exe"
+2. Aceptá los permisos de administrador que pida Windows
+3. Esperá a que termine (instala todo automáticamente)
+4. La PC se va a REINICIAR sola
+5. Al volver a encender, NO toques nada:
+   - Se abre sola una ventana negra que dice "build 1.4"
+   - El sistema se termina de configurar solo (15-20 min,
+     descarga ~7 GB la primera vez)
+   - Se abre solo en el navegador cuando está listo
+
+AVISO DE FIREWALL (importante)
+  Durante la configuración, Windows puede preguntar si
+  permitís el acceso a la red de "Rancher Desktop",
+  "vpnkit" o "Docker". Hacé clic en "PERMITIR ACCESO".
+  Es el motor interno del sistema: sin ese permiso no
+  funciona. Puede preguntar más de una vez.
+
+----------------------------------------
+PRUEBA DE FUNCIONAMIENTO
+----------------------------------------
+
+Para confirmar que todo quedó andando:
+
+1. Entrá a  http://localhost:3000
+2. Creá un registro nuevo, completá los datos del
+   beneficiario y grabá un audio de prueba (~1 minuto
+   hablando de un caso inventado).
+3. Envialo y andá a "Mis registros": el estado pasa de
+   "Procesando" a "Listo" solo (puede tardar varios
+   minutos según la PC).
+4. Abrí el registro: tiene que mostrar resumen, prioridad
+   y la transcripción. Descargá el .docx y abrilo en Word.
+
+Si ese recorrido completo funciona, el sistema está
+operativo de punta a punta.
+
+----------------------------------------
+USO DIARIO
+----------------------------------------
+
+- Hacé doble clic en el icono "EstoyAi" del escritorio
+- Esperá unos segundos
+- El sistema se abre en el navegador
+
+Si no se abre solo, entrá a:  http://localhost:3000
+
+No hace falta dejar ninguna ventana abierta: los servicios
+quedan corriendo de fondo.
+
+----------------------------------------
+DESDE EL CELULAR (promotores)
+----------------------------------------
+
+Los promotores acceden desde el navegador del celular
+usando el enlace que te proporcione el responsable del sistema.
+
+----------------------------------------
+PROBLEMAS FRECUENTES
+----------------------------------------
+
+"No se abre el navegador"
+  Esperá 1 minuto y entrá manualmente a http://localhost:3000
+
+"Tarda mucho la primera vez"
+  Es normal. La primera vez descarga ~7 GB. Las siguientes
+  veces arranca en menos de un minuto.
+
+"Se cerró la ventana negra"
+  No pasa nada. Volvé a hacer doble clic en el icono del escritorio.
+
+"Algo no funciona"
+  Abrí el icono "Diagnóstico EstoyAi" del escritorio:
+  muestra el estado de cada componente. Si hay que pedir
+  ayuda, mandá una foto de esa pantalla y el archivo
+  C:\Program Files\EstoyAi\instalacion.log
+
+----------------------------------------
+SOPORTE
+----------------------------------------
+
+Ante cualquier problema, contactá a:
+
+Lautaro R. Temperini
+latta.romero@gmail.com
++54 9 2915051376

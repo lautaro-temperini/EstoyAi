@@ -1,57 +1,76 @@
 @echo off
-title Pequenos Pasos — Estado del sistema
+chcp 65001 > nul
+title Pequeños Pasos — Estado del sistema
+color 0F
 
-echo.
+set "INSTALL_DIR=%~dp0"
+cd /d "%INSTALL_DIR%"
+
+cls
 echo  ═══════════════════════════════════════════════════
-echo   Pequeños Pasos — Estado del sistema
+echo    PEQUEÑOS PASOS — Estado del sistema
 echo  ═══════════════════════════════════════════════════
 echo.
 
-:: ── Docker ────────────────────────────────────────────────────────────────────
+:: ── Motor de contenedores ──────────────────────────────────────────
 docker info >nul 2>&1
 if errorlevel 1 (
-    echo  [!] Docker no está corriendo.
-    echo      Iniciá Docker Desktop primero.
+    echo  [X] El motor de contenedores NO está corriendo.
+    echo.
+    echo      Abrí "Pequeños Pasos" desde el escritorio
+    echo      y esperá un minuto antes de revisar el estado.
     echo.
     pause
     exit /b 1
 )
-echo  Docker: OK
+echo  [OK] Motor de contenedores: funcionando
 echo.
 
-cd /d "%~dp0.."
-
-:: ── Estado de cada contenedor ─────────────────────────────────────────────────
-echo  Servicios:
+:: ── Estado de cada servicio ────────────────────────────────────────
+echo  SERVICIOS:
 echo  ─────────────────────────────────────────────────────
-docker compose ps --format "table {{.Name}}\t{{.Status}}\t{{.Ports}}"
+docker compose ps --format "table {{.Name}}\t{{.Status}}"
 echo.
 
-:: ── Healthchecks ──────────────────────────────────────────────────────────────
-echo  Conectividad interna:
+:: ── Conectividad ───────────────────────────────────────────────────
+echo  CONECTIVIDAD:
 echo  ─────────────────────────────────────────────────────
-
-curl -s -o nul -w "  app-pwa   (puerto 3000): %%{http_code}\n" http://localhost:3000
-curl -s -o nul -w "  n8n       (puerto 5678): %%{http_code}\n" http://localhost:5678/healthz
-
+curl -s -o nul -w "  Sistema principal (3000): %%{http_code}\n" http://localhost:3000 2>nul
+curl -s -o nul -w "  Procesador n8n    (5678): %%{http_code}\n" http://localhost:5678/healthz 2>nul
+echo.
+echo    (200 = funcionando correctamente)
 echo.
 
-:: ── Modelos Ollama instalados ─────────────────────────────────────────────────
-echo  Modelos instalados en Ollama:
+:: ── Modelo de IA ───────────────────────────────────────────────────
+echo  MODELO DE IA:
 echo  ─────────────────────────────────────────────────────
-docker compose exec -T ollama ollama list 2>nul || echo  (Ollama no está corriendo)
+docker compose exec -T ollama ollama list 2>nul | find "gemma3:4b" >nul
+if errorlevel 1 (
+    echo  [X] Modelo gemma3:4b NO instalado.
+    echo      Ejecutá "Pequeños Pasos" para descargarlo.
+) else (
+    echo  [OK] Modelo gemma3:4b instalado
+)
 echo.
 
-:: ── Túnel Cloudflare ──────────────────────────────────────────────────────────
-echo  Túnel Cloudflare:
+:: ── Túnel Cloudflare ───────────────────────────────────────────────
+echo  ACCESO REMOTO (túnel Cloudflare):
 echo  ─────────────────────────────────────────────────────
-sc query cloudflared 2>nul | findstr "STATE" || echo  (servicio cloudflared no instalado)
+sc query cloudflared 2>nul | findstr "STATE" >nul
+if errorlevel 1 (
+    echo  [--] Túnel no configurado (acceso solo local)
+) else (
+    sc query cloudflared | findstr "STATE"
+)
 echo.
 
-echo  Para ver logs de un servicio:
-echo    docker compose logs --tail=50 app-pwa
-echo    docker compose logs --tail=50 n8n
-echo    docker compose logs --tail=50 whisper
-echo    docker compose logs --tail=50 ollama
+echo  ═══════════════════════════════════════════════════
+echo.
+echo  Si algo aparece con [X], cerrá esta ventana, abrí
+echo  "Pequeños Pasos" desde el escritorio, esperá un
+echo  minuto y volvé a revisar.
+echo.
+echo  Si el problema sigue, contactá a soporte
+echo  (ver archivo LEEME.txt).
 echo.
 pause

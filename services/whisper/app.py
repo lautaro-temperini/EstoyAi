@@ -26,6 +26,16 @@ LANGUAGE = os.getenv("WHISPER_LANGUAGE", "es")
 DATA_ROOT = Path(os.getenv("DATA_DIR", "/data")).resolve()
 AUDIO_ROOT = (DATA_ROOT / "audio").resolve()
 
+# Prima el estilo del decoder: sin esto Whisper a veces colapsa a texto corrido
+# en minúsculas sin puntuación. No es una instrucción — es una muestra de estilo
+# que el modelo imita (debe ser texto natural bien puntuado, no un pedido).
+INITIAL_PROMPT = os.getenv(
+    "WHISPER_INITIAL_PROMPT",
+    "Hola, buenas tardes. Hoy visité a la familia del beneficiario y registré "
+    "los datos: peso, talla y controles médicos. La señora María comentó que "
+    "el nene está mejor. ¿Quedó algo pendiente? Sí, la próxima visita.",
+)
+
 _model = None
 
 
@@ -78,6 +88,7 @@ def _transcribe_file(audio_path: Path) -> TranscribeResponse:
             language=lang,
             beam_size=5,
             vad_filter=True,
+            initial_prompt=INITIAL_PROMPT or None,
         )
     except Exception as exc:
         logger.error("No se pudo decodificar %s: %s", audio_path, exc)

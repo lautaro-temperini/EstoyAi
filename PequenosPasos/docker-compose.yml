@@ -1,10 +1,14 @@
-# ─── Pequeños Pasos — sede stack ──────────────────────────────────────────────
-# Uso:
-#   Primer arranque:  docker compose up -d
-#                     docker compose exec ollama ollama pull gemma3:4b
-#   Arranques diarios: docker compose up -d   (o usar scripts/arrancar-sede.bat)
+# ─── Pequeños Pasos — sede stack (PRODUCCIÓN / instalador) ────────────────────
+# Este compose usa imágenes PRE-CONSTRUIDAS publicadas en GHCR — NO buildea en
+# la PC del cliente. Para regenerar y publicar las imágenes (desde el repo):
+#   docker build -t ghcr.io/lautaro-temperini/pp-app-pwa:latest ./app-pwa
+#   docker build --build-arg WHISPER_MODEL=medium \
+#        -t ghcr.io/lautaro-temperini/pp-whisper:latest ./services/whisper
+#   docker push ghcr.io/lautaro-temperini/pp-app-pwa:latest
+#   docker push ghcr.io/lautaro-temperini/pp-whisper:latest
 #
-# Variables de entorno: copiar .env.example → .env y ajustar.
+#   Primer arranque:  docker compose up -d   (baja imágenes + modelo gemma3:4b)
+#   Arranques diarios: docker compose up -d
 # SQLite vive en el volumen "data" (data/sqlite/informes.db) — no es un contenedor.
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -12,9 +16,7 @@ services:
 
   # ── PWA / API ──────────────────────────────────────────────────────────────
   app-pwa:
-    build:
-      context: ./app-pwa
-      dockerfile: Dockerfile
+    image: ghcr.io/lautaro-temperini/pp-app-pwa:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -57,6 +59,7 @@ services:
       - APP_URL=${APP_URL:-http://app-pwa:3000}
       - WHISPER_URL=${WHISPER_URL:-http://whisper:8000}
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
+      # Elegido por primera-vez.bat segun RAM/CPU de la PC (ver .env junto a este archivo)
       - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma3:4b}
       # n8n internals
       - N8N_HOST=0.0.0.0
@@ -80,8 +83,8 @@ services:
       retries: 3
 
   # ── LLM local (Ollama) ─────────────────────────────────────────────────────
-  # Solo interno — no expone puerto al host.
-  # Primer uso: docker compose exec ollama ollama pull gemma3:4b
+  # Solo interno — no expone puerto al host. El modelo gemma3:4b lo baja
+  # automáticamente primera-vez.bat / 2-iniciar-sistema.bat en el primer arranque.
   # Fallback CPU lento: docker compose exec ollama ollama pull gemma3:1b
   ollama:
     image: ollama/ollama:0.30.5
@@ -91,6 +94,7 @@ services:
     networks:
       - sede-net
     environment:
+      # En PCs con poca RAM conviene 5m: libera el modelo cuando no se usa.
       - OLLAMA_KEEP_ALIVE=${OLLAMA_KEEP_ALIVE:-24h}
     healthcheck:
       # La imagen de ollama no trae wget; "ollama ps" habla con el server local.
@@ -104,19 +108,16 @@ services:
   # Solo interno — no expone puerto al host.
   # El modelo se pre-descarga en el build de la imagen (ver services/whisper/Dockerfile).
   whisper:
-    build:
-      context: ./services/whisper
-      dockerfile: Dockerfile
-      args:
-        - WHISPER_MODEL=${WHISPER_MODEL:-base}
+    image: ghcr.io/lautaro-temperini/pp-whisper:latest
     restart: unless-stopped
     environment:
+      # "medium" viene horneado en la imagen; otros (small/base) se descargan al
+      # primer arranque y quedan en el volumen whisper_cache.
       - WHISPER_MODEL=${WHISPER_MODEL:-medium}
       - WHISPER_LANGUAGE=${WHISPER_LANGUAGE:-es}
       - DATA_DIR=/data
     volumes:
       - data:/data
-      # Modelos descargados en runtime (cuando WHISPER_MODEL != el horneado en la imagen)
       - whisper_cache:/root/.cache
     networks:
       - sede-net

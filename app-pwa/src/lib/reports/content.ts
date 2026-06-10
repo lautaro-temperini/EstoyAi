@@ -134,6 +134,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
     fields: [
       { label: "Situación laboral", value: val(d.seguimiento.situacionLaboral) },
       { label: "Desempeño académico", value: val(d.seguimiento.desempenoAcademico) },
+      { label: "Compromisos", value: listAsField(d.seguimiento.compromisos) },
     ],
   });
 

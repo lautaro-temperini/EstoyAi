@@ -1,9 +1,33 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { listRegistros, deleteRegistro, type Registro, type RegistroEstado } from "@/lib/queue/db";
+import {
+  listRegistros,
+  deleteRegistro,
+  putRegistro,
+  type Registro,
+  type RegistroEstado,
+} from "@/lib/queue/db";
 import { CloudflareIcon, PodioIcon } from "@/components/brand-icons";
+
+/** Map the server-side processing estado onto the device-side estado. */
+function mapServerEstado(s: string): RegistroEstado | null {
+  switch (s) {
+    case "RECIBIDO":
+    case "EXTRAIDO":
+      return "procesando";
+    case "LISTO":
+      return "listo";
+    case "ERROR":
+      return "error";
+    default:
+      return null;
+  }
+}
+
+/** Estados que vale la pena re-consultar contra el servidor (no terminales). */
+const REFRESH: RegistroEstado[] = ["encolado", "subiendo", "procesando"];
 
 const BADGE: Record<RegistroEstado, { label: string; cls: string }> = {
   encolado: { label: "En cola", cls: "bg-surface-container-high text-on-surface-variant" },
@@ -29,15 +53,50 @@ export default function RegistrosPage() {
   const [busy, setBusy] = useState<AccionPendiente>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
 
+  // Lee IndexedDB y reconcilia los registros no terminados con el servidor,
+  // para que "procesando" avance a "listo"/"error" sin tener que abrir cada uno.
+  const reconcile = useCallback(async () => {
+    const local = await listRegistros();
+    let changed = false;
+    const next = await Promise.all(
+      local.map(async (r) => {
+        if (!REFRESH.includes(r.estado)) return r;
+        try {
+          const res = await fetch(`/api/informe/${r.id}`, { cache: "no-store" });
+          if (!res.ok) return r; // el servidor todavía no lo tiene (404) — sigue igual
+          const data = (await res.json()) as { estado?: string };
+          const mapped = data.estado ? mapServerEstado(data.estado) : null;
+          if (mapped && mapped !== r.estado) {
+            const updated = { ...r, estado: mapped };
+            await putRegistro(updated); // persiste en IndexedDB
+            changed = true;
+            return updated;
+          }
+        } catch {
+          /* offline / server down — conserva el estado local */
+        }
+        return r;
+      }),
+    );
+    setItems((prev) => {
+      if (!prev) return next; // primera carga
+      if (!changed && prev.length === next.length) return prev; // sin cambios: evita re-render
+      return next;
+    });
+  }, []);
+
   useEffect(() => {
     let active = true;
-    listRegistros().then((r) => {
-      if (active) setItems(r);
-    });
+    const run = () => {
+      if (active) void reconcile();
+    };
+    run();
+    const t = setInterval(run, 5000);
     return () => {
       active = false;
+      clearInterval(t);
     };
-  }, []);
+  }, [reconcile]);
 
   const confirmTarget = items?.find((r) => r.id === confirmId) ?? null;
 

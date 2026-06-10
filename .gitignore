@@ -57,3 +57,8 @@ next-env.d.ts
 
 # local env
 .env*.local
+
+# instalador Windows: binarios pesados y artefactos de build (no versionar)
+PequenosPasos/1-instalar-rancher.msi
+PequenosPasos/Output/
+PequenosPasos/*.log

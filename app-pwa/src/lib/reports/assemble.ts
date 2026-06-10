@@ -31,6 +31,8 @@ const ESTRUCTURA_CAMPOS = [
   "- prioridad: clasificá en este orden de precedencia (revisá de ALTA a BAJA y aplicá el primer nivel que corresponda):",
   "  ALTA — acción el mismo día: violencia física, abuso sexual o psicológico, violencia intrafamiliar aguda, daños físicos o psicológicos evidentes en niños/as o adolescentes, riesgo de vida inminente.",
   "  MEDIA — acción en 24-72hs: falta de insumos del comedor o de primera necesidad (pañales, leche fórmula, botiquín); desnutrición leve o moderada; falta de controles médicos obligatorios; ausencias frecuentes sin justificación (2+ veces por semana); rotura de equipamiento clave que frena la actividad (heladera, bomba de agua, internet); conflictos o discusiones fuertes entre beneficiarios.",
+  "  MEDIA también si hay compromisos de microcrédito con pagos atrasados o en riesgo de incumplimiento. NO aplicar MEDIA si el beneficiario está al día con los pagos.",
+  "  MEDIA también si hay una acción de seguimiento explícita pendiente (visita programada, renovación, derivación no urgente) que no encaje en ningún ítem de ALTA ni de BAJA.",
   "  BAJA — resolución semanal/mensual: falta de materiales no esenciales (témperas, hojas, juegos); reparaciones menores (foco, puerta, humedad estética); demoras en legajos que no impiden el seguimiento; baja de voluntario reemplazable. Si la transcripción es puramente informativa: BAJA.",
   "- motivoCriticidad: una frase corta (máx 15 palabras) explicando por qué se asignó esa prioridad. Si es BAJA informativa, devolvé \"\".",
   "- entidades.nombres: nombres propios de personas dichos literalmente; si no hay, [].",
