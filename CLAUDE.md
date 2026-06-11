@@ -59,7 +59,7 @@ Promotor → graba WAV (WebAudio 16kHz) → IndexedDB (pending)
   → SQLite: LISTO → promotor descarga .docx
 ```
 
-El estado se fusiona entre cliente (IndexedDB) y servidor (SQLite). Ver DESIGN.md para el diagrama completo.
+El estado se fusiona entre cliente (IndexedDB) y servidor (SQLite). Ver ARCHITECTURE.md para el diagrama completo.
 
 ### Estructura de `app-pwa/src/`
 
@@ -107,10 +107,8 @@ Ver `.env.example`. Las más importantes al desarrollar:
 
 ---
 
-## Referencia de diseño
+## Referencia de arquitectura
 
-Ver `DESIGN.md` para: diagrama de componentes, máquinas de estado cliente/servidor, modelo de dominio completo y tabla de decisiones de arquitectura.
+Ver `ARCHITECTURE.md` para: diagrama de componentes, flujo de datos, máquinas de estado cliente/servidor, modelo de dominio y decisiones técnicas.
 
-Ver `ARCHITECTURE.md` para topología de despliegue, estructura del monorepo y fronteras de responsabilidad.
-
-Documentos de producto locales (gitignored en `docs/`): `brief.md`, `prd.md`, `trd.md`.
+Ver `DESIGN.md` para el design system UI (tokens, tipografía, motion).
