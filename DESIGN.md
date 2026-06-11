@@ -261,6 +261,16 @@ Al cambiar el prompt o el schema:
 
 ---
 
+## Documentación adicional
+
+| Archivo | Contenido |
+|---|---|
+| `ARCHITECTURE.md` | Topología, modos de ejecución, estructura del repo |
+| `README-SEDE.md` | Manual operativo para la sede |
+| `MULTITENANT.md` | Subdominios, tunnel Cloudflare, R2 |
+| `docs/` (local) | brief, prd, trd — requisitos de producto |
+| `skills/` (local) | Agent skills para landing/UI (ver `skills/README.md`) |
+
 ## Variables de entorno clave
 
 | Variable | Dónde se usa | Default |

@@ -110,3 +110,7 @@ Ver `.env.example`. Las más importantes al desarrollar:
 ## Referencia de diseño
 
 Ver `DESIGN.md` para: diagrama de componentes, máquinas de estado cliente/servidor, modelo de dominio completo y tabla de decisiones de arquitectura.
+
+Ver `ARCHITECTURE.md` para topología de despliegue, estructura del monorepo y fronteras de responsabilidad.
+
+Documentos de producto locales (gitignored en `docs/`): `brief.md`, `prd.md`, `trd.md`.
