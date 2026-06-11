@@ -58,6 +58,11 @@ next-env.d.ts
 # local env
 .env*.local
 
+# documentación de producto y skills de agentes (local, no versionar)
+docs/
+skills/
+.agents/
+
 # instalador Windows: binarios pesados y artefactos de build (no versionar)
 PequenosPasos/**/*.msi
 PequenosPasos/Output/
