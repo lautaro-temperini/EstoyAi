@@ -28,8 +28,9 @@ export function parseUploadMeta(raw: string): UploadMeta | null {
   }
 }
 
-export function toReportMetadata(meta: UploadMeta): ReportMetadata {
+export function toReportMetadata(meta: UploadMeta, tenant: string | null = null): ReportMetadata {
   return {
+    tenant,
     tipo: meta.tipo,
     beneficiario: meta.beneficiario,
     programa: meta.programa,

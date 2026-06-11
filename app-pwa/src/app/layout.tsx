@@ -1,20 +1,24 @@
 import type { Metadata, Viewport } from "next";
+import { headers } from "next/headers";
 import "./globals.css";
 import { ServiceWorkerRegister } from "./sw-register";
 import { QueueFlusher } from "./queue-flusher";
 import { FlowProvider } from "./flow-context";
+import { tenantFromHeaders } from "@/lib/tenants/config";
 
-export const metadata: Metadata = {
-  title: "Pequeños Pasos — Registro de campo",
-  description:
-    "Registro de campo por voz para promotores de Pequeños Pasos.",
-  manifest: "/manifest.webmanifest",
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "black-translucent",
-    title: "Pequeños Pasos",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = tenantFromHeaders(await headers());
+  return {
+    title: `${tenant.orgName} — Registro de campo`,
+    description: `Registro de campo por voz para promotores de ${tenant.orgName}.`,
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "black-translucent",
+      title: tenant.shortName,
+    },
+  };
+}
 
 export const viewport: Viewport = {
   themeColor: "#f8f9ff",

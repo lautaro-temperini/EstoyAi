@@ -24,6 +24,10 @@ services:
       - HOSTNAME=0.0.0.0
       - DATA_DIR=/data
       - SITE_PASSWORD=${SITE_PASSWORD:-}
+      # Multi-tenant: subdominio → ONG (ver app-pwa/src/lib/tenants/config.ts).
+      # Al sumar una ONG nueva, agregá acá su TENANT_<SLUG>_PASSWORD.
+      - ROOT_DOMAIN=${ROOT_DOMAIN:-estoyai.com}
+      - TENANT_PEQUENOSPASOS_PASSWORD=${TENANT_PEQUENOSPASOS_PASSWORD:-}
       - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/registro}
       - N8N_R2_WEBHOOK_URL=${N8N_R2_WEBHOOK_URL:-}
       - N8N_PODIO_WEBHOOK_URL=${N8N_PODIO_WEBHOOK_URL:-}
@@ -68,6 +72,13 @@ services:
       - N8N_CONCURRENCY_PRODUCTION_LIMIT=1
       - GENERIC_TIMEZONE=America/Argentina/Buenos_Aires
       - N8N_BLOCK_ENV_ACCESS_IN_NODE=false
+      # El Code node de subir-r2 firma SigV4 (crypto) y sube con http/https crudos.
+      - NODE_FUNCTION_ALLOW_BUILTIN=crypto,http,https
+      # R2: el workflow subir-r2 lee estas envs (firma S3 a mano, sin credencial n8n).
+      - CF_ACCOUNT_ID=${CF_ACCOUNT_ID:-}
+      - CF_R2_ACCESS_KEY_ID=${CF_R2_ACCESS_KEY_ID:-}
+      - CF_R2_SECRET_ACCESS_KEY=${CF_R2_SECRET_ACCESS_KEY:-}
+      - CF_R2_BUCKET=${CF_R2_BUCKET:-}
     volumes:
       - n8n_data:/home/node/.n8n
       # Workflow pre-cargado al iniciar n8n (lectura única en primer arranque).

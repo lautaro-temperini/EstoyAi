@@ -1,11 +1,11 @@
   [Setup]
   AppName=EstoyAi
-  AppVersion=1.5
+  AppVersion=1.6
   AppPublisher=Lautaro R. Temperini
   DefaultDirName={autopf}\EstoyAi
   CreateAppDir=yes
   OutputDir=Output
-  OutputBaseFilename=EstoyAi-Installer-1.5
+  OutputBaseFilename=EstoyAi-Installer-1.6
   SetupIconFile=sistema\icono.ico
   Compression=lzma
   SolidCompression=yes

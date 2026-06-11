@@ -1,25 +1,35 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { tenantForHost, tenantPassword } from "@/lib/tenants/config";
 
 /**
- * HTTP Basic Auth a nivel de toda la instalación.
+ * HTTP Basic Auth multi-tenant.
  *
- * Protege la app con una contraseña única configurada en SITE_PASSWORD.
- * - Si SITE_PASSWORD no está definida → no se aplica auth (desarrollo local con `npm run dev`).
- * - El usuario se ignora (puede ser cualquier string); solo se valida la contraseña.
- * - Una vez autenticado, el browser cachea las credenciales para la sesión.
+ * El subdominio (Host header) elige la ONG; cada una tiene su propia contraseña
+ * (TENANT_<SLUG>_PASSWORD, con fallback a SITE_PASSWORD). Ver lib/tenants/config.
+ * - Si el tenant no tiene contraseña → no se aplica auth (desarrollo local).
+ * - El usuario se ignora; solo se valida la contraseña.
+ * - El realm muestra el nombre de la ONG.
  *
- * Rutas EXCLUIDAS (ver `config.matcher` abajo):
- * - `/api/informe/[id]/*` → las llama n8n desde dentro de la red Docker; no puede
- *   autenticarse con Basic Auth. (Quedan accesibles solo dentro de `sede-net`.)
- * - Assets estáticos (`_next`, íconos, sw.js, manifest) → no son sensibles y deben
- *   servirse sin gatear el shell de la PWA.
+ * Además inyecta `x-tenant` en la request para que los Server Components y las
+ * API routes sepan qué ONG sirve esta petición (branding, system prompt).
+ *
+ * Rutas EXCLUIDAS (ver `config.matcher`):
+ * - `/api/informe/[id]/*` → las llama n8n desde la red Docker; sin Basic Auth.
+ * - Assets estáticos (`_next`, íconos, sw.js, manifest) → sin gatear.
  */
 export function middleware(req: NextRequest) {
-  const password = process.env.SITE_PASSWORD;
+  const tenant = tenantForHost(req.headers.get("host"));
+  const password = tenantPassword(tenant);
 
-  // Sin contraseña configurada → middleware no-op (desarrollo local).
+  // Propaga el tenant a los handlers río abajo.
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-tenant", tenant.slug);
+  const pass = () =>
+    NextResponse.next({ request: { headers: requestHeaders } });
+
+  // Sin contraseña configurada → solo inyecta el tenant y sigue.
   if (!password) {
-    return NextResponse.next();
+    return pass();
   }
 
   const header = req.headers.get("authorization");
@@ -29,9 +39,9 @@ export function middleware(req: NextRequest) {
       // atob está disponible en el Edge runtime de Next.js middleware.
       const decoded = atob(encoded);
       const sep = decoded.indexOf(":");
-      const pass = sep === -1 ? "" : decoded.slice(sep + 1);
-      if (pass === password) {
-        return NextResponse.next();
+      const provided = sep === -1 ? "" : decoded.slice(sep + 1);
+      if (provided === password) {
+        return pass();
       }
     }
   }
@@ -39,7 +49,7 @@ export function middleware(req: NextRequest) {
   return new NextResponse("Autenticación requerida", {
     status: 401,
     headers: {
-      "WWW-Authenticate": 'Basic realm="Pequeños Pasos", charset="UTF-8"',
+      "WWW-Authenticate": `Basic realm="${tenant.orgName}", charset="UTF-8"`,
     },
   });
 }

@@ -4,6 +4,7 @@ import { ensureDataDirs, audioPathFor } from "@/lib/db/paths";
 import { insertInformeRecibido } from "@/lib/db/sqlite";
 import { parseUploadMeta, toReportMetadata } from "@/lib/api/metadata";
 import { assertValidId } from "@/lib/api/validate";
+import { tenantFromHeaders } from "@/lib/tenants/config";
 
 export const runtime = "nodejs";
 
@@ -63,7 +64,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "no se pudo guardar el audio" }, { status: 500 });
     }
 
-    const metadata = toReportMetadata(meta);
+    // El tenant lo decide el servidor por Host (middleware setea x-tenant), no
+    // el cliente: evita falsificación y no requiere tocar SW/IndexedDB.
+    const tenant = tenantFromHeaders(request.headers).slug;
+    const metadata = toReportMetadata(meta, tenant);
     let created: boolean;
     try {
       ({ created } = insertInformeRecibido({ id: meta.id, audioPath, metadata }));

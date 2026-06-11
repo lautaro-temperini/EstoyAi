@@ -96,6 +96,8 @@ export type Programa = "primera-infancia" | "ninez-adolescencia" | "oficios";
 
 /** Auto-captured context for the report (provided by the device/frontend). */
 export interface ReportMetadata {
+  /** ONG (subdominio) que originó el registro; orienta el system prompt en n8n. */
+  tenant: string | null;
   /** What was registered: an individual beneficiary or a group activity. */
   tipo: TipoRegistro | null;
   /** Identified beneficiary (individual flow); null for group activities. */

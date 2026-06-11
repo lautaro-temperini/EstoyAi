@@ -1,0 +1,53 @@
+{
+  "id": "estoyaisubirr2",
+  "name": "subir-r2",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "subir-r2",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "id": "node-webhook-r2",
+      "name": "webhook-r2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -160,
+        300
+      ],
+      "webhookId": "pp-subir-r2"
+    },
+    {
+      "parameters": {
+        "jsCode": "const crypto = require('crypto');\nconst http = require('http');\nconst https = require('https');\nconst NL = String.fromCharCode(10);\nconst body = $('webhook-r2').item.json.body || {};\nif (!body.id) throw new Error('payload sin id');\n\nconst appUrl = $env.APP_URL || 'http://app-pwa:3000';\nconst accountId = $env.CF_ACCOUNT_ID;\nconst accessKey = $env.CF_R2_ACCESS_KEY_ID;\nconst secretKey = $env.CF_R2_SECRET_ACCESS_KEY;\nconst bucket = $env.CF_R2_BUCKET;\nif (!accountId || !accessKey || !secretKey || !bucket) {\n  throw new Error('Faltan envs R2: CF_ACCOUNT_ID / CF_R2_ACCESS_KEY_ID / CF_R2_SECRET_ACCESS_KEY / CF_R2_BUCKET');\n}\n\n// http/https crudos: helpers.httpRequest (axios) altera el cuerpo binario y\n// rompe la firma SigV4 (hash del payload != cuerpo enviado -> R2 400).\nconst request = (mod, options, payload) => new Promise((resolve, reject) => {\n  const req = mod.request(options, (res) => {\n    const chunks = [];\n    res.on('data', (c) => chunks.push(c));\n    res.on('end', () => resolve({ status: res.statusCode, body: Buffer.concat(chunks) }));\n  });\n  req.on('error', reject);\n  if (payload) req.write(payload);\n  req.end();\n});\n\n// 1) Descargar el .docx desde app-pwa (n8n no monta el volumen data).\n// (sin new URL: el sandbox del Code node no expone esa global)\nconst m = appUrl.match(/^https?:[/][/]([^:/]+)(?::(\\d+))?/);\nif (!m) throw new Error('APP_URL invalida: ' + appUrl);\nconst got = await request(http, { hostname: m[1], port: m[2] ? Number(m[2]) : 80, path: '/api/informe/' + body.id + '/docx', method: 'GET' });\nif (got.status !== 200) throw new Error('descarga del docx fallo: HTTP ' + got.status);\nconst payload = got.body;\n\n// 2) Firma SigV4 (servicio s3, region auto, path-style).\nconst host = accountId + '.r2.cloudflarestorage.com';\nconst region = 'auto';\nconst service = 's3';\nconst contentType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';\n\nconst enc = (s) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase());\nconst key = [body.carpeta, body.subcarpeta, body.filename].filter(Boolean).join('/');\nconst canonicalUri = '/' + bucket + '/' + key.split('/').map(enc).join('/');\n\nconst now = new Date();\nconst pad = (n) => String(n).padStart(2, '0');\nconst amzDate = '' + now.getUTCFullYear() + pad(now.getUTCMonth() + 1) + pad(now.getUTCDate()) + 'T' + pad(now.getUTCHours()) + pad(now.getUTCMinutes()) + pad(now.getUTCSeconds()) + 'Z';\nconst dateStamp = amzDate.slice(0, 8);\n\nconst payloadHash = crypto.createHash('sha256').update(payload).digest('hex');\nconst canonicalHeaders = ['content-type:' + contentType, 'host:' + host, 'x-amz-content-sha256:' + payloadHash, 'x-amz-date:' + amzDate].join(NL) + NL;\nconst signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date';\nconst canonicalRequest = ['PUT', canonicalUri, '', canonicalHeaders, signedHeaders, payloadHash].join(NL);\n\nconst scope = dateStamp + '/' + region + '/' + service + '/aws4_request';\nconst stringToSign = ['AWS4-HMAC-SHA256', amzDate, scope, crypto.createHash('sha256').update(canonicalRequest).digest('hex')].join(NL);\n\nconst hmac = (k, d) => crypto.createHmac('sha256', k).update(d).digest();\nconst kDate = hmac('AWS4' + secretKey, dateStamp);\nconst kRegion = hmac(kDate, region);\nconst kService = hmac(kRegion, service);\nconst kSigning = hmac(kService, 'aws4_request');\nconst signature = crypto.createHmac('sha256', kSigning).update(stringToSign).digest('hex');\n\nconst authorization = 'AWS4-HMAC-SHA256 Credential=' + accessKey + '/' + scope + ', SignedHeaders=' + signedHeaders + ', Signature=' + signature;\n\n// 3) PUT del objeto a R2 (bytes exactos: content-length explicito, sin chunked).\nconst res = await request(https, {\n  hostname: host,\n  path: canonicalUri,\n  method: 'PUT',\n  headers: {\n    Authorization: authorization,\n    'x-amz-date': amzDate,\n    'x-amz-content-sha256': payloadHash,\n    'content-type': contentType,\n    'content-length': payload.length,\n  },\n}, payload);\nif (res.status !== 200) {\n  throw new Error('R2 respondio ' + res.status + ': ' + res.body.toString('utf8').slice(0, 300));\n}\n\nreturn [{ json: { ok: true, key, status: res.status, bytes: payload.length } }];"
+      },
+      "id": "node-subir",
+      "name": "subir-r2",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        80,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "webhook-r2": {
+      "main": [
+        [
+          {
+            "node": "subir-r2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

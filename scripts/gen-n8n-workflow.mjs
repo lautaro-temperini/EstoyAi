@@ -52,6 +52,10 @@ const ESTRUCTURA_CAMPOS = [
 const buildSystemPrompt = (enfasis = []) =>
   [...REGLAS_ABSOLUTAS, ...enfasis, ...ESTRUCTURA_CAMPOS].join("\n");
 
+// Claves: "<programa>" (todas las ONGs) o "<tenant>:<programa>" (override por
+// ONG). La selección en prepCode prueba "<tenant>:<programa>" → "<programa>" →
+// "generic". Para un system prompt propio de una ONG, agregá p. ej.
+// "otraong:primera-infancia": buildSystemPrompt([...]) y regenerá el workflow.
 const PROMPTS = {
   generic: buildSystemPrompt(),
   "primera-infancia": buildSystemPrompt([
@@ -176,8 +180,12 @@ const EXTRACTION_JSON_SCHEMA = ${JSON.stringify(EXTRACTION_JSON_SCHEMA)};
 
 const transcript = (($json.text) || '').trim();
 const meta = $('init').item.json.metadata || {};
-// Selecciona el system prompt según el programa; genérico si null/desconocido.
-const SYSTEM_PROMPT = PROMPTS[meta.programa] || PROMPTS.generic;
+// Selecciona el system prompt: primero por ONG+programa ("<tenant>:<programa>"),
+// luego por programa (compat con instalación de un solo cliente), luego genérico.
+const SYSTEM_PROMPT =
+  PROMPTS[meta.tenant + ':' + meta.programa] ||
+  PROMPTS[meta.programa] ||
+  PROMPTS.generic;
 const capturedAt = typeof meta.capturedAt === 'number' ? meta.capturedAt : Date.now();
 const userMessage = 'Fecha del registro: ' + fechaLarga(capturedAt) + '.\\n\\nTranscripción:\\n' + transcript;
 const model = $env.OLLAMA_MODEL || 'qwen3:1.7b';

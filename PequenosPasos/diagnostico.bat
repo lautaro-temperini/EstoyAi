@@ -16,7 +16,7 @@ set "OLLAMA_MODEL=gemma3:4b"
 if exist "%INSTALL_DIR%.env" for /f "tokens=2 delims==" %%a in ('findstr /b /c:"OLLAMA_MODEL=" "%INSTALL_DIR%.env"') do set "OLLAMA_MODEL=%%a"
 
 echo  =====================================================
-echo    ESTOY AI - Diagnostico              (build 1.5)
+echo    ESTOY AI - Diagnostico              (build 1.6)
 echo  =====================================================
 echo.
 

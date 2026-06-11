@@ -9,6 +9,7 @@ export const runtime = "nodejs";
 type Params = { params: Promise<{ id: string }> };
 
 const FALLBACK_META: ReportMetadata = {
+  tenant: null,
   tipo: null,
   beneficiario: null,
   programa: null,

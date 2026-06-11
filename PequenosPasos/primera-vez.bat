@@ -24,7 +24,7 @@ if exist "%ProgramFiles%\Rancher Desktop\resources\resources\win32\bin" set "PAT
 
 cls
 echo ================================================
-echo    EstoyAi - Configuracion inicial  (build 1.5)
+echo    EstoyAi - Configuracion inicial  (build 1.6)
 echo ================================================
 echo.
 echo  Este proceso es automatico y tarda 15-20 min.
