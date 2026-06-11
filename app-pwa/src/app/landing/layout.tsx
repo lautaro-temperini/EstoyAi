@@ -10,13 +10,13 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "EstoyAi — Informes de campo por voz",
+  title: "EstoyAi — Informes de visitas domiciliarias por voz",
   description:
-    "Plataforma para organizaciones sociales: los promotores dictan visitas en el celular y reciben informes Word estructurados, procesados en la propia sede.",
+    "Dictá la visita en dos minutos. Tu sede genera el informe Word — offline, uniforme, sin mandar la voz de las familias a la nube.",
   openGraph: {
-    title: "EstoyAi — Informes de campo por voz",
+    title: "EstoyAi — Informes de visitas domiciliarias por voz",
     description:
-      "Convertí registros de voz en informes de seguimiento. Offline, uniformes y con los datos en tu sede.",
+      "Recuperá tiempo de acompañamiento sin exportar la intimidad de las familias a infraestructura ajena.",
     type: "website",
     locale: "es_AR",
   },

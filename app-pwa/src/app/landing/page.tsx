@@ -9,6 +9,9 @@ import Link from "next/link";
  *
  * Elemento firma: diagrama voz → sede → .docx con pulso animado en el path.
  * Sin CTA de conversión (objetivo: comprensión, no captación).
+ *
+ * Narrativa: dolor → prueba (Pequeños Pasos) → flujo → soberanía (directorio)
+ * → audiencia calificada. Open source en footer.
  */
 
 function LogoMark() {
@@ -36,7 +39,7 @@ function FlowDiagram() {
     <figure className="landing-flow-diagram landing-anim landing-anim--3">
       <svg
         className="landing-flow-diagram__svg"
-        viewBox="0 0 400 140"
+        viewBox="0 0 400 200"
         role="img"
         aria-labelledby="flow-diagram-title flow-diagram-desc"
       >
@@ -49,27 +52,55 @@ function FlowDiagram() {
         {/* Connection paths */}
         <path
           className="landing-flow-path"
-          d="M 72 70 L 148 70"
+          d="M 104 100 L 156 100"
+          strokeOpacity="0.55"
         />
         <path
           className="landing-flow-path"
-          d="M 252 70 L 328 70"
+          d="M 244 100 L 296 100"
+          strokeOpacity="0.55"
         />
         <path
           className="landing-flow-pulse"
-          d="M 72 70 L 148 70 L 252 70 L 328 70"
+          d="M 104 100 L 156 100 L 244 100 L 296 100"
         />
 
+        {/* Timing labels on connectors */}
+        <text
+          x="130"
+          y="88"
+          textAnchor="middle"
+          fill="currentColor"
+          opacity="0.5"
+          fontFamily="Atkinson Hyperlegible Next, sans-serif"
+          fontSize="10"
+          fontWeight="600"
+        >
+          2 min
+        </text>
+        <text
+          x="270"
+          y="88"
+          textAnchor="middle"
+          fill="currentColor"
+          opacity="0.5"
+          fontFamily="Atkinson Hyperlegible Next, sans-serif"
+          fontSize="10"
+          fontWeight="600"
+        >
+          &lt;3 min
+        </text>
+
         {/* Node 1: mic / field */}
-        <g transform="translate(36, 70)">
-          <circle className="landing-flow-node__circle" r="36" />
+        <g transform="translate(60, 100)">
+          <circle className="landing-flow-node__circle" r="44" />
           <g transform="translate(-12, -14)" fill="none" stroke="#0040a1" strokeWidth="2" strokeLinecap="round">
             <rect x="4" y="8" width="16" height="22" rx="8" />
             <path d="M12 30v6M8 36h8" />
             <path d="M20 18c2 1.5 3 3.5 3 6a7 7 0 0 1-14 0c0-2.5 1-4.5 3-6" />
           </g>
           <text
-            y="52"
+            y="68"
             textAnchor="middle"
             fill="#0d1c2e"
             fontFamily="Atkinson Hyperlegible Next, sans-serif"
@@ -81,15 +112,15 @@ function FlowDiagram() {
         </g>
 
         {/* Node 2: sede / server */}
-        <g transform="translate(200, 70)">
-          <circle className="landing-flow-node__circle landing-flow-node__circle--active" r="36" />
+        <g transform="translate(200, 100)">
+          <circle className="landing-flow-node__circle landing-flow-node__circle--active" r="44" />
           <g transform="translate(-14, -12)" fill="none" stroke="#0056d2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="2" y="4" width="24" height="18" rx="2" />
             <path d="M8 26v4h12v-4M6 30h16" />
             <path d="M8 10h4M8 14h8M8 18h6" />
           </g>
           <text
-            y="52"
+            y="68"
             textAnchor="middle"
             fill="#0d1c2e"
             fontFamily="Atkinson Hyperlegible Next, sans-serif"
@@ -101,14 +132,14 @@ function FlowDiagram() {
         </g>
 
         {/* Node 3: document */}
-        <g transform="translate(364, 70)">
-          <circle className="landing-flow-node__circle landing-flow-node__circle--done" r="36" />
+        <g transform="translate(340, 100)">
+          <circle className="landing-flow-node__circle landing-flow-node__circle--done" r="44" />
           <g transform="translate(-10, -14)" fill="none" stroke="#006c49" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M6 2h10l6 6v22a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
             <path d="M16 2v6h6M8 14h12M8 18h10M8 22h8" />
           </g>
           <text
-            y="52"
+            y="68"
             textAnchor="middle"
             fill="#0d1c2e"
             fontFamily="Atkinson Hyperlegible Next, sans-serif"
@@ -123,43 +154,6 @@ function FlowDiagram() {
         Voz en el barrio → procesamiento en tu sede → .docx listo
       </figcaption>
     </figure>
-  );
-}
-
-function IconMic() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <rect x="9" y="2" width="6" height="12" rx="3" />
-      <path d="M5 10a7 7 0 0 0 14 0M12 17v3M9 22h6" />
-    </svg>
-  );
-}
-
-function IconOffline() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-      <path d="M12 20h.01M8.5 16.429a5 5 0 0 1 7.074 0M5 12.859a10 10 0 0 1 5.17-2.69M19 12.859a10 10 0 0 0-2.007-1.523" />
-      <path d="M2 8.82a15 15 0 0 1 4.288-1.975M22 8.82a15 15 0 0 0-11.288-3.11" />
-      <line x1="2" y1="2" x2="22" y2="22" />
-    </svg>
-  );
-}
-
-function IconShield() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="M9 12l2 2 4-4" />
-    </svg>
-  );
-}
-
-function IconDoc() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-      <path d="M14 2v6h6M8 13h8M8 17h6M8 9h2" />
-    </svg>
   );
 }
 
@@ -190,6 +184,75 @@ function IconLock() {
   );
 }
 
+function IconAudienceOrg() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 21h18" />
+      <path d="M5 21V7l7-4 7 4v14" />
+      <path d="M9 21v-6h6v6" />
+      <line x1="9" y1="9" x2="9" y2="9.01" />
+      <line x1="15" y1="9" x2="15" y2="9.01" />
+      <line x1="9" y1="13" x2="9" y2="13.01" />
+      <line x1="15" y1="13" x2="15" y2="13.01" />
+    </svg>
+  );
+}
+
+function IconAudienceSignal() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M2 20h.01" />
+      <path d="M6 20v-3" />
+      <path d="M10 20v-6" opacity="0.35" />
+      <path d="M14 20v-9" opacity="0.2" />
+      <path d="M18 20V7" opacity="0.15" />
+      <path d="M4 16.5 20 16.5" strokeDasharray="2 2" opacity="0.55" />
+    </svg>
+  );
+}
+
+function IconAudiencePerson() {
+  return (
+    <svg
+      width="20"
+      height="20"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <circle cx="9" cy="8" r="2.75" />
+      <path d="M4 20v-1.25a5 5 0 0 1 10 0V20" />
+      <path d="M16.5 9.5c.75.65 1.25 1.45 1.25 2.5" opacity="0.45" />
+      <path d="M15 12.25a2.75 2.75 0 0 0-1 1.25" opacity="0.35" />
+      <line x1="14.5" y1="7" x2="20.5" y2="15" />
+    </svg>
+  );
+}
+
 export default function LandingPage() {
   const year = new Date().getFullYear();
 
@@ -211,108 +274,134 @@ export default function LandingPage() {
           <div className="landing__container landing-hero__layout">
             <div>
               <h1 id="hero-heading" className="landing-hero__title landing-anim landing-anim--1">
-                Después de cada visita, media hora escribiendo lo que ya dijiste.
+                Salís de la casa a las 16:00. A las 16:45 seguís escribiendo el informe.
               </h1>
               <p className="landing-hero__lead landing-anim landing-anim--2">
-                EstoyAi convierte la voz del promotor en un informe de seguimiento
-                listo para archivar — en menos de 3 minutos, con o sin señal en el
-                momento de la visita.
+                EstoyAi invierte ese flujo: el promotor dicta dos minutos al salir
+                del domicilio; la sede de la ONG genera el Word — con o sin señal
+                en el barrio. La voz de las familias no sale de la organización.
               </p>
               <p className="landing-hero__stat landing-anim landing-anim--3">
-                <span className="landing-hero__stat-value">~30 min</span>
-                <span className="landing-hero__stat-label">de redacción manual → ~2 min dictando</span>
+                <span className="landing-hero__stat-value">~30 min → ~2 min</span>
+                <span className="landing-hero__stat-label">
+                  de redacción manual a dictado en campo, por visita
+                </span>
               </p>
             </div>
             <FlowDiagram />
           </div>
         </section>
 
-        {/* ── Flujo en 3 pasos ── */}
-        <section className="landing__section" aria-labelledby="flow-heading">
-          <div className="landing__container">
-            <p className="landing__section-label">Cómo funciona</p>
-            <h2 id="flow-heading" className="landing__headline-md">
-              Un proceso real, en el orden en que ocurre
-            </h2>
-            <p className="landing__body-lg" style={{ marginTop: "1rem", maxWidth: "52ch" }}>
-              No es magia en la nube: el promotor graba, la sede procesa, el
-              informe queda listo para revisar y archivar.
-            </p>
+        {/* ── En producción: Pequeños Pasos (prueba social temprana) ── */}
+        <section className="landing__section" aria-labelledby="case-heading">
+          <div className="landing__container landing-case">
+            <div>
+              <span className="landing-case__badge">En producción</span>
+              <h2 id="case-heading" className="landing-case__org">
+                Pequeños Pasos
+              </h2>
+              <p className="landing-case__context">
+                ONG argentina que acompaña familias en situación de vulnerabilidad.
+                Sus promotores visitan hogares y documentan cada encuentro con
+                EstoyAi: dictado en campo, informe Word generado en la sede, mismo
+                formato para todo el equipo.
+              </p>
+              <div className="landing-case__sections" aria-label="Secciones del informe">
+                <span className="landing-case__section-tag">Intervención</span>
+                <span className="landing-case__section-tag">Compromisos</span>
+                <span className="landing-case__section-tag">Seguimiento</span>
+                <span className="landing-case__section-tag">Vulnerabilidades</span>
+                <span className="landing-case__section-tag">+7 secciones</span>
+              </div>
+              <p className="landing-case__footnote">
+                Cada informe lo revisa el equipo coordinador antes de archivarlo.
+                El sistema acelera la documentación; no reemplaza el criterio
+                profesional.
+              </p>
+            </div>
 
-            <ol className="landing-steps" style={{ marginTop: "2.5rem", listStyle: "none", padding: 0 }}>
-              <li className="landing-step">
-                <span className="landing-step__num" aria-hidden="true">1</span>
-                <h3 className="landing-step__title">El promotor graba en el celular</h3>
-                <p className="landing-step__text">
-                  Al terminar la visita, dicta lo que observó: contexto familiar,
-                  intervención, acuerdos. Unos 2 minutos de audio, sin formularios
-                  ni teclado.
-                </p>
-              </li>
-              <li className="landing-step">
-                <span className="landing-step__num" aria-hidden="true">2</span>
-                <h3 className="landing-step__title">El audio viaja a la sede de la ONG</h3>
-                <p className="landing-step__text">
-                  Si no hay señal, el audio queda encolado en el teléfono y se
-                  sube solo cuando vuelve la conexión. En la sede, un servidor
-                  local transcribe y estructura el contenido.
-                </p>
-              </li>
-              <li className="landing-step">
-                <span className="landing-step__num" aria-hidden="true">3</span>
-                <h3 className="landing-step__title">El informe aparece listo para descargar</h3>
-                <p className="landing-step__text">
-                  En menos de 3 minutos hay un archivo Word con 11 secciones fijas:
-                  datos de la visita, intervención, acuerdos, observaciones. Misma
-                  estructura para todos los promotores.
-                </p>
-              </li>
-            </ol>
+            <div className="landing-case__panel">
+              <h3 className="landing-case__panel-title">Qué cambió en el programa</h3>
+              <div className="landing-case__compare">
+                <div className="landing-case__row">
+                  <span className="landing-case__row-label landing-case__row-label--before">Antes</span>
+                  <p className="landing-case__row-text">
+                    Informes redactados a mano al volver —{" "}
+                    <strong>media hora por visita</strong>, a menudo incompletos.
+                    Sin señal en el barrio, la visita quedaba sin registro hasta
+                    otro día.
+                  </p>
+                </div>
+                <div className="landing-case__row">
+                  <span className="landing-case__row-label landing-case__row-label--after">Ahora</span>
+                  <p className="landing-case__row-text">
+                    Audio de un par de minutos al salir del domicilio. En{" "}
+                    <strong>menos de 3 minutos</strong> la sede devuelve un .docx
+                    con once secciones fijas. La visita queda registrada aunque
+                    la subida espere conectividad.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
-        {/* ── Propuesta de valor ── */}
-        <section className="landing__section landing__section--tight" aria-labelledby="value-heading">
+        {/* ── Flujo en 3 pasos ── */}
+        <section className="landing__section landing__section--flow" aria-labelledby="flow-heading">
           <div className="landing__container">
-            <p className="landing__section-label">Qué cambia en el día a día</p>
-            <h2 id="value-heading" className="landing__headline-md">
-              Menos tiempo escribiendo, más tiempo acompañando
+            <p className="landing__section-label">Cómo funciona</p>
+            <h2 id="flow-heading" className="landing__headline-md">
+              Grabá al salir. Archivá desde la sede.
             </h2>
+            <p className="landing__body-lg">
+              Tres pasos. Sin formularios en la calle. El archivo sigue siendo
+              Word — el que ya usás para rendir cuentas.
+            </p>
 
-            <div className="landing-values" style={{ marginTop: "2rem" }}>
-              <article className="landing-value">
-                <div className="landing-value__icon"><IconMic /></div>
-                <h3 className="landing-value__title">El promotor dicta, no escribe</h3>
-                <p className="landing-value__text">
-                  Dos minutos de grabación reemplazan media hora de redacción
-                  manual después de cada visita.
+            <div className="landing-flow-panel">
+              <ol className="landing-steps" style={{ listStyle: "none", padding: 0 }}>
+                <li className="landing-step">
+                  <span className="landing-step__num" aria-hidden="true">1</span>
+                  <h3 className="landing-step__title">Dictá al salir del domicilio</h3>
+                  <p className="landing-step__text">
+                    Contexto familiar, intervención, acuerdos — unos 2 minutos de
+                    audio en el celular. Sin teclado ni pantallas en la vereda.
+                  </p>
+                </li>
+                <li className="landing-step">
+                  <span className="landing-step__num" aria-hidden="true">2</span>
+                  <h3 className="landing-step__title">La sede procesa el audio</h3>
+                  <p className="landing-step__text">
+                    Sin señal, el audio queda encolado y sube solo cuando hay red.
+                    En la sede se transcribe y se ordena en las secciones del
+                    informe — en hardware de la propia organización.
+                  </p>
+                </li>
+                <li className="landing-step">
+                  <span className="landing-step__num" aria-hidden="true">3</span>
+                  <h3 className="landing-step__title">Descargá el Word y archivá</h3>
+                  <p className="landing-step__text">
+                    En menos de 3 minutos hay un .docx listo para que el coordinador
+                    lo revise. Once secciones fijas, la misma estructura para todos
+                    los promotores.
+                  </p>
+                </li>
+              </ol>
+
+              <div className="landing-flow-note" aria-label="Resumen del impacto">
+                <p className="landing-flow-note__item">
+                  <strong>Tiempo recuperado</strong>
+                  De ~30 min de redacción a ~2 min de dictado por visita.
                 </p>
-              </article>
-              <article className="landing-value">
-                <div className="landing-value__icon"><IconOffline /></div>
-                <h3 className="landing-value__title">Funciona sin internet</h3>
-                <p className="landing-value__text">
-                  El audio se guarda en el celular y sube en segundo plano cuando
-                  hay señal. Las visitas en zonas sin cobertura no quedan sin
-                  registrar.
+                <p className="landing-flow-note__item">
+                  <strong>Territorio</strong>
+                  La visita se registra en el momento, aunque el barrio no tenga señal.
                 </p>
-              </article>
-              <article className="landing-value">
-                <div className="landing-value__icon"><IconShield /></div>
-                <h3 className="landing-value__title">Los datos no salen de la organización</h3>
-                <p className="landing-value__text">
-                  Transcripción y extracción corren en un servidor en la sede de
-                  la ONG, no en servicios externos en la nube pública.
+                <p className="landing-flow-note__item">
+                  <strong>Archivo uniforme</strong>
+                  Un solo formato de informe para coordinación y auditoría interna.
                 </p>
-              </article>
-              <article className="landing-value">
-                <div className="landing-value__icon"><IconDoc /></div>
-                <h3 className="landing-value__title">Informes uniformes</h3>
-                <p className="landing-value__text">
-                  Once secciones fijas en cada informe, sin importar quién grabó.
-                  Facilita el seguimiento y la auditoría entre equipos.
-                </p>
-              </article>
+              </div>
             </div>
           </div>
         </section>
@@ -326,90 +415,48 @@ export default function LandingPage() {
                 Los datos de tus beneficiarios se quedan en tu sede
               </h2>
               <p className="landing__body-lg" style={{ marginTop: "1rem" }}>
-                EstoyAi está pensado para organizaciones que manejan información
-                sensible de familias y menores. El procesamiento ocurre en hardware
-                de la propia ONG — sin enviar audio ni transcripciones a APIs
-                comerciales de terceros.
+                Para organizaciones que documentan visitas domiciliarias con
+                información sensible de familias y menores. El audio va del celular
+                del promotor al servidor de la sede: ahí se transcribe, se arma el
+                informe y se guarda. Sin enviar voz ni texto a servicios comerciales
+                de reconocimiento de voz ni de inteligencia artificial en la nube.
               </p>
               <p className="landing-boundary">
-                <strong>Perímetro de datos:</strong> el audio viaja del celular del
-                promotor al servidor de la sede. Ahí termina el recorrido. Nada se
-                replica en infraestructura ajena a la organización.
+                <strong>Perímetro de datos:</strong> el recorrido termina en tu
+                sede. Nada se replica en infraestructura ajena a la organización.
+                Operación pensada para hardware modesto en la ONG, sin GPU dedicada.
               </p>
             </div>
 
-            <div className="landing-stack" aria-label="Componentes del procesamiento local">
+            <div className="landing-stack" aria-label="Garantías de procesamiento local">
               <div className="landing-stack__item">
                 <div className="landing-stack__icon"><IconWhisper /></div>
                 <div>
-                  <p className="landing-stack__title">Transcripción local</p>
+                  <p className="landing-stack__title">Voz transcrita en la sede</p>
                   <p className="landing-stack__text">
-                    faster-whisper corre en la sede. El audio no pasa por servicios
-                    de reconocimiento de voz en la nube.
+                    El audio se convierte en texto en un servidor de tu organización,
+                    no en plataformas comerciales de reconocimiento de voz.
                   </p>
                 </div>
               </div>
               <div className="landing-stack__item">
                 <div className="landing-stack__icon"><IconBrain /></div>
                 <div>
-                  <p className="landing-stack__title">Extracción con modelo local</p>
+                  <p className="landing-stack__title">Informe ordenado en la sede</p>
                   <p className="landing-stack__text">
-                    Un LLM pequeño en la misma máquina estructura el texto en JSON
-                    con campos fijos. Sin llamadas a APIs externas de inteligencia
-                    artificial.
+                    Lo dictado se distribuye en las secciones del informe en la
+                    misma máquina — sin ChatGPT ni APIs externas de IA.
                   </p>
                 </div>
               </div>
               <div className="landing-stack__item">
                 <div className="landing-stack__icon"><IconLock /></div>
                 <div>
-                  <p className="landing-stack__title">Acceso por organización</p>
+                  <p className="landing-stack__title">Control institucional</p>
                   <p className="landing-stack__text">
-                    Cada ONG opera en su subdominio con acceso protegido. Los
-                    informes viven en el servidor de la sede, bajo control del
-                    equipo coordinador.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ── En producción: Pequeños Pasos ── */}
-        <section className="landing__section" aria-labelledby="case-heading">
-          <div className="landing__container landing-case">
-            <div>
-              <span className="landing-case__badge">En producción</span>
-              <h2 id="case-heading" className="landing-case__org">
-                Pequeños Pasos
-              </h2>
-              <p className="landing-case__context">
-                ONG argentina que acompaña familias en situación de vulnerabilidad.
-                Es el primer despliegue real de EstoyAi: promotores de campo que
-                visitan hogares y necesitan dejar constancia escrita de cada
-                encuentro.
-              </p>
-            </div>
-
-            <div className="landing-case__panel">
-              <h3 className="landing-case__panel-title">Qué cambió con EstoyAi</h3>
-              <div className="landing-case__compare">
-                <div className="landing-case__row">
-                  <span className="landing-case__row-label landing-case__row-label--before">Antes</span>
-                  <p className="landing-case__row-text">
-                    Cada promotor redactaba informes a mano al volver de la visita.
-                    <strong> ~30 minutos por registro</strong>, con datos incompletos
-                    o ilegibles. En barrios sin señal, la visita quedaba sin
-                    documentar hasta tener conectividad.
-                  </p>
-                </div>
-                <div className="landing-case__row">
-                  <span className="landing-case__row-label landing-case__row-label--after">Ahora</span>
-                  <p className="landing-case__row-text">
-                    Dicta un audio de un par de minutos al salir del domicilio.
-                    La sede procesa y genera un <strong>.docx con 11 secciones</strong>{" "}
-                    listo para archivar. El mismo formato para todo el equipo,
-                    sin depender de internet en el momento de la grabación.
+                    Cada organización opera en su propio acceso. Los informes viven
+                    en el servidor de la sede, bajo responsabilidad del equipo
+                    coordinador.
                   </p>
                 </div>
               </div>
@@ -422,45 +469,85 @@ export default function LandingPage() {
           <div className="landing__container">
             <p className="landing__section-label">Para quién es</p>
             <h2 id="audience-heading" className="landing__headline-md">
-              Organizaciones con trabajo de campo y poco margen para burocracia
+              Visitas domiciliarias, datos sensibles, equipos de campo
             </h2>
 
             <div className="landing-audience" style={{ marginTop: "2rem" }}>
               <article className="landing-audience__item">
-                <h3 className="landing-audience__title">ONGs con promotores en territorio</h3>
+                <div className="landing-audience__icon" aria-hidden="true">
+                  <IconAudienceOrg />
+                </div>
+                <h3 className="landing-audience__title">Programas con promotores en hogares</h3>
                 <p className="landing-audience__text">
-                  Equipos que visitan beneficiarios en sus hogares y necesitan
-                  informes de seguimiento consistentes para coordinación interna
-                  y rendición de cuentas.
+                  Contención familiar, primera infancia, acompañamiento territorial —
+                  donde cada visita necesita quedar escrita para el equipo y para
+                  rendir cuentas ante financiadores.
                 </p>
               </article>
               <article className="landing-audience__item">
-                <h3 className="landing-audience__title">Operaciones con conectividad irregular</h3>
+                <div className="landing-audience__icon" aria-hidden="true">
+                  <IconAudienceSignal />
+                </div>
+                <h3 className="landing-audience__title">Territorio con señal irregular</h3>
                 <p className="landing-audience__text">
-                  Barrios periféricos, zonas rurales o edificios donde la señal
-                  falla. El registro ocurre en el momento de la visita aunque la
-                  subida espere.
+                  Barrios periféricos, zonas rurales, edificios donde la conexión
+                  falla. El registro ocurre al salir de la visita; la subida puede
+                  esperar.
                 </p>
               </article>
               <article className="landing-audience__item">
-                <h3 className="landing-audience__title">Equipos sin formación técnica</h3>
+                <div className="landing-audience__icon" aria-hidden="true">
+                  <IconAudiencePerson />
+                </div>
+                <h3 className="landing-audience__title">Promotores sin perfil técnico</h3>
                 <p className="landing-audience__text">
-                  Promotores que no son usuarios de software complejo. Grabar,
-                  esperar y descargar — tres pasos que cualquier persona con
-                  smartphone puede hacer.
+                  Si saben grabar un audio de WhatsApp, pueden usar EstoyAi. No hay
+                  formularios largos ni capacitación en software complejo.
                 </p>
               </article>
             </div>
+
+            <aside className="landing-not-for" aria-labelledby="not-for-heading">
+              <h3 id="not-for-heading" className="landing-not-for__title">
+                No es para
+              </h3>
+              <ul className="landing-not-for__list">
+                <li>
+                  Organizaciones que buscan un CRM o gestión integral de casos —
+                  EstoyAi documenta visitas, no reemplaza un sistema de seguimiento
+                  completo.
+                </li>
+                <li>
+                  Programas que no registran visitas domiciliarias por escrito.
+                </li>
+                <li>
+                  Equipos dispuestos a enviar datos de beneficiarios a la nube
+                  pública por conveniencia operativa.
+                </li>
+              </ul>
+            </aside>
           </div>
         </section>
       </main>
 
       <footer className="landing-footer">
         <div className="landing__container landing-footer__inner">
-          <p className="landing-footer__contact">
-            Consultas:{" "}
-            <a href="mailto:contacto@estoyai.com">contacto@estoyai.com</a>
-          </p>
+          <div>
+            <p className="landing-footer__contact">
+              Consultas:{" "}
+              <a href="mailto:contacto@estoyai.com">contacto@estoyai.com</a>
+            </p>
+            <p className="landing-footer__oss">
+              Código abierto (MIT) ·{" "}
+              <a
+                href="https://github.com/lautaro-temperini/EstoyAi"
+                rel="noopener noreferrer"
+                target="_blank"
+              >
+                github.com/lautaro-temperini/EstoyAi
+              </a>
+            </p>
+          </div>
           <p className="landing-footer__copy">© {year} EstoyAi</p>
         </div>
       </footer>
