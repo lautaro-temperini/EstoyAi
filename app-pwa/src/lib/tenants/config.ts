@@ -77,6 +77,16 @@ export function tenantForHost(host: string | null | undefined): Tenant {
   return BY_SLUG.get(sub) ?? DEFAULT_TENANT;
 }
 
+/**
+ * Host de landing pública: el apex (estoyai.com) y www. NO es una ONG —
+ * muestra la página institucional, sin login y sin acceso al pipeline.
+ * localhost/IP NO son landing: en desarrollo se ve la app directamente.
+ */
+export function isLandingHost(host: string | null | undefined): boolean {
+  const h = normalizeHost(host);
+  return h === ROOT_DOMAIN || h === "www." + ROOT_DOMAIN;
+}
+
 /** Resuelve el tenant por slug (p. ej. el header `x-tenant`). Cae a DEFAULT. */
 export function tenantBySlug(slug: string | null | undefined): Tenant {
   if (!slug) return DEFAULT_TENANT;

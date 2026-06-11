@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { tenantForHost, tenantPassword } from "@/lib/tenants/config";
+import { tenantForHost, tenantPassword, isLandingHost } from "@/lib/tenants/config";
 
 /**
  * HTTP Basic Auth multi-tenant.
@@ -18,7 +18,24 @@ import { tenantForHost, tenantPassword } from "@/lib/tenants/config";
  * - Assets estáticos (`_next`, íconos, sw.js, manifest) → sin gatear.
  */
 export function middleware(req: NextRequest) {
-  const tenant = tenantForHost(req.headers.get("host"));
+  const host = req.headers.get("host");
+
+  // ── Apex / www → landing pública ──────────────────────────────────────────
+  // Sin login y sin pipeline: solo la página institucional. Cualquier ruta de
+  // la app (grabar, registros, API de audio…) se redirige a la landing.
+  if (isLandingHost(host)) {
+    const { pathname } = req.nextUrl;
+    if (pathname === "/") {
+      return NextResponse.rewrite(new URL("/landing", req.url));
+    }
+    if (pathname === "/landing" || pathname.startsWith("/landing/")) {
+      return NextResponse.next();
+    }
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
+  // ── Subdominio de ONG → app con Basic Auth ────────────────────────────────
+  const tenant = tenantForHost(host);
   const password = tenantPassword(tenant);
 
   // Propaga el tenant a los handlers río abajo.
