@@ -73,15 +73,20 @@ export async function enqueueRegistro(input: EnqueueInput): Promise<string> {
 export async function requestFlush(): Promise<void> {
   const sw = typeof navigator !== "undefined" ? navigator.serviceWorker : undefined;
   if (sw?.controller) {
-    sw.controller.postMessage({ type: "flush" });
+    // Un solo mecanismo por vez: Background Sync ya sube inmediatamente si hay
+    // conexión (y reintenta solo si no). Sumarle el flush por postMessage hacía
+    // dos subidas en paralelo del mismo audio → ejecución duplicada en n8n.
     try {
       const reg = await sw.ready;
-      // Background Sync wakes the SW to upload even if the app is later closed.
-      await (reg as unknown as { sync?: { register(tag: string): Promise<void> } })
-        .sync?.register(SYNC_TAG);
+      const sync = (reg as unknown as { sync?: { register(tag: string): Promise<void> } }).sync;
+      if (sync) {
+        await sync.register(SYNC_TAG);
+        return;
+      }
     } catch {
-      /* Background Sync unsupported — the postMessage flush still covers us. */
+      /* Background Sync no soportado — cae al flush por mensaje. */
     }
+    sw.controller.postMessage({ type: "flush" });
     return;
   }
   await clientFlush();

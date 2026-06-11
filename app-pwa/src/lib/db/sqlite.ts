@@ -89,24 +89,24 @@ export function getInforme(id: string): InformeRow | null {
   return row ? rowToInforme(row) : null;
 }
 
+/**
+ * Inserta el informe en estado RECIBIDO. Idempotente por id: si la fila ya
+ * existe (el cliente puede subir el mismo audio dos veces — Background Sync +
+ * flush inmediato en paralelo), NO la pisa y devuelve created=false para que
+ * el caller no vuelva a disparar el webhook de n8n. La verificación es
+ * atómica: better-sqlite3 es síncrono y único escritor del proceso.
+ */
 export function insertInformeRecibido(input: {
   id: string;
   audioPath: string;
   metadata: ReportMetadata;
-}): InformeRow {
+}): { informe: InformeRow; created: boolean } {
   const now = Date.now();
-  getDb()
+  const result = getDb()
     .prepare(
       `INSERT INTO informes (id, estado, audio_path, metadata, campos, created_at, updated_at)
        VALUES (?, 'RECIBIDO', ?, ?, ?, ?, ?)
-       ON CONFLICT(id) DO UPDATE SET
-         estado = 'RECIBIDO',
-         audio_path = excluded.audio_path,
-         metadata = excluded.metadata,
-         informe_json = NULL,
-         campos = NULL,
-         error = NULL,
-         updated_at = excluded.updated_at`,
+       ON CONFLICT(id) DO NOTHING`,
     )
     .run(
       input.id,
@@ -116,7 +116,7 @@ export function insertInformeRecibido(input: {
       now,
       now,
     );
-  return getInforme(input.id)!;
+  return { informe: getInforme(input.id)!, created: result.changes > 0 };
 }
 
 export function upsertInformeExtraido(input: {

@@ -1,5 +1,5 @@
 @echo off
-title EstoyAi - Estado del sistema
+title EstoyAi - Diagnostico
 color 0F
 
 set "INSTALL_DIR=%~dp0"
@@ -16,7 +16,7 @@ set "OLLAMA_MODEL=gemma3:4b"
 if exist "%INSTALL_DIR%.env" for /f "tokens=2 delims==" %%a in ('findstr /b /c:"OLLAMA_MODEL=" "%INSTALL_DIR%.env"') do set "OLLAMA_MODEL=%%a"
 
 echo  =====================================================
-echo    ESTOY AI - Estado del sistema       (build 1.4)
+echo    ESTOY AI - Diagnostico              (build 1.5)
 echo  =====================================================
 echo.
 
@@ -49,15 +49,23 @@ echo.
 echo    (200 = funcionando correctamente)
 echo.
 
-:: -- Modelo de IA --
-echo  MODELO DE IA:
+:: -- Modelos de IA (leidos de los contenedores: lo que REALMENTE se usa) --
+echo  MODELOS DE IA:
 echo  -----------------------------------------------------
-docker compose exec -T ollama ollama list 2>nul | find "%OLLAMA_MODEL%" >nul
+set "LLM_ACTUAL="
+for /f %%a in ('docker compose exec -T n8n printenv OLLAMA_MODEL 2^>nul') do set "LLM_ACTUAL=%%a"
+if not defined LLM_ACTUAL set "LLM_ACTUAL=%OLLAMA_MODEL%"
+set "WHISPER_ACTUAL="
+for /f %%a in ('docker compose exec -T whisper printenv WHISPER_MODEL 2^>nul') do set "WHISPER_ACTUAL=%%a"
+if not defined WHISPER_ACTUAL set "WHISPER_ACTUAL=?"
+echo  Extraccion (LLM):        %LLM_ACTUAL%
+echo  Transcripcion (whisper): %WHISPER_ACTUAL%
+docker compose exec -T ollama ollama list 2>nul | find "%LLM_ACTUAL%" >nul
 if errorlevel 1 (
-    echo  [X] Modelo %OLLAMA_MODEL% NO instalado.
+    echo  [X] Modelo %LLM_ACTUAL% NO descargado.
     echo      Ejecuta "EstoyAi" para descargarlo.
 ) else (
-    echo  [OK] Modelo %OLLAMA_MODEL% instalado
+    echo  [OK] Modelo %LLM_ACTUAL% descargado
 )
 echo.
 

@@ -64,15 +64,22 @@ export async function POST(request: Request) {
     }
 
     const metadata = toReportMetadata(meta);
+    let created: boolean;
     try {
-      insertInformeRecibido({ id: meta.id, audioPath, metadata });
+      ({ created } = insertInformeRecibido({ id: meta.id, audioPath, metadata }));
     } catch {
       await fs.unlink(audioPath).catch(() => {});
       return NextResponse.json({ error: "no se pudo registrar el informe" }, { status: 500 });
     }
 
     // Fire-and-forget — the promoter gets 202 immediately.
-    void triggerN8n({ id: meta.id, audioPath, metadata });
+    // Solo en el primer POST de este id: los reintentos del cliente (Background
+    // Sync, doble flush) no deben duplicar la ejecución en n8n.
+    if (created) {
+      void triggerN8n({ id: meta.id, audioPath, metadata });
+    } else {
+      console.warn(`[api/audio] subida duplicada de ${meta.id} — webhook ya disparado, se ignora`);
+    }
 
     return NextResponse.json({ id: meta.id }, { status: 202 });
   } catch {

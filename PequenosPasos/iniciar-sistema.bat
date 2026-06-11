@@ -79,8 +79,8 @@ if errorlevel 1 (
 )
 
 timeout /t 15 /nobreak > nul
-if exist "%INSTALL_DIR%update-workflow.bat" (
-    call "%INSTALL_DIR%update-workflow.bat" > nul 2>&1
+if exist "%INSTALL_DIR%sistema\update-workflow.bat" (
+    call "%INSTALL_DIR%sistema\update-workflow.bat" > nul 2>&1
 )
 
 timeout /t 8 /nobreak > nul

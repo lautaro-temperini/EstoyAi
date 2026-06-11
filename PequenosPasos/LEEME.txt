@@ -1,6 +1,6 @@
 ========================================
    EstoyAi — Sistema de registro
-   Versión 1.4
+   Versión 1.5
 ========================================
 
 QUÉ ES
@@ -23,12 +23,12 @@ PASO PREVIO — Advertencia de Windows
 
   Si no aparece, continuá normalmente.
 
-1. Hacé doble clic en "EstoyAi-Installer-1.4.exe"
+1. Hacé doble clic en "EstoyAi-Installer-1.5.exe"
 2. Aceptá los permisos de administrador que pida Windows
 3. Esperá a que termine (instala todo automáticamente)
 4. La PC se va a REINICIAR sola
 5. Al volver a encender, NO toques nada:
-   - Se abre sola una ventana negra que dice "build 1.4"
+   - Se abre sola una ventana negra que dice "build 1.5"
    - El sistema se termina de configurar solo (15-20 min,
      descarga ~7 GB la primera vez)
    - Se abre solo en el navegador cuando está listo

@@ -2,8 +2,9 @@
 :: Importa y activa el workflow de n8n usando el CLI del contenedor.
 :: No requiere Node en la PC: todo corre dentro del contenedor n8n.
 :: El registro.json esta montado en /home/node/workflows (ver docker-compose.yml).
+:: Vive en sistema\ - el docker-compose.yml esta un nivel arriba.
 
-set "INSTALL_DIR=%~dp0"
+set "INSTALL_DIR=%~dp0.."
 cd /d "%INSTALL_DIR%"
 
 :: -- Rancher NO agrega docker al PATH del sistema: hay que apuntar a sus carpetas.

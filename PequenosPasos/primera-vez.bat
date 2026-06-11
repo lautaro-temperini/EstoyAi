@@ -24,7 +24,7 @@ if exist "%ProgramFiles%\Rancher Desktop\resources\resources\win32\bin" set "PAT
 
 cls
 echo ================================================
-echo    EstoyAi - Configuracion inicial  (build 1.4)
+echo    EstoyAi - Configuracion inicial  (build 1.5)
 echo ================================================
 echo.
 echo  Este proceso es automatico y tarda 15-20 min.
@@ -96,7 +96,7 @@ if defined RANCHER goto rancher_ok
 
 echo [3/6] Instalando motor de contenedores ^(3-5 min^)...
 echo [%date% %time%] instalando MSI >> "%LOG%"
-start /wait msiexec.exe /i "%INSTALL_DIR%1-instalar-rancher.msi" /quiet /norestart /l*v "%INSTALL_DIR%msi-install.log"
+start /wait msiexec.exe /i "%INSTALL_DIR%sistema\instalador-rancher.msi" /quiet /norestart /l*v "%INSTALL_DIR%msi-install.log"
 echo [%date% %time%] msiexec exit=%errorlevel% >> "%LOG%"
 call :find_rancher
 if defined RANCHER goto rancher_ok
@@ -158,15 +158,15 @@ echo.
 
 echo [6/6] Configurando flujo de trabajo...
 timeout /t 20 /nobreak > nul
-if exist "%INSTALL_DIR%update-workflow.bat" (
-    call "%INSTALL_DIR%update-workflow.bat" >> "%LOG%" 2>&1
+if exist "%INSTALL_DIR%sistema\update-workflow.bat" (
+    call "%INSTALL_DIR%sistema\update-workflow.bat" >> "%LOG%" 2>&1
 )
 echo [%date% %time%] workflow importado >> "%LOG%"
 echo.
 
 :: -- Exito: borrar la tarea programada de primer arranque y el MSI --
 schtasks /delete /tn EstoyAiPrimeraVez /f >nul 2>&1
-if exist "%INSTALL_DIR%1-instalar-rancher.msi" del "%INSTALL_DIR%1-instalar-rancher.msi" >nul 2>&1
+if exist "%INSTALL_DIR%sistema\instalador-rancher.msi" del "%INSTALL_DIR%sistema\instalador-rancher.msi" >nul 2>&1
 echo [%date% %time%] ===== primera-vez: completado OK ===== >> "%LOG%"
 
 echo Esperando que el sistema levante...
