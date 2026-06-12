@@ -1,297 +1,285 @@
-# DESIGN.md — EstoyAi / Pequeños Pasos
+# Design System — EstoyAi / Pequeños Pasos
 
-Documento de diseño del sistema. Describe decisiones de arquitectura, flujo de datos y modelo de dominio. Para comandos de operación ver [CLAUDE.md](CLAUDE.md).
+Sistema **Supportive Insight**: PWA de campo legible, calmada y táctil. Fuente de verdad en código: `app-pwa/src/app/globals.css` (Tailwind v4 `@theme`).
 
----
-
-## Propósito del sistema
-
-Herramienta de campo para promotores de una ONG. El promotor llena nombre/apellido/DNI de un beneficiario, graba un mensaje de voz dictando lo que observó en la intervención, y recibe un `.docx` listo para archivar. Todo funciona sin conexión; la sincronización ocurre en segundo plano cuando hay red.
+La landing pública (`app-pwa/src/app/landing/`) tiene **design system propio** documentado en [Landing pública](#landing-pública). Comparte paleta con la PWA pero implementación aislada en `landing.css`.
 
 ---
 
-## Componentes y responsabilidades
+## Filosofía visual
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Dispositivo del promotor                                   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │  PWA (Next.js 15)   :3000                           │   │
-│  │  ├─ /registro       captura nombre/apellido/dni     │   │
-│  │  ├─ /grabar         graba WAV (WebAudio, 16 kHz)    │   │
-│  │  ├─ /estado/[id]    polling del progreso            │   │
-│  │  └─ /informe/[id]   descarga .docx / toggle campos  │   │
-│  │                                                     │   │
-│  │  Service Worker (sw.js)                             │   │
-│  │  ├─ Background Sync → POST /api/audio               │   │
-│  │  └─ postMessage → actualiza estado cliente          │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────┬───────────────────────────────────┘
-                          │ POST /api/audio (multipart)
-                          ▼
-┌─────────────────────────────────────────────────────────────┐
-│  Docker stack  (red interna: sede-net)                      │
-│                                                             │
-│  app-pwa :3000  ──webhook──▶  n8n :5678                    │
-│     │                           │                           │
-│     │ SQLite (data/sqlite/)      ├──▶ whisper :8000         │
-│     │ audio  (data/audio/)       │    faster-whisper medium │
-│     │ docx   (data/docx/)        │                          │
-│     │                           ├──▶ ollama :11434          │
-│     │◀── POST /extraccion        │    gemma3:4b              │
-│     │◀── POST /generar-docx      │                          │
-│     │◀── POST /error             └──▶ POST /api/informe/…   │
-│                                                             │
-│  Volúmenes compartidos: data (app-pwa + whisper)           │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Servicios
-
-| Servicio | Imagen / Framework | Rol |
-|---|---|---|
-| `app-pwa` | Next.js 15, `output: standalone` | PWA + API REST + SQLite |
-| `n8n` | n8nio/n8n 2.8.4 | Orquestador del pipeline (no escribe SQLite) |
-| `whisper` | faster-whisper `medium` | Transcripción ASR, POST /transcribe |
-| `ollama` | ollama 0.30.5, `gemma3:4b` | LLM local, extracción estructurada |
+Herramienta de trabajo en campo, no app de consumo: contraste alto, targets táctiles generosos, jerarquía clara para promotores bajo presión. Paleta azul institucional + verde de progreso; motion sutil y respetuosa de `prefers-reduced-motion`.
 
 ---
 
-## Flujo de datos end-to-end
+## Tokens de color
 
-```
-[Promotor]
-  1. /registro  → ingresa nombre/apellido/DNI (sessionStorage)
-  2. /grabar    → graba WAV (WebAudio ScriptProcessorNode, 16 kHz mono PCM)
-                → enqueueRegistro(): UUID generado en dispositivo
-                  WAV + meta guardados en IndexedDB (pending store)
-                → navega a /estado/<id>
+Definidos en `globals.css` como `--color-*` → utilidades Tailwind `bg-*`, `text-*`, `border-*`.
 
-[Service Worker]
-  3. Background Sync → POST /api/audio (multipart)
-     - campo: audio = WAV blob
-     - campo: meta  = JSON {id, tipo, beneficiario, capturedAt, …}
-     - postMessage al cliente: encolado → subiendo
+| Rol                        | Token                                   | Hex       |
+| -------------------------- | --------------------------------------- | --------- |
+| Primary                    | `--color-primary`                       | `#0040a1` |
+| On primary                 | `--color-on-primary`                    | `#ffffff` |
+| Primary container          | `--color-primary-container`             | `#0056d2` |
+| Secondary (éxito/progreso) | `--color-secondary`                     | `#006c49` |
+| Tertiary (acento cálido)   | `--color-tertiary`                      | `#663f00` |
+| Error                      | `--color-error`                         | `#ba1a1a` |
+| Background / surface       | `--color-background`, `--color-surface` | `#f8f9ff` |
+| On surface                 | `--color-on-surface`                    | `#0d1c2e` |
+| Outline                    | `--color-outline`                       | `#737785` |
 
-[POST /api/audio]
-  4. Guarda WAV en data/audio/<id>.wav
-     Escribe SQLite: RECIBIDO
-     Fire-and-forget → n8n webhook
-
-[n8n — registro.json]
-  5a. POST /transcribe → faster-whisper → transcripcion: string
-  5b. Ollama gemma3:4b con SYSTEM_PROMPT + EXTRACTION_JSON_SCHEMA (grammar)
-      → ReportExtraction (JSON constrained)
-  5c. POST /api/informe/<id>/extraccion  → SQLite: EXTRAIDO
-  5d. POST /api/informe/<id>/generar-docx → renderiza .docx → SQLite: LISTO
-  5e. (rama error) POST /api/informe/<id>/error → SQLite: ERROR
-
-[/estado/<id>]
-  6. Polling GET /api/informe/<id> cada 4 s
-     SW postMessage: subiendo → procesando
-     polling: procesando → listo / error
-
-[Promotor]
-  7. Descarga GET /api/informe/<id>/docx
-     Nombre del archivo: Apellido_Nombre_DNI_YYYY-MM-DD.docx
-```
+Contenedores de surface (`surface-container-*`, `surface-variant`) dan profundidad en cards y paneles sin sombras pesadas.
 
 ---
 
-## Máquinas de estado
+## Tipografía
 
-### Cliente (IndexedDB `registros`, `RegistroEstado`)
+- **Display / Headlines:** Atkinson Hyperlegible Next — legibilidad en móvil, pesos 600–700.
+- **Body / Label / Caption:** Inter — cuerpo 16px base, labels 14px semibold.
+- **Iconos:** Material Symbols Outlined (`.material-symbols-outlined`, variante `.fill`).
 
-```
-encolado
-  │  (SW detecta red o SW inicia Background Sync)
-  ▼
-subiendo
-  │  (SW confirma upload completo)
-  ▼
-procesando   ◀── polling GET /api/informe
-  │
-  ├──▶ listo
-  └──▶ error  (retry → reset a encolado)
-```
-
-### Servidor (SQLite `informes`, `InformeEstado`)
-
-```
-RECIBIDO  (POST /api/audio)
-  │
-  ├──▶ EXTRAIDO  (POST /extraccion — n8n tras Ollama)
-  │       │
-  │       └──▶ LISTO   (POST /generar-docx — n8n tras render)
-  │
-  └──▶ ERROR    (POST /error — rama de error n8n)
-```
-
-`/estado/[id]` fusiona ambas: SW postMessage conduce `encolado→subiendo`, el polling del servidor conduce `procesando→listo/error`.
+| Token         | Tamaño / line-height | Uso                 |
+| ------------- | -------------------- | ------------------- |
+| `display-lg`  | 32px / 40px, 700     | Títulos de pantalla |
+| `headline-md` | 24px / 32px, 600     | Secciones           |
+| `headline-sm` | 20px / 28px, 600     | Subtítulos          |
+| `body-lg`     | 18px / 28px          | Texto destacado     |
+| `body-md`     | 16px / 24px          | Cuerpo default      |
+| `label-md`    | 14px / 20px, 600     | Botones, labels     |
+| `caption`     | 12px / 16px, 500     | Metadatos, hints    |
 
 ---
 
-## Modelo de dominio
+## Espaciado
 
-### Tipos principales (`lib/reports/schema.ts`)
+- **Base:** 8px (`--spacing-unit`)
+- **Stack:** sm 8px · md 16px · lg 24px
+- **Gutter / container margin:** 16px / 20px
+- **Touch target mínimo:** 48px (`--spacing-touch-target-min`)
+- **Radius:** lg 0.5rem · xl 0.75rem
 
-```
-FieldReport
-  ├─ id: string (UUID — generado en dispositivo, viaja a través de todo el pipeline)
-  ├─ transcripcion: string (verbatim — fuente de verdad, no se modifica)
-  ├─ metadatos: ReportMetadata
-  │    ├─ tipo: "individual" | "grupal"
-  │    ├─ beneficiario: { nombre, apellido, dni } | null
-  │    ├─ sector, unidad: string | null
-  │    └─ capturedAt, durationMs
-  ├─ estado: "PENDIENTE" | "CONFIRMADO"
-  ├─ createdAt: number (epoch ms, servidor)
-  └─ [ReportExtraction]
-       ├─ resumen: string (1-2 frases ejecutivas)
-       ├─ prioridad: "ALTA" | "MEDIA" | "BAJA"
-       ├─ entidades: { nombres[], fechas[] }
-       ├─ accionesPendientes: string[]
-       └─ datos: DatosInforme
-            ├─ demografia  (nombre, edad, fechaNacimiento, esMenor)
-            ├─ metricas    (peso, talla, diagnosticos[], avanceObra)
-            ├─ socioeconomico (familia, ingresos, vivienda, vulnerabilidades[])
-            ├─ intervencion  (fecha, lugar, tipoActividad, profesionales[])
-            ├─ seguimiento   (compromisos[], situacionLaboral, desempenoAcademico)
-            └─ narrativa: string
-```
-
-### Invariantes críticos
-
-- **El LLM nunca inventa datos.** Todo campo vacío → `""` o `[]`. El `SYSTEM_PROMPT` lo explicita y el JSON Schema grammar lo fuerza.
-- **`transcripcion` es inmutable.** El LLM solo organiza; la transcripción original siempre está disponible para verificación.
-- **El UUID nace en el dispositivo.** Se genera en `enqueueRegistro()` y es la clave primaria en IndexedDB, SQLite y el sistema de archivos (`data/audio/<id>.wav`, `data/docx/<id>.docx`).
-- **n8n nunca escribe SQLite.** Solo llama endpoints HTTP de Next.js, que son el único escritor.
+Escala práctica en layouts: 4 / 8 / 12 / 16 / 24 / 32 / 48 px (vía Tailwind + tokens custom).
 
 ---
 
-## Pipeline de LLM
+## Motion
 
-### Prompt del sistema (`assemble.ts → SYSTEM_PROMPT`)
+Curvas: `--ease-out`, `--ease-in-out`. Entradas ≤ 300ms; solo `transform`/`opacity`.
 
-Instrucciones en español para el modelo:
-1. Extraer exclusivamente lo que dice la transcripción.
-2. Si es mensaje de prueba o sin información real → decirlo en el resumen y dejar todo vacío.
-3. Reglas campo por campo con definiciones precisas.
-4. Regla crítica para arrays: si no se menciona explícitamente → `[]`.
-5. `/no_think` al final para suprimir razonamiento interno (Qwen/Gemma compatible).
+| Clase                            | Efecto                       |
+| -------------------------------- | ---------------------------- |
+| `.anim-enter`                    | slide-up + fade              |
+| `.anim-fade`                     | fade (safe en headers fixed) |
+| `.anim-pop`                      | scale 0.96 → 1               |
+| `.stagger`                       | hijos con delay 40–290ms     |
+| `.active-tap`                    | feedback táctil scale(0.98)  |
+| `.recording-pulse` / `.wave-bar` | grabación activa             |
 
-### Prompt de usuario (`buildUserMessage`)
-
-```
-Fecha del registro: <día largo en español, ej. "martes, 6 de junio de 2026">.
-
-Transcripción:
-<texto verbatim de faster-whisper>
-```
-
-La fecha se ancla en español para que el modelo resuelva referencias relativas ("hoy", "el martes") a fechas absolutas.
-
-### JSON Schema (`EXTRACTION_JSON_SCHEMA`)
-
-Pasado como `format` a Ollama (grammar-constrained). Fuerza:
-- `prioridad` a enum `["ALTA","MEDIA","BAJA"]`
-- Todos los campos requeridos presentes
-- `additionalProperties: false` en cada objeto
-
-El modelo no puede emitir JSON malformado ni agregar campos no definidos.
+Con `prefers-reduced-motion: reduce` → solo fades; sin pulse/wave.
 
 ---
 
-## Generación del informe `.docx`
+## Componentes definidos
 
-### Pipeline de render
-
-```
-FieldReport
-  │
-  ▼ buildReportContent()   [content.ts]
-ReportContent
-  ├─ disclaimer
-  ├─ titular (Apellido Nombre, o fallback a LLM → "Actividad Grupal")
-  ├─ prioridad
-  ├─ fecha, lugar
-  ├─ resumenEjecutivo
-  └─ sections: Section[]
-       ├─ { kind: "fields", title, fields: [{label, value}] }
-       ├─ { kind: "bullets", title, items: string[] }
-       └─ { kind: "text", title, body }
-  │
-  ▼ filterReportContent()  [campos.ts]  ← opcional, si el promotor oculta secciones
-  │
-  ▼ renderReportDocxBufferFromContent()  [report-docx.ts]
-Buffer (.docx)
-```
-
-### Invariante de secciones
-
-`buildReportContent()` **siempre** emite las 11 secciones. Ningún campo queda en blanco: si el valor es vacío → `"—"`, si el array es vacío → `["—"]`. Esto garantiza que el `.docx` tenga estructura consistente independientemente de qué mencionó el promotor.
-
-### Nombre del archivo
-
-```
-Apellido_Nombre_DNI_YYYY-MM-DD.docx
-```
-Normalizado: sin acentos, espacios → `_`. Si falta algún dato → `informe-<uuid>.docx`.
+| Componente           | Estado | Notas                                                                    |
+| -------------------- | ------ | ------------------------------------------------------------------------ |
+| Stepper              | ✅      | `components/stepper.tsx` — progreso del flujo registro → grabar → estado |
+| Brand icons          | ✅      | `components/brand-icons.tsx` — SVG tenant                                |
+| Botones / inputs     | ✅      | Tailwind + tokens; clases en páginas del flujo                           |
+| Card / surface       | ✅      | `bg-surface-container-*`, bordes `outline-variant`                       |
+| Grabación (waveform) | ✅      | `.wave-bar`, `.recording-pulse` en `/grabar`                             |
+| Landing pública      | ✅      | `app-pwa/src/app/landing/` — ver [Landing pública](#landing-pública)     |
 
 ---
 
-## Offline / PWA
+## Decisiones documentadas
 
-- **IndexedDB `pending` store**: cola de uploads. Cada entrada tiene WAV + meta + estado.
-- **IndexedDB `registros` store**: lista persistente visible en la app (historial del dispositivo).
-- **Service Worker (`public/sw.js`)**: intercepta `POST /api/audio` mientras hay red. Si la app está cerrada, Background Sync reintenta al reconectar.
-- **WAV, no WebM**: `use-recorder.ts` usa `WebAudio ScriptProcessorNode` para codificar PCM WAV 16 kHz mono. MediaRecorder produce WebM que genera transcripciones defectuosas en faster-whisper.
-
----
-
-## n8n workflow
-
-`n8n/workflows/registro.json` es **generado**. No editar a mano. La fuente es `scripts/gen-n8n-workflow.mjs`, que embebe copias literales de `SYSTEM_PROMPT` y `EXTRACTION_JSON_SCHEMA`.
-
-Al cambiar el prompt o el schema:
-1. Editar `lib/reports/assemble.ts` y/o `lib/reports/schema.ts`.
-2. Actualizar las copias en `scripts/gen-n8n-workflow.mjs`.
-3. `node scripts/gen-n8n-workflow.mjs`
-4. Reimportar en el editor n8n y reactivar el workflow.
+- **Atkinson + Inter:** legibilidad en exterior y para usuarios no técnicos; Atkinson en titulares evita confusión O/0.
+- **Material Symbols:** set consistente sin bundle de iconos custom; fill para estados activos.
+- **Tailwind v4 `@theme`:** un solo archivo de tokens; utilidades generadas automáticamente.
+- **Landing desacoplada:** marketing en `landing.css`; misma paleta, sin Tailwind ni `globals.css`, para no acoplar la PWA operativa.
+- **Motion Emil Kowalski:** entradas cortas, GPU-only; stagger decorativo, no bloqueante.
 
 ---
 
-## Documentación adicional
+## Anti-patterns de este sistema
 
-| Archivo | Contenido |
-|---|---|
-| `ARCHITECTURE.md` | Topología, modos de ejecución, estructura del repo |
-| `README-SEDE.md` | Manual operativo para la sede |
-| `MULTITENANT.md` | Subdominios, tunnel Cloudflare, R2 |
-| `docs/` (local) | brief, prd, trd — requisitos de producto |
-| `skills/` (local) | Agent skills para landing/UI (ver `skills/README.md`) |
-
-## Variables de entorno clave
-
-| Variable | Dónde se usa | Default |
-|---|---|---|
-| `DATA_DIR` | app-pwa, whisper | `../data` (relativo a `app-pwa/`) |
-| `N8N_WEBHOOK_URL` | `POST /api/audio` | `http://n8n:5678/webhook/registro` |
-| `OLLAMA_MODEL` | n8n Code node (`$env.OLLAMA_MODEL`) | `gemma3:4b` |
-| `NEXT_PUBLIC_ASR_LANG` | assemble.ts `ASR_LANGUAGE` | `es` |
-| `N8N_BLOCK_ENV_ACCESS_IN_NODE` | n8n | debe ser `false` |
-| `WHISPER_MODEL` | whisper Dockerfile build arg | `base` (runtime: `medium`) |
+- No usar **MediaRecorder/WebM** en UI de grabación (degrada pipeline ASR — ver [ARCHITECTURE.md](ARCHITECTURE.md)).
+- No **scale(0)** en animaciones de layout (rompe percepción de solidez).
+- No mezclar **`landing.css`** en flujo operativo (`/registro`, `/grabar`, …) ni importar tokens de `globals.css` en la landing sin actualizar ambas secciones de este doc.
+- No targets táctiles **< 48px** en acciones primarias.
+- No ignorar **`prefers-reduced-motion`** al agregar animaciones nuevas.
+- No introducir fuentes o colores **fuera de `globals.css`** sin actualizar este documento.
 
 ---
 
-## Decisiones de diseño
+## Landing pública
 
-| Decisión | Alternativa descartada | Razón |
-|---|---|---|
-| UUID generado en dispositivo | UUID en servidor | El id debe viajar con el WAV offline; no se puede esperar al servidor |
-| better-sqlite3 síncrono | Postgres, SQLite async | Stack de un promotor en sede; un solo escritor; zero-config |
-| WAV 16 kHz via WebAudio | MediaRecorder WebM | WebM produce artefactos que degrada dramáticamente la transcripción |
-| n8n como orquestador | Cola interna en Next.js | Visualización de ejecuciones, reintentos, branching sin código custom |
-| JSON Schema grammar (Ollama `format`) | Post-processing del output | Modelo pequeño (4b) no garantiza JSON válido sin grammar |
-| Next.js como único escritor SQLite | n8n escribe directo | Única fuente de verdad; evita race conditions entre procesos |
-| `output: standalone` | Export estático | Necesita API routes (SQLite, archivos) |
+Ruta: `/landing` (apex `estoyai.com`). Objetivo: **adopción** — que otras ONGs contacten para usar EstoyAi (gratis, open source). CTA principal = `mailto` de contacto; secundario = GitHub. Copy desde `docs/brief.md`.
+
+### Archivos
+
+| Archivo                               | Rol                                                   |
+| ------------------------------------- | ----------------------------------------------------- |
+| `app-pwa/src/app/landing/page.tsx`    | Contenido, SVG inline (logo, diagrama, iconos)        |
+| `app-pwa/src/app/landing/layout.tsx`  | Metadata SEO/OG, fuente Inter (`--font-landing-body`) |
+| `app-pwa/src/app/landing/landing.css` | Tokens y componentes bajo scope `.landing`            |
+
+No usa Tailwind ni `globals.css`. Todos los estilos viven en `landing.css` con prefijo de clase `landing-*`.
+
+### Dirección visual
+
+**Civic utilitario** (estilo «Accessible & Ethical») **sobre los tokens de «Supportive Insight»**: la PWA y la landing comparten radios, bordes suaves, curva de motion y microinteracciones. Servicio público hecho impecable: confianza por **claridad**, no por decoración. Grilla suiza, **alto contraste** (AAA), tipografía masiva, estructura por **reglas hairline** (`outline-variant`, no negras). Fondo papel (`#f8f9ff`), azul institucional dominante, verde como **único acento** (señal «se queda en la sede»).
+
+Casing: **igual que la webapp** — los labels NO usan `text-transform: uppercase`; la jerarquía va por peso (600) y color (`muted`/`ink`). Reservado mayúsculas: ninguna palabra en caja alta completa.
+
+Evitar explícitamente:
+
+- Decoración / adorno (gradientes, sombras blandas, grano, grilla de fondo)
+- **Mayúsculas totales** en labels (rompe coherencia con la PWA)
+- Bajo contraste y tipografía tímida
+- Dark + verde ácido (startup) · cream + serif (ONG genérica)
+
+**Elemento firma:** índice numerado `01 / 02 / 03` a ancho completo, numerales Atkinson gigantes, filas separadas por hairlines (`.landing-index`). **Firma secundaria:** schematic horizontal Campo → Sede → .docx con pulso en el path (`FlowSchematic`, nodos rectangulares).
+
+**Narrativa de secciones** (11 elementos del framework de landing, adaptados a adopción de ONG — no venta SaaS): header (logo + nav + CTA) → hero (título masivo + CTA primario/ghost + social proof: 13 ONGs / 90% / en producción) → **01** problema (3 dolores) → **02** cómo funciona (índice 3 pasos + schematic) → **03** por qué es diferente (7 diferenciales del brief) → soberanía (spotlight oscuro) → **04** caso Pequeños Pasos (social proof real) → **05** para quién + exclusiones → **06** FAQ (accordion `<details>`) → CTA final (bloque ink full-bleed) → footer (contacto, OSS, origen Halketon).
+
+Testimonios (elemento 8 del framework): **no se inventan citas**; el caso real Pequeños Pasos cumple esa función. Si hay una cita verificada de la organización, va en ese bloque.
+
+### Tokens (scope `.landing`)
+
+Definidos al inicio de `landing.css`. Hex de marca compartidos con la PWA, **reasignados a roles civic** (nombres semánticos por función, no por escala Material).
+
+| Rol                          | Variable        | Valor / notas                                  |
+| ---------------------------- | --------------- | ---------------------------------------------- |
+| Azul institucional (bloques) | `--ink`         | `#0040a1`                                       |
+| Azul links / markers / hover | `--ink-bright`  | `#0056d2`                                       |
+| Tinta (texto + bloque osc.)  | `--ink-deep`    | `#0d1c2e`                                       |
+| Verde — único acento         | `--green`       | `#006c49` (señal «se queda en la sede»)         |
+| Fondo papel                  | `--paper`       | `#f8f9ff`                                       |
+| Banda alterna                | `--paper-2`     | `#eef1fb` (footer)                              |
+| Texto secundario             | `--muted`           | `#424654` (= on-surface-variant de la PWA)  |
+| Reglas / bordes suaves       | `--outline-variant` | `#c3c6d6`                                    |
+| Borde acento                 | `--outline`         | `#737785`                                    |
+| Surface (paneles)            | `--surface`         | `#ffffff` (surface-container-lowest)         |
+| Fill suave / hover           | `--surface-low`     | `#eff4ff` (surface-container-low)            |
+| Banda footer                 | `--surface-band`    | `#e6eeff` (surface-container)                |
+| Sobre tinta                  | `--on-ink`          | `#ffffff`                                    |
+
+Radios `--radius-lg 0.5rem` / `--radius-xl 0.75rem` (idénticos a `globals.css`). **Sin sombras**: la jerarquía es estructural (reglas suaves + radios + tipo), no por elevación.
+
+### Tipografía
+
+| Uso             | Fuente                             | Carga                                               |
+| --------------- | ---------------------------------- | --------------------------------------------------- |
+| Display / h1–h3 | Atkinson Hyperlegible Next 600–700 | Google Fonts en `landing.css`                       |
+| Body            | Inter 400–500–600                  | `next/font` en `layout.tsx` → `--font-landing-body` |
+
+| Clase / elemento        | Tamaño                                  | Uso                              |
+| ----------------------- | --------------------------------------- | -------------------------------- |
+| `.landing-hero__title`  | `clamp(2.75rem, 8.5vw, 5.5rem)`, ls −0.045em | H1 masivo, 2–3 palabras por línea |
+| `.landing-index__num`   | `clamp(2.5rem, 7vw, 4.5rem)`, tabular   | Numerales índice 01/02/03 (firma) |
+| `.landing__h2`          | `clamp(1.875rem, 4.5vw, 3rem)`          | H2 de sección                    |
+| `.landing-stat__value`  | `clamp(1.75rem, 4vw, 2.5rem)`, tabular  | Métricas del panel hero          |
+| `.landing__lead`        | `clamp(1.0625rem, 1.6vw, 1.1875rem)`    | Lead / párrafo destacado         |
+| `.landing__eyebrow`     | `0.875rem`, caja normal, peso 600       | Eyebrow + número de sección      |
+| Cuerpo base             | `1.0625rem` / 1.6                       | Default bajo `.landing`          |
+
+Titulares: `letter-spacing: -0.025em` a `-0.04em`, peso 700, line-height 0.98–1.08. Números siempre `font-variant-numeric: tabular-nums`. **Labels en caja normal** (peso + color), nunca uppercase.
+
+### Espaciado y layout
+
+| Token                     | Valor                            |
+| ------------------------- | -------------------------------- |
+| `--space-1` … `--space-7` | 0.5rem → 6rem (escala 8px-base)  |
+| `--max-width`             | `76rem`                          |
+| `--gutter`                | `clamp(1.25rem, 4vw, 1.75rem)`   |
+| `--touch-min`             | `48px` (links / targets)         |
+
+**Radios** `--radius-lg 0.5rem` / `--radius-xl 0.75rem` (= PWA) en paneles, celdas, chips, cajas de icono.
+
+**Contenedor:** `.landing__container` — centrado, max-width, gutter.
+
+**Ritmo vertical de secciones** (`main > section`):
+
+- Cada `.landing__section` separada por `border-top: 1px solid var(--outline-variant)` — la **regla suave** marca el corte, no el color de fondo.
+- `.landing-sov`: bloque oscuro full-bleed (`--ink-deep`), texto blanco.
+- Footer: banda `--surface-band`.
+
+**Breakpoints habituales:** 40rem (header meta, footer row), 44rem (compare 2 col), 52rem (audiencia 3 col), 56rem (soberanía 2 col), 60rem (hero 2 col).
+
+### Elevación y superficies
+
+**Sin sombras** — jerarquía estructural con bordes suaves y radios (igual estrategia que los paneles planos de la PWA):
+
+- **Reglas** — `1px solid var(--outline-variant)` entre secciones y filas (índice, audiencia, compare, stats).
+- **Bloques** — paneles `border: 1px solid var(--outline-variant)` + `border-radius` + fondo `--surface` (claro) o `--ink-deep` (oscuro). Cero `box-shadow`.
+- **Microinteracciones** (alineadas a `globals.css`): `.active-tap` `scale(0.98)` en links/logo; hover en `.landing-aud__cell` → `border-color` + `background` (transición 280ms, sin transform); focus rings 2px.
+
+### Motion
+
+| Elemento              | Comportamiento                                               |
+| --------------------- | ------------------------------------------------------------ |
+| `.landing-anim --1/4` | Entrada `enter-up` + `translateY(10px)`, delays 60–270ms     |
+| `.landing-rule`       | `landing-draw` 600ms — la regla se dibuja 0 → 100% (scaleX)  |
+| `.landing-flow__pulse`| `landing-travel` 3.6s — dash viaja Campo → Sede → .docx      |
+
+Curva: `cubic-bezier(0.23, 1, 0.32, 1)` y duración `280ms` — **las mismas de `globals.css`** (Emil Kowalski). Con `prefers-reduced-motion: reduce`: sin entradas, reglas ya dibujadas (`scaleX(1)`), pulse estático, hover sin transición.
+
+Sin gradientes, grano ni grilla de fondo — el civic no decora el fondo.
+
+### Secciones y componentes
+
+| Bloque         | Clases principales                       | Notas                                                       |
+| -------------- | ---------------------------------------- | ----------------------------------------------------------- |
+| Header         | `.landing-header`, `.landing-header__nav` | Blur 12px, rule-bottom; nav + CTA `Adoptalo` ≥52rem; logo `.active-tap` |
+| Botones / CTA  | `.landing-btn` + `--primary`/`--ghost`/`--on-dark`/`--ghost-on-dark` | Radius-lg, target 48px, `.active-tap`; variantes invertidas para bloques oscuros |
+| Hero           | `.landing-hero`, `.landing-hero__panel`, `.landing-hero__proof` | Título masivo + CTAs + social proof (stats Atkinson) + panel + schematic |
+| Schematic firma| `.landing-flow`, `.landing-flow__*`      | SVG 360×96; nodos redondeados Campo / Sede / .docx          |
+| Problema       | `.landing-problem__*`                     | 3 celdas, `border-top` tertiary (acento cálido del dolor)   |
+| Índice (firma) | `.landing-index`, `.landing-index__num`  | Filas 01/02/03 ancho completo, numerales gigantes, hairlines |
+| Por qué (benefits)| `.landing-why__*`                     | Grid 1→2→3 col; 7 diferenciales con icono; hover en celda   |
+| Soberanía      | `.landing-sov`, `.landing-guarantee`     | Bloque oscuro spotlight; garantías en cajas; `.landing-sov__boundary` |
+| Caso de estudio| `.landing-case__*`, `.landing-compare`   | Status «Activo hoy»; programas en chips; Antes/Ahora en filas |
+| Audiencia      | `.landing-aud`, `.landing-notfor`        | Celdas en grid bordeado; exclusiones en lista con guiones   |
+| FAQ            | `.landing-faq__*`                         | `<details>/<summary>` nativo (sin JS); chevron `expand_more` rota |
+| CTA final      | `.landing-final__*`                       | Bloque `--ink` full-bleed; CTAs invertidos; max 44rem       |
+| Footer         | `.landing-footer`                        | Email, GitHub MIT, origen Halketon, copyright              |
+
+Eyebrow de sección: `.landing__eyebrow` con `data-index="0N"` — el número (Atkinson) precede al label. Iconos: SVG stroke inline en `page.tsx` (no Material Symbols).
+
+### Relación con la PWA operativa
+
+| Aspecto            | PWA (`globals.css`)         | Landing (`landing.css`)                 |
+| ------------------ | --------------------------- | --------------------------------------- |
+| Implementación     | Tailwind v4 `@theme`        | CSS vanilla scoped                      |
+| Tipografía display | Atkinson (root layout)      | Atkinson (CDN en landing)               |
+| Objetivo UX        | Táctil, flujo bajo presión  | Lectura, confianza institucional        |
+| Animaciones        | `.anim-enter`, stagger, tap | `.landing-anim`, reglas dibujadas, pulse SVG |
+| Iconos             | Material Symbols (root layout) | Material Symbols (landing/layout.tsx) |
+| Elevación          | Sombras suaves              | Ninguna — reglas hairline + bordes      |
+
+Al cambiar un hex de marca, actualizar **ambos** archivos de tokens y esta sección.
+
+### Anti-patterns (landing)
+
+- No **inventar testimonios/citas** — solo proof real (caso Pequeños Pasos). El objetivo es adopción honesta, no marketing inflado.
+- No importar **Tailwind/utilidades PWA ni ShadCN** en `page.tsx` de landing — el aislamiento en `landing.css` (CSS vanilla scoped) es deliberado; el framework de landing-page se adapta a este sistema, no al revés.
+- No desviar el **copy del brief** (`docs/brief.md`) — es la fuente de verdad de claims (gratis, OSS, offline, hardware, datos, adaptable, instalable).
+- No reemplazar **Material Symbols** por SVG inline custom — la font ya carga en `landing/layout.tsx`, mismos iconos que la PWA.
+- No **unificar con `globals.css`** sin plan explícito: el aislamiento protege la PWA.
+- No agregar **sombras, gradientes ni grano** — la jerarquía va por reglas suaves, radios y tipo. (Radios sí: `--radius-lg/xl`, alineados a la PWA.)
+- No usar **mayúsculas totales** en labels — caja normal con peso 600 + color, como la webapp.
+- No usar **bordes negros / `outline-variant` reemplazado por tinta** — las reglas son suaves (`#c3c6d6`).
+- No usar el **verde como decoración** — es señal exclusiva de «se queda en la sede» (paso final, status, acentos de privacidad).
+- No animaciones de **layout pesado** (solo opacity/transform en entradas, scaleX en reglas, dash en pulse) ni curvas distintas a `--ease-out`.
+- No olvidar **`prefers-reduced-motion`** al tocar motion.
+
+---
+
+## Referencias
+
+- PWA: `app-pwa/src/app/globals.css`, `app-pwa/src/app/layout.tsx`
+- Landing: `app-pwa/src/app/landing/landing.css`, `app-pwa/src/app/landing/page.tsx`
+- Arquitectura del producto: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Skills locales para rediseño: `skills/README.md`

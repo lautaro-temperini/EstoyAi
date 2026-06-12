@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { tenantForHost, tenantPassword, isLandingHost } from "@/lib/tenants/config";
+import {
+  tenantForHost,
+  tenantPassword,
+  isLandingHost,
+  normalizeHost,
+  ROOT_DOMAIN,
+} from "@/lib/tenants/config";
 
 /**
  * HTTP Basic Auth multi-tenant.
@@ -28,13 +34,22 @@ export function middleware(req: NextRequest) {
     if (pathname === "/") {
       return NextResponse.rewrite(new URL("/landing", req.url));
     }
-    if (pathname === "/landing" || pathname.startsWith("/landing/")) {
-      return NextResponse.next();
-    }
+    // `/landing` no es URL pública: la canónica es `/` (rewrite interno).
     return NextResponse.redirect(new URL("/", req.url));
   }
 
   // ── Subdominio de ONG → app con Basic Auth ────────────────────────────────
+  // La landing no pertenece a los subdominios; en localhost/IP sí se permite
+  // `/landing` para iterar el diseño en desarrollo.
+  const isOngSubdomain = normalizeHost(host).endsWith("." + ROOT_DOMAIN);
+  if (
+    isOngSubdomain &&
+    (req.nextUrl.pathname === "/landing" ||
+      req.nextUrl.pathname.startsWith("/landing/"))
+  ) {
+    return NextResponse.redirect(new URL("/", req.url));
+  }
+
   const tenant = tenantForHost(host);
   const password = tenantPassword(tenant);
 

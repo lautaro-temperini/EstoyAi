@@ -40,8 +40,8 @@ Manual operativo: [README-SEDE.md](README-SEDE.md). Multi-tenant y tunnel: [MULT
 
 | Archivo | Descripción |
 |---|---|
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Topología, stack, fronteras del sistema |
-| [DESIGN.md](DESIGN.md) | Flujo de datos, estados, modelo de dominio |
+| [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitectura, flujo de datos, estados, dominio |
+| [DESIGN.md](DESIGN.md) | Design system UI (tokens, componentes) |
 | [CLAUDE.md](CLAUDE.md) | Comandos y guía para agentes de código |
 
 Documentos de producto locales (no versionados): `docs/brief.md`, `docs/prd.md`, `docs/trd.md`.

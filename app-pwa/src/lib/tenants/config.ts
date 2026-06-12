@@ -53,7 +53,7 @@ export const DEFAULT_TENANT: Tenant = TENANTS[0];
 const BY_SLUG = new Map(TENANTS.map((t) => [t.slug, t]));
 
 /** Quita el puerto y normaliza a minúsculas: "Pequenos.estoyai.com:3000" → host. */
-function normalizeHost(host: string | null | undefined): string {
+export function normalizeHost(host: string | null | undefined): string {
   if (!host) return "";
   return host.split(":")[0].trim().toLowerCase();
 }
