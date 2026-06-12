@@ -67,3 +67,6 @@ skills/
 PequenosPasos/**/*.msi
 PequenosPasos/Output/
 PequenosPasos/*.log
+
+# wrangler (cache/logs locales del deploy a Pages)
+.wrangler/
