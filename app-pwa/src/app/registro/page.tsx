@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useFlow } from "../flow-context";
 import { Stepper } from "@/components/stepper";
 import type { Programa } from "@/lib/reports/schema";
+import { PROGRAMA_LABELS } from "@/lib/reports/programa";
 
 const PROGRAMAS: {
   id: Programa;
@@ -13,19 +14,19 @@ const PROGRAMAS: {
 }[] = [
   {
     id: "primera-infancia",
-    titulo: "Primera Infancia",
+    titulo: PROGRAMA_LABELS["primera-infancia"],
     descripcion: "Niños y niñas de 0 a 5 años",
     icon: "child_care",
   },
   {
     id: "ninez-adolescencia",
-    titulo: "Niñez y Adolescencia",
+    titulo: PROGRAMA_LABELS["ninez-adolescencia"],
     descripcion: "Chicos y chicas de 6 a 18 años",
     icon: "school",
   },
   {
     id: "oficios",
-    titulo: "Oficios",
+    titulo: PROGRAMA_LABELS.oficios,
     descripcion: "Adultos en capacitación laboral",
     icon: "construction",
   },

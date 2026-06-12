@@ -146,6 +146,13 @@ export default function RegistrosPage() {
           <span className="material-symbols-outlined">arrow_back</span>
         </button>
         <h1 className="font-headline-sm text-headline-sm text-on-surface">Mis registros</h1>
+        <button
+          onClick={() => router.push("/tablero")}
+          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
+        >
+          <span className="material-symbols-outlined text-[20px]">dashboard</span>
+          <span className="font-caption text-caption">Coordinación</span>
+        </button>
       </header>
 
       <main className="flex-grow pt-20 px-container-margin pb-12 max-w-xl mx-auto w-full">

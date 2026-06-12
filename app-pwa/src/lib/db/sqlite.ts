@@ -79,6 +79,23 @@ function rowToInforme(r: InformeDbRow): InformeRow {
   };
 }
 
+// TODO(perf): json_extract(metadata,'$.tenant') hace full table scan. En sede
+// single-tenant con volumen bajo es irrelevante, pero si la tabla crece (varias
+// ONGs / cientos de informes) conviene promover `tenant` a columna propia (al
+// insertar en RECIBIDO) + índice, o un índice sobre la expresión json_extract.
+// No resolver todavía — recordatorio para cuando el volumen lo justifique.
+export function listInformesByTenant(tenant: string): InformeRow[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT id, estado, audio_path, metadata, informe_json, campos, error, created_at, updated_at
+       FROM informes
+       WHERE json_extract(metadata, '$.tenant') = ?
+       ORDER BY created_at DESC`,
+    )
+    .all(tenant) as InformeDbRow[];
+  return rows.map(rowToInforme);
+}
+
 export function getInforme(id: string): InformeRow | null {
   const row = getDb()
     .prepare(
