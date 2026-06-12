@@ -26,14 +26,14 @@ Todo corre en la PC de la sede. Sin APIs externas, sin suscripciones, sin GPU re
 
 ## Por qué es diferente
 
-| | EstoyAi |
-|---|---|
-| **Costo** | Gratis, sin licencias |
-| **Datos** | Quedan en la sede de la ONG |
-| **Conectividad** | Funciona sin señal en campo |
-| **Hardware** | PC con 8GB RAM (donación típica de ONG) |
-| **IA** | Local: Whisper + Ollama (gemma3:4b) |
-| **Multi-ONG** | Multi-tenant por subdominio |
+|                  | EstoyAi                                 |
+| ---------------- | --------------------------------------- |
+| **Costo**        | Gratis, sin licencias                   |
+| **Datos**        | Quedan en la sede de la ONG             |
+| **Conectividad** | Funciona sin señal en campo             |
+| **Hardware**     | PC con 8GB RAM (donación típica de ONG) |
+| **IA**           | Local: Whisper + Ollama (gemma3:4b)     |
+| **Multi-ONG**    | Multi-tenant por subdominio             |
 
 ## Estructura
 
@@ -70,12 +70,12 @@ Variables de entorno: copiar `.env.example` → `.env`.
 
 ## Documentación
 
-| | |
-|---|---|
+|                                    |                                                                       |
+| ---------------------------------- | --------------------------------------------------------------------- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitectura completa, flujo de datos, estados, dominio e invariantes |
-| [DESIGN.md](DESIGN.md) | Design system UI — tokens, tipografía, motion |
-| [MULTITENANT.md](MULTITENANT.md) | Multi-tenant por subdominio y túnel Cloudflare |
-| [COMANDOS.md](COMANDOS.md) | Referencia de todos los comandos del proyecto |
+| [DESIGN.md](DESIGN.md)             | Design system UI — tokens, tipografía, motion                         |
+| [MULTITENANT.md](MULTITENANT.md)   | Multi-tenant por subdominio y túnel Cloudflare                        |
+| [COMANDOS.md](COMANDOS.md)         | Referencia de todos los comandos del proyecto                         |
 
 ## Licencia
 
