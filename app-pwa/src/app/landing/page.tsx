@@ -24,7 +24,7 @@ const DEMO_SRC = "";
 
 function LogoMark() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img className="landing-logo__mark" src="/favicon.ico" width={34} height={34} alt="" aria-hidden="true" />;
+  return <img className="landing-logo__mark" src="/icono.ico" width={34} height={34} alt="" aria-hidden="true" />;
 }
 
 /** Iconos Material Symbols — mismo set que la PWA operativa. */
