@@ -63,10 +63,8 @@ docs/
 skills/
 .agents/
 
-# instalador Windows: binarios pesados y artefactos de build (no versionar)
-PequenosPasos/**/*.msi
-PequenosPasos/Output/
-PequenosPasos/*.log
+# instalador Windows: carpeta completa local (tokens, binarios, artefactos)
+PequenosPasos/
 
 # wrangler (cache/logs locales del deploy a Pages)
 .wrangler/
