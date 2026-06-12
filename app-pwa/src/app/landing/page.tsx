@@ -24,7 +24,7 @@ const DEMO_SRC = "";
 
 function LogoMark() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img className="landing-logo__mark" src="/icono.webp" width={34} height={34} alt="" aria-hidden="true" />;
+  return <img className="landing-logo__mark" src="/icono.webp?v=2" width={34} height={34} alt="" aria-hidden="true" />;
 }
 
 /** Iconos Material Symbols — mismo set que la PWA operativa. */
@@ -241,7 +241,7 @@ export default function LandingPage() {
     <>
       <header className="landing-header">
         <div className="landing__container landing-header__inner">
-          <Link href="/landing" className="landing-logo" aria-label="EstoyAi — inicio">
+          <Link href="/" className="landing-logo" aria-label="EstoyAi — inicio">
             <LogoMark />
             <span className="landing-logo__text">EstoyAi</span>
           </Link>

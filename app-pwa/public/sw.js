@@ -9,7 +9,7 @@
 // Plain classic worker (no imports) — reads IndexedDB directly. The store shape
 // must match src/lib/queue/db.ts.
 
-const CACHE = "pp-shell-v1";
+const CACHE = "pp-shell-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
 const SYNC_TAG = "upload-audio";
 const DB_NAME = "pp-registros";
