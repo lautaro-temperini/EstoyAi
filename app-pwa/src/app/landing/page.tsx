@@ -24,7 +24,7 @@ const DEMO_SRC = "";
 
 function LogoMark() {
   // eslint-disable-next-line @next/next/no-img-element
-  return <img className="landing-logo__mark" src="/icono.ico" width={34} height={34} alt="" aria-hidden="true" />;
+  return <img className="landing-logo__mark" src="/icono.webp" width={34} height={34} alt="" aria-hidden="true" />;
 }
 
 /** Iconos Material Symbols — mismo set que la PWA operativa. */
@@ -128,7 +128,7 @@ function FlowSchematic() {
       </svg>
 
       <figcaption className="landing-flow__caption">
-        Voz en el barrio → tu sede → .docx en menos de 3 min
+        Voz en el barrio → tu sede → .docx en menos de 5 min
       </figcaption>
     </figure>
   );
@@ -184,7 +184,7 @@ const PROBLEMS = [
   {
     icon: "signal_disconnected",
     title: "El registro ocurre donde no hay red",
-    text: "El promotor no puede abrir un formulario online en una zona vulnerable. Lo que no anota en el momento se reconstruye de memoria — con sesgo, omisiones y sin el contexto del terreno.",
+    text: "El promotor no puede abrir un formulario online en una zona vulnerable. Lo que no anota en el momento se reconstruye de memoria, con sesgo, omisiones y sin el contexto del terreno.",
   },
   {
     icon: "hub",
@@ -469,7 +469,7 @@ export default function LandingPage() {
                   <p className="landing-guarantee__title">Datos extraídos en la sede</p>
                   <p className="landing-guarantee__text">
                     La IA distribuye lo dictado en las secciones del informe en la misma
-                    máquina — sin ChatGPT ni APIs externas.
+                    máquina. Sin ChatGPT ni APIs externas.
                   </p>
                 </div>
               </div>
