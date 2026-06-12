@@ -34,3 +34,27 @@ ingress:
 
   # Regla por defecto: rechazar todo lo que no coincida con los hostnames.
   - service: http_status:404
+
+# ─── Nota: subdominios con prefijo "www" (decisión: NO soportados) ─────────────
+#
+# Caso: pequenospasos.estoyai.com funciona, pero www.pequenospasos.estoyai.com no.
+#
+# La APP ya lo resolvería: tenantForHost() / subdomainOf() en
+# app-pwa/src/lib/tenants/config.ts toma el ÚLTIMO label antes del dominio raíz,
+# así que "www.pequenospasos" → tenant "pequenospasos". No hay que tocar código.
+#
+# Lo que falta es ENRUTAMIENTO + SSL, y ahí está el costo:
+#   1. DNS: CNAME www.pequenospasos → <UUID>.cfargotunnel.com (proxied).
+#   2. Public Hostname en el tunnel: www.pequenospasos.estoyai.com → localhost:3000.
+#   3. SSL: el Universal SSL gratuito cubre estoyai.com y *.estoyai.com, pero NO
+#      www.pequenospasos.estoyai.com (subdominio de DOS niveles; el wildcard solo
+#      cubre uno). Requiere Advanced Certificate Manager (pago, ~US$10/mes).
+#
+# Ojo: un redirect 301 www→sin-www NO evita el problema de SSL. El handshake TLS
+# ocurre ANTES del redirect, así que sin cert válido el https://www... falla
+# antes de poder redirigir.
+#
+# DECISIÓN (jun 2026): no se soporta el prefijo www en subdominios de ONG. No se
+# agrega DNS, ni Public Hostname, ni Redirect Rule, ni ACM. Compartir siempre la
+# URL canónica SIN www: https://pequenospasos.estoyai.com
+# ──────────────────────────────────────────────────────────────────────────────
