@@ -34,15 +34,15 @@ docker compose up -d
 docker compose exec ollama ollama pull gemma3:4b
 ```
 
-Manual operativo: [README-SEDE.md](README-SEDE.md). Multi-tenant y tunnel: [MULTITENANT.md](MULTITENANT.md).
+Multi-tenant y tunnel: [MULTITENANT.md](MULTITENANT.md).
 
 ## Documentación
 
-| Archivo | Descripción |
-|---|---|
+| Archivo                            | Descripción                                    |
+| ---------------------------------- | ---------------------------------------------- |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitectura, flujo de datos, estados, dominio |
-| [DESIGN.md](DESIGN.md) | Design system UI (tokens, componentes) |
-| [CLAUDE.md](CLAUDE.md) | Comandos y guía para agentes de código |
+| [DESIGN.md](DESIGN.md)             | Design system UI (tokens, componentes)         |
+| [CLAUDE.md](CLAUDE.md)             | Comandos y guía para agentes de código         |
 
 Documentos de producto locales (no versionados): `docs/brief.md`, `docs/prd.md`, `docs/trd.md`.
 

@@ -47,6 +47,7 @@ Por cada ONG nueva: una fila más con su subdominio.
    ```ts
    { slug: "otraong", orgName: "Otra ONG", shortName: "Otra ONG" },
    ```
+
 2. **Contraseña** — en `.env`:
    
    ```
@@ -54,7 +55,9 @@ Por cada ONG nueva: una fila más con su subdominio.
    ```
    
    (Variable: `TENANT_<SLUG_EN_MAYÚSCULAS>_PASSWORD`. Sin ella cae a `SITE_PASSWORD`.)
+
 3. **Tunnel** — Public Hostname `otraong.estoyai.com → http://localhost:3000`.
+
 4. **System prompt propio (opcional)** — en `scripts/gen-n8n-workflow.mjs`,
    dentro de `PROMPTS`, agregá claves `"otraong:<programa>"`:
    
@@ -70,6 +73,7 @@ Por cada ONG nueva: una fila más con su subdominio.
    ```
    
    Sin claves propias, la ONG usa los prompts por programa (compat).
+
 5. **Rebuild** del contenedor app-pwa: `docker compose up -d --build app-pwa`.
 
 La selección de prompt en n8n prueba en orden:
@@ -92,8 +96,10 @@ en un Code node leyendo las envs. Rotar = cambiar `.env` + `docker compose up -d
 ### Pasos
 
 1. **Bucket** — dash.cloudflare.com → R2 → Create bucket (ej. `estoyai-informes`).
+
 2. **Token** — R2 → Manage R2 API Tokens → Create → *Object Read & Write*.
    Anotá Account ID, Access Key ID y Secret.
+
 3. **`.env`** (los 4 valores van acá):
    
    ```
@@ -103,10 +109,12 @@ en un Code node leyendo las envs. Rotar = cambiar `.env` + `docker compose up -d
    CF_R2_BUCKET=estoyai-informes
    N8N_R2_WEBHOOK_URL=http://n8n:5678/webhook/subir-r2
    ```
+
 4. **Importar el workflow** — ya armado en
    [`n8n/workflows/subir-r2.json`](n8n/workflows/subir-r2.json):
    n8n → Workflows → Import from file → seleccioná el archivo → **Activá**.
    (Sin elegir credenciales: lee todo de `$env`.)
+
 5. **Reiniciar** para cargar las envs nuevas: `docker compose up -d`.
 
 > Si editás la firma, regenerá el workflow: `node scripts/gen-subir-r2.mjs`.

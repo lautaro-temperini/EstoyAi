@@ -40,12 +40,12 @@ El sistema tiene **dos modos de ejecución**:
 
 ### Servicios Docker (`docker-compose.yml`)
 
-| Servicio | Puerto host | Rol |
-|---|---|---|
-| `app-pwa` | 3000 | Next.js 15 PWA + API REST + SQLite |
-| `n8n` | 5678 | Orquestador del pipeline audio→docx |
-| `whisper` | interno | faster-whisper `medium`, POST /transcribe |
-| `ollama` | interno | LLM local gemma3:4b, extracción estructurada |
+| Servicio  | Puerto host | Rol                                          |
+| --------- | ----------- | -------------------------------------------- |
+| `app-pwa` | 3000        | Next.js 15 PWA + API REST + SQLite           |
+| `n8n`     | 5678        | Orquestador del pipeline audio→docx          |
+| `whisper` | interno     | faster-whisper `medium`, POST /transcribe    |
+| `ollama`  | interno     | LLM local gemma3:4b, extracción estructurada |
 
 Red interna Docker: `sede-net`. Volumen compartido `data` entre `app-pwa` y `whisper`.
 
@@ -107,12 +107,12 @@ El workflow `subir-r2.json` (integración Cloudflare R2) se genera con `scripts/
 
 Ver `.env.example`. Las más importantes al desarrollar:
 
-| Variable | Efecto |
-|---|---|
-| `DATA_DIR` | Directorio de audio, docx y sqlite (default: `../data`) |
-| `N8N_WEBHOOK_URL` | URL del webhook n8n (default: `http://n8n:5678/webhook/registro`) |
-| `OLLAMA_MODEL` | Modelo LLM (default: `gemma3:4b`; alternativa lenta: `qwen3:1.7b`) |
-| `N8N_BLOCK_ENV_ACCESS_IN_NODE` | Debe ser `false` para que n8n lea env vars en Code nodes |
+| Variable                       | Efecto                                                             |
+| ------------------------------ | ------------------------------------------------------------------ |
+| `DATA_DIR`                     | Directorio de audio, docx y sqlite (default: `../data`)            |
+| `N8N_WEBHOOK_URL`              | URL del webhook n8n (default: `http://n8n:5678/webhook/registro`)  |
+| `OLLAMA_MODEL`                 | Modelo LLM (default: `gemma3:4b`; alternativa lenta: `qwen3:1.7b`) |
+| `N8N_BLOCK_ENV_ACCESS_IN_NODE` | Debe ser `false` para que n8n lea env vars en Code nodes           |
 
 ---
 
