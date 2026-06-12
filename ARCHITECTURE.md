@@ -6,7 +6,7 @@ Documento único de arquitectura y diseño del sistema: topología, flujo de dat
 
 ## Propósito del sistema
 
-Herramienta de campo para promotores de una ONG. El promotor llena nombre/apellido/DNI de un beneficiario, graba un mensaje de voz dictando lo que observó en la intervención, y recibe un `.docx` listo para archivar. Todo funciona sin conexión; la sincronización ocurre en segundo plano cuando hay red.
+Herramienta de campo para promotores de una ONG. El promotor elige el **programa** (Primera Infancia, Niñez y Adolescencia, Oficios), llena nombre/apellido/DNI del beneficiario, graba un mensaje de voz dictando lo que observó en la intervención, y recibe un `.docx` listo para archivar. Todo funciona sin conexión; la sincronización ocurre en segundo plano cuando hay red. El programa elegido orienta la extracción del LLM (system prompt específico).
 
 ---
 
@@ -75,10 +75,12 @@ Una sola instalación de sede puede servir **varias ONGs** vía subdominios ([MU
 │  Dispositivo del promotor                                   │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │  PWA (Next.js 15)   :3000                           │   │
-│  │  ├─ /registro       captura nombre/apellido/dni     │   │
-│  │  ├─ /grabar         graba WAV (WebAudio, 16 kHz)    │   │
-│  │  ├─ /estado/[id]    polling del progreso            │   │
-│  │  └─ /informe/[id]   descarga .docx / toggle campos  │   │
+│  │  ├─ /registro             elige programa            │   │
+│  │  ├─ /registro/beneficiario nombre/apellido/dni      │   │
+│  │  ├─ /grabar               graba WAV (WebAudio,16kHz)│   │
+│  │  ├─ /estado/[id]          polling del progreso      │   │
+│  │  ├─ /informe/[id]         descarga .docx/toggle     │   │
+│  │  └─ /registros            historial del dispositivo │   │
 │  │                                                     │   │
 │  │  Service Worker (sw.js)                             │   │
 │  │  ├─ Background Sync → POST /api/audio               │   │
@@ -121,14 +123,15 @@ Una sola instalación de sede puede servir **varias ONGs** vía subdominios ([MU
 EstoyAi/
 ├── app-pwa/                 # Next.js 15 PWA + API (núcleo del producto)
 │   └── src/
-│       ├── app/             # App Router: páginas + route handlers
-│       ├── lib/reports/     # Schema, prompt, content, docx
+│       ├── app/             # App Router: páginas + route handlers + flow-context
+│       ├── lib/reports/     # Schema, prompts, content, docx
+│       ├── lib/api/         # Helpers de API routes (meta, validación id)
 │       ├── lib/queue/       # IndexedDB cliente
 │       ├── lib/db/          # SQLite servidor
 │       └── lib/tenants/     # Multi-tenant (Edge-safe)
 ├── services/whisper/        # Microservicio ASR (Python)
 ├── n8n/workflows/           # registro.json, subir-r2.json (generados)
-├── scripts/                 # gen-n8n-workflow, update-workflow, estado
+├── scripts/                 # gen-n8n-workflow, gen-subir-r2, update-workflow, estado
 ├── cloudflared/             # Referencia config tunnel
 ├── PequenosPasos/           # Instalador Windows para sede
 ├── docs/                    # brief, prd, trd (local, .gitignore)
@@ -141,7 +144,8 @@ EstoyAi/
 
 ```
 [Promotor]
-  1. /registro  → ingresa nombre/apellido/DNI (sessionStorage)
+  1. /registro              → elige programa (flow-context → sessionStorage)
+     /registro/beneficiario → ingresa nombre/apellido/DNI
   2. /grabar    → graba WAV (WebAudio ScriptProcessorNode, 16 kHz mono PCM)
                 → enqueueRegistro(): UUID generado en dispositivo
                   WAV + meta guardados en IndexedDB (pending store)
@@ -150,17 +154,19 @@ EstoyAi/
 [Service Worker]
   3. Background Sync → POST /api/audio (multipart)
      - campo: audio = WAV blob
-     - campo: meta  = JSON {id, tipo, beneficiario, capturedAt, …}
+     - campo: meta  = JSON {id, tipo, beneficiario, programa, capturedAt, …}
      - postMessage al cliente: encolado → subiendo
 
 [POST /api/audio]
   4. Guarda WAV en data/audio/<id>.wav
+     Resuelve tenant por Host (x-tenant); arma ReportMetadata
      Escribe SQLite: RECIBIDO
      Fire-and-forget → n8n webhook
 
 [n8n — registro.json]
   5a. POST /transcribe → faster-whisper → transcripcion: string
-  5b. Ollama gemma3:4b con SYSTEM_PROMPT + EXTRACTION_JSON_SCHEMA (grammar)
+  5b. Ollama (OLLAMA_MODEL, fallback qwen3:1.7b) con el system prompt del
+      programa (systemPromptForPrograma) + EXTRACTION_JSON_SCHEMA (grammar)
       → ReportExtraction (JSON constrained)
   5c. POST /api/informe/<id>/extraccion  → SQLite: EXTRAIDO
   5d. POST /api/informe/<id>/generar-docx → renderiza .docx → SQLite: LISTO
@@ -227,20 +233,27 @@ RECIBIDO  (POST /api/audio)
 
 ### Tipos principales (`lib/reports/schema.ts`)
 
+`FieldReport extends ReportExtraction`: los campos de la extracción del LLM
+viven en el nivel superior; metadatos, transcripción e id los aporta el sistema.
+
 ```
 FieldReport
-  ├─ id: string (UUID — generado en dispositivo, viaja a través de todo el pipeline)
+  ├─ id: string (UUID — generado en dispositivo, viaja por todo el pipeline)
   ├─ transcripcion: string (verbatim — fuente de verdad, no se modifica)
   ├─ metadatos: ReportMetadata
-  │    ├─ tipo: "individual" | "grupal"
+  │    ├─ tenant: string | null        (ONG que originó el registro)
+  │    ├─ tipo: "individual" | "grupal" | null
   │    ├─ beneficiario: { nombre, apellido, dni } | null
+  │    ├─ programa: "primera-infancia" | "ninez-adolescencia" | "oficios" | null
   │    ├─ sector, unidad: string | null
   │    └─ capturedAt, durationMs
   ├─ estado: "PENDIENTE" | "CONFIRMADO"
   ├─ createdAt: number (epoch ms, servidor)
-  └─ [ReportExtraction]
+  │
+  └─ (ReportExtraction — campos de nivel superior)
        ├─ resumen: string (1-2 frases ejecutivas)
        ├─ prioridad: "ALTA" | "MEDIA" | "BAJA"
+       ├─ motivoCriticidad: string (≤15 palabras; "" si BAJA informativa)
        ├─ entidades: { nombres[], fechas[] }
        ├─ accionesPendientes: string[]
        └─ datos: DatosInforme
@@ -256,21 +269,27 @@ FieldReport
 
 - **El LLM nunca inventa datos.** Todo campo vacío → `""` o `[]`. El `SYSTEM_PROMPT` lo explicita y el JSON Schema grammar lo fuerza.
 - **`transcripcion` es inmutable.** El LLM solo organiza; la transcripción original siempre está disponible para verificación.
-- **El UUID nace en el dispositivo.** Se genera en `enqueueRegistro()` y es la clave primaria en IndexedDB, SQLite y el filesystem (`data/audio/<id>.wav`, `data/docx/<id>.docx`).
+- **El UUID nace en el dispositivo.** Se genera en `enqueueRegistro()` y es la clave primaria en IndexedDB, SQLite y el filesystem (`data/audio/<id>.wav`, `data/docx/<id>.docx`). Las API routes lo validan como UUID-v4 (`assertValidId`) para evitar path traversal.
 - **n8n nunca escribe SQLite.** Solo llama endpoints HTTP de Next.js, que son el único escritor.
+- **El tenant lo decide el servidor.** El middleware resuelve la ONG por el header `Host` e inyecta `x-tenant`; el cliente no puede falsearlo. El `programa`, en cambio, viaja en la meta del upload.
 
 ---
 
 ## Pipeline de LLM
 
-### Prompt del sistema (`assemble.ts → SYSTEM_PROMPT`)
+### Prompt del sistema (`assemble.ts`)
+
+`buildSystemPrompt(enfasis)` compone: reglas absolutas → énfasis del programa → estructura de campos. Hay un prompt genérico (`SYSTEM_PROMPT`) y tres variantes por programa (`SYSTEM_PROMPT_PRIMERA_INFANCIA`, `_NINEZ_ADOLESCENCIA`, `_OFICIOS`); `systemPromptForPrograma()` elige según el `programa` de la meta. El gen script replica esta selección en n8n con override por ONG (`PROMPTS["<tenant>:<programa>"]`).
 
 Instrucciones en español para el modelo:
 1. Extraer exclusivamente lo que dice la transcripción.
 2. Si es mensaje de prueba o sin información real → decirlo en el resumen y dejar todo vacío.
-3. Reglas campo por campo con definiciones precisas.
-4. Regla crítica para arrays: si no se menciona explícitamente → `[]`.
-5. `/no_think` al final para suprimir razonamiento interno (Qwen/Gemma compatible).
+3. `prioridad` por orden de precedencia (ALTA → MEDIA → BAJA) con criterios definidos; `motivoCriticidad` justifica la clasificación en ≤15 palabras.
+4. Reglas campo por campo con definiciones precisas; el énfasis del programa prioriza qué extraer.
+5. Regla crítica para arrays: si no se menciona explícitamente → `[]`.
+6. `/no_think` al final para suprimir razonamiento interno (Qwen/Gemma compatible).
+
+`buildReport()` (servidor) limpia placeholders ("[No especificada]", "N/A", "No se menciona", …) que los modelos chicos emiten pese al prompt, tratándolos como vacíos.
 
 ### Prompt de usuario (`buildUserMessage`)
 
@@ -305,10 +324,11 @@ FieldReport
 ReportContent
   ├─ disclaimer
   ├─ titular (Apellido Nombre, o fallback a LLM → "Actividad Grupal")
-  ├─ prioridad
+  ├─ prioridad, motivoCriticidad
   ├─ fecha, lugar
   ├─ resumenEjecutivo
-  └─ sections: Section[]
+  ├─ generadoEl
+  └─ sections: Section[]  (7 secciones de cuerpo)
        ├─ { kind: "fields", title, fields: [{label, value}] }
        ├─ { kind: "bullets", title, items: string[] }
        └─ { kind: "text", title, body }
@@ -321,7 +341,9 @@ Buffer (.docx)
 
 ### Invariante de secciones
 
-`buildReportContent()` **siempre** emite las 11 secciones. Ningún campo queda en blanco: si el valor es vacío → `"—"`, si el array es vacío → `["—"]`. Esto garantiza que el `.docx` tenga estructura consistente independientemente de qué mencionó el promotor.
+`buildReportContent()` **siempre** emite el encabezado fijo (disclaimer, titular, prioridad/motivo, fecha, lugar, resumen) más las **7 secciones de cuerpo**: Identificación y Demografía, Diagnósticos, Contexto Socioeconómico, Detalles de la Intervención, Seguimiento, Acciones Pendientes, Observaciones y Contexto. Ningún campo queda en blanco: valor vacío → `"—"`, array vacío → `["—"]`. Esto garantiza que el `.docx` tenga estructura consistente independientemente de qué mencionó el promotor.
+
+`reportFileBase()` (nombre del .docx) y `beneficiarioFolder()` (carpeta para R2/Podio) derivan del beneficiario, con fallback al UUID si faltan datos.
 
 ### Nombre del archivo
 
@@ -378,7 +400,7 @@ O en sede: `scripts/update-workflow.bat`.
 |---|---|---|
 | `DATA_DIR` | app-pwa, whisper | `../data` (relativo a `app-pwa/`) |
 | `N8N_WEBHOOK_URL` | `POST /api/audio` | `http://n8n:5678/webhook/registro` |
-| `OLLAMA_MODEL` | n8n Code node (`$env.OLLAMA_MODEL`) | `gemma3:4b` |
+| `OLLAMA_MODEL` | n8n Code node (`$env.OLLAMA_MODEL`) | `gemma3:4b` (.env) / `qwen3:1.7b` (fallback en el workflow si no está seteada) |
 | `NEXT_PUBLIC_ASR_LANG` | assemble.ts `ASR_LANGUAGE` | `es` |
 | `N8N_BLOCK_ENV_ACCESS_IN_NODE` | n8n | debe ser `false` |
 | `WHISPER_MODEL` | whisper Dockerfile build arg | `base` (runtime: `medium`) |
@@ -406,7 +428,8 @@ Lista completa: `.env.example`.
 | Extender | Dónde |
 |---|---|
 | Nueva ONG | `tenants/config.ts`, `.env`, Cloudflare hostname |
-| Prompt por programa | `assemble.ts` + `gen-n8n-workflow.mjs` → regenerar workflow |
+| Nuevo programa | `Programa` (`schema.ts`), opción en `/registro`, prompt en `assemble.ts` + `gen-n8n-workflow.mjs` → regenerar workflow |
+| Prompt por programa / ONG | `assemble.ts` (`SYSTEM_PROMPT_*`) + `PROMPTS` en `gen-n8n-workflow.mjs` → regenerar |
 | Integración R2/Podio | Workflows n8n + env en `docker-compose.yml` |
 | Schema de extracción | `schema.ts` (sincronizar en gen script) |
 
