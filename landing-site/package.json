@@ -5,7 +5,7 @@
   "description": "Landing pública del apex estoyai.com — export estático always-on (Cloudflare Pages). Reusa la landing de app-pwa como único source of truth.",
   "scripts": {
     "build": "next build",
-    "deploy": "next build && wrangler pages deploy out --project-name=estoyai-landing"
+    "deploy": "next build && npx wrangler pages deploy out --project-name=estoyai-landing --branch=main --commit-dirty=true"
   },
   "dependencies": {
     "next": "15.1.7",
