@@ -21,8 +21,7 @@ const REGISTROS = "registros";
 /** UI/queue state of a registro, from capture to downloadable .docx. */
 export type RegistroEstado =
   | "encolado" // saved on device, not yet sent
-  | "subiendo" // upload in flight
-  | "procesando" // server has the audio, whisper+LLM running
+  | "procesando" // subiendo o ya en el servidor (whisper+LLM) — un solo estado visible
   | "listo" // .docx ready to download
   | "error"; // upload or processing failed
 

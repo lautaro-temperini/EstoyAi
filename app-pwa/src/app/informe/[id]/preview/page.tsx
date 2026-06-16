@@ -5,6 +5,8 @@ import { buildReportContent } from "@/lib/reports/content";
 import { filterReportContent } from "@/lib/reports/campos";
 import { assertValidId } from "@/lib/api/validate";
 import { StatusChip, type EstadoChip } from "@/components/status-chip";
+import { IS_DEV, devFieldReport } from "@/lib/dev-mock";
+import { DEFAULT_CAMPOS } from "@/lib/reports/campos";
 
 export const dynamic = "force-dynamic";
 
@@ -14,16 +16,19 @@ const PRIORIDAD_CHIP: Record<string, EstadoChip> = { ALTA: "alta", MEDIA: "media
 
 export default async function PreviewPage({ params }: Params) {
   const { id } = await params;
+  let valid = true;
   try {
     assertValidId(id);
   } catch {
-    notFound();
+    valid = false;
   }
 
-  const row = getInforme(id);
-  if (!row || !row.informeJson) notFound();
+  const row = valid ? getInforme(id) : null;
+  // Dev: ver el preview con ids mock (m1…) sin SQLite. Prod: id válido + fila real.
+  const report = row?.informeJson ?? (IS_DEV ? devFieldReport(id) : null);
+  if (!report) notFound();
 
-  const content = filterReportContent(buildReportContent(row.informeJson), row.campos);
+  const content = filterReportContent(buildReportContent(report), row?.campos ?? DEFAULT_CAMPOS);
 
   return (
     <div className="min-h-screen flex flex-col">

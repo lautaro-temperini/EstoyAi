@@ -104,7 +104,7 @@ async function clientFlush(): Promise<void> {
 }
 
 async function uploadOne(p: PendingUpload): Promise<void> {
-  await updateRegistroEstado(p.id, "subiendo");
+  await updateRegistroEstado(p.id, "procesando");
   try {
     const form = new FormData();
     form.append("audio", p.wavBlob, p.filename);

@@ -81,7 +81,7 @@ async function flushAll() {
 }
 
 async function uploadOne(p) {
-  await setEstado(p.id, "subiendo");
+  await setEstado(p.id, "procesando");
   try {
     const form = new FormData();
     form.append("audio", p.wavBlob, p.filename);

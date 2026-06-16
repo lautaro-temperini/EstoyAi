@@ -28,11 +28,10 @@ function mapServerEstado(s: string): RegistroEstado | null {
 }
 
 /** Estados que vale la pena re-consultar contra el servidor (no terminales). */
-const REFRESH: RegistroEstado[] = ["encolado", "subiendo", "procesando"];
+const REFRESH: RegistroEstado[] = ["encolado", "procesando"];
 
 const ESTADO_TO_CHIP: Record<RegistroEstado, EstadoChip> = {
   encolado: "en-cola",
-  subiendo: "subiendo",
   procesando: "procesando",
   listo: "listo",
   error: "error",
@@ -55,7 +54,7 @@ const MOCK_REGISTROS: Registro[] = [
   { id: "r2", titular: "Pérez Sofía", tipo: "individual", programa: "primera-infancia", estado: "procesando", createdAt: Date.now() - 2 * 3600_000 },
   { id: "r3", titular: "Sosa Jorge", tipo: "individual", programa: "oficios", estado: "error", createdAt: Date.now() - 5 * 3600_000 },
   { id: "r4", titular: "Luna Valentina", tipo: "individual", programa: "primera-infancia", estado: "encolado", createdAt: Date.now() - 26 * 3600_000 },
-  { id: "r5", titular: "Actividad grupal", tipo: "grupal", programa: "ninez-adolescencia", estado: "subiendo", createdAt: Date.now() - 27 * 3600_000 },
+  { id: "r5", titular: "Actividad grupal", tipo: "grupal", programa: "ninez-adolescencia", estado: "procesando", createdAt: Date.now() - 27 * 3600_000 },
 ];
 
 export default function RegistrosPage() {

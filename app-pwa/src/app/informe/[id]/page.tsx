@@ -12,6 +12,7 @@ import {
 } from "@/lib/reports/campos";
 import type { FieldReport, Prioridad } from "@/lib/reports/schema";
 import { StatusChip, ESTADO_CHIP, type EstadoChip } from "@/components/status-chip";
+import { IS_DEV, devInformeData } from "@/lib/dev-mock";
 
 // ── Tipos locales ────────────────────────────────────────────────────────────
 
@@ -71,12 +72,16 @@ export default function InformePage() {
     let active = true;
     (async () => {
       try {
-        const res = await fetch(`/api/informe/${id}`, { cache: "no-store" });
-        if (!res.ok) {
-          setFetchError(res.status === 404 ? "Informe no encontrado." : "Error al cargar el informe.");
+        const res = await fetch(`/api/informe/${id}`, { cache: "no-store" }).catch(() => null);
+        let d: InformeData;
+        if (res && res.ok) {
+          d = (await res.json()) as InformeData;
+        } else if (IS_DEV) {
+          d = devInformeData(id); // dev: ver UI con ids mock (m1, r1…)
+        } else {
+          setFetchError(res?.status === 404 ? "Informe no encontrado." : "Error al cargar el informe.");
           return;
         }
-        const d = (await res.json()) as InformeData;
         if (!active) return;
         setData(d);
         setEnviado(d.enviado);

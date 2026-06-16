@@ -8,7 +8,6 @@ export type EstadoChip =
   | "media"
   | "baja"
   | "en-cola"
-  | "subiendo"
   | "procesando"
   | "listo"
   | "error";
@@ -18,7 +17,6 @@ export const ESTADO_CHIP: Record<EstadoChip, { label: string; cls: string }> = {
   media: { label: "MEDIA", cls: "bg-orange-100 text-orange-700" },
   baja: { label: "BAJA", cls: "bg-yellow-100 text-yellow-800" },
   "en-cola": { label: "En cola", cls: "bg-gray-100 text-gray-600" },
-  subiendo: { label: "Subiendo", cls: "bg-cyan-100 text-cyan-700" },
   procesando: { label: "Procesando", cls: "bg-cyan-100 text-cyan-700" },
   listo: { label: "Listo", cls: "bg-green-100 text-green-700" },
   error: { label: "Error", cls: "bg-red-100 text-red-700" },
