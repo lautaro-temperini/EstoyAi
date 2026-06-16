@@ -15,6 +15,9 @@ export interface InformeRow {
   informeJson: FieldReport | null;
   campos: CamposConfig;
   error: string | null;
+  /** Enviado a coordinación por el promotor (gate). */
+  enviado: boolean;
+  enviadoAt: number | null;
   createdAt: number;
   updatedAt: number;
 }
@@ -27,6 +30,8 @@ interface InformeDbRow {
   informe_json: string | null;
   campos: string | null;
   error: string | null;
+  enviado: number;
+  enviado_at: number | null;
   created_at: number;
   updated_at: number;
 }
@@ -52,8 +57,23 @@ function getDb(): Database.Database {
         updated_at INTEGER NOT NULL
       )
     `);
+    migrate(db);
   }
   return db;
+}
+
+/** Migraciones idempotentes sobre la tabla existente (ALTER guardado por columna). */
+function migrate(d: Database.Database): void {
+  const cols = (d.prepare("PRAGMA table_info(informes)").all() as { name: string }[]).map(
+    (c) => c.name,
+  );
+  if (!cols.includes("enviado")) {
+    d.exec("ALTER TABLE informes ADD COLUMN enviado INTEGER NOT NULL DEFAULT 0");
+    d.exec("ALTER TABLE informes ADD COLUMN enviado_at INTEGER");
+    // Backfill: los LISTO ya existentes se consideran enviados a coordinación,
+    // para no hacerlos desaparecer del tablero al introducir el gate.
+    d.exec("UPDATE informes SET enviado = 1, enviado_at = updated_at WHERE estado = 'LISTO'");
+  }
 }
 
 function parseJson<T>(raw: string | null): T | null {
@@ -74,6 +94,8 @@ function rowToInforme(r: InformeDbRow): InformeRow {
     informeJson: parseJson<FieldReport>(r.informe_json),
     campos: parseJson<CamposConfig>(r.campos) ?? DEFAULT_CAMPOS,
     error: r.error,
+    enviado: r.enviado === 1,
+    enviadoAt: r.enviado_at,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
@@ -84,24 +106,25 @@ function rowToInforme(r: InformeDbRow): InformeRow {
 // ONGs / cientos de informes) conviene promover `tenant` a columna propia (al
 // insertar en RECIBIDO) + índice, o un índice sobre la expresión json_extract.
 // No resolver todavía — recordatorio para cuando el volumen lo justifique.
-export function listInformesByTenant(tenant: string): InformeRow[] {
+const COLS =
+  "id, estado, audio_path, metadata, informe_json, campos, error, enviado, enviado_at, created_at, updated_at";
+
+export function listInformesByTenant(
+  tenant: string,
+  opts: { soloEnviados?: boolean } = {},
+): InformeRow[] {
+  const where = opts.soloEnviados
+    ? "json_extract(metadata, '$.tenant') = ? AND enviado = 1"
+    : "json_extract(metadata, '$.tenant') = ?";
   const rows = getDb()
-    .prepare(
-      `SELECT id, estado, audio_path, metadata, informe_json, campos, error, created_at, updated_at
-       FROM informes
-       WHERE json_extract(metadata, '$.tenant') = ?
-       ORDER BY created_at DESC`,
-    )
+    .prepare(`SELECT ${COLS} FROM informes WHERE ${where} ORDER BY created_at DESC`)
     .all(tenant) as InformeDbRow[];
   return rows.map(rowToInforme);
 }
 
 export function getInforme(id: string): InformeRow | null {
   const row = getDb()
-    .prepare(
-      `SELECT id, estado, audio_path, metadata, informe_json, campos, error, created_at, updated_at
-       FROM informes WHERE id = ?`,
-    )
+    .prepare(`SELECT ${COLS} FROM informes WHERE id = ?`)
     .get(id) as InformeDbRow | undefined;
   return row ? rowToInforme(row) : null;
 }
@@ -166,6 +189,26 @@ export function setInformeListo(id: string): InformeRow | null {
   const result = getDb()
     .prepare(`UPDATE informes SET estado = 'LISTO', error = NULL, updated_at = ? WHERE id = ?`)
     .run(now, id);
+  if (result.changes === 0) return null;
+  return getInforme(id);
+}
+
+/** Marca el informe como enviado a coordinación (gate del promotor). */
+export function setInformeEnviado(id: string): InformeRow | null {
+  const now = Date.now();
+  const result = getDb()
+    .prepare(`UPDATE informes SET enviado = 1, enviado_at = ?, updated_at = ? WHERE id = ?`)
+    .run(now, now, id);
+  if (result.changes === 0) return null;
+  return getInforme(id);
+}
+
+/** Edita el informe_json (corrección del promotor) sin cambiar el estado. */
+export function updateInformeJson(id: string, informeJson: FieldReport): InformeRow | null {
+  const now = Date.now();
+  const result = getDb()
+    .prepare(`UPDATE informes SET informe_json = ?, updated_at = ? WHERE id = ?`)
+    .run(JSON.stringify(informeJson), now, id);
   if (result.changes === 0) return null;
   return getInforme(id);
 }

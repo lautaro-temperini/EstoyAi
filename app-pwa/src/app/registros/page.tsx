@@ -9,6 +9,8 @@ import {
   type Registro,
   type RegistroEstado,
 } from "@/lib/queue/db";
+import { StatusChip, type EstadoChip } from "@/components/status-chip";
+import { programaLabel } from "@/lib/reports/programa";
 
 /** Map the server-side processing estado onto the device-side estado. */
 function mapServerEstado(s: string): RegistroEstado | null {
@@ -28,27 +30,32 @@ function mapServerEstado(s: string): RegistroEstado | null {
 /** Estados que vale la pena re-consultar contra el servidor (no terminales). */
 const REFRESH: RegistroEstado[] = ["encolado", "subiendo", "procesando"];
 
-const BADGE: Record<RegistroEstado, { label: string; cls: string }> = {
-  encolado: { label: "En cola", cls: "bg-surface-container-high text-on-surface-variant" },
-  subiendo: { label: "Subiendo", cls: "bg-primary-container/20 text-primary" },
-  procesando: { label: "Procesando", cls: "bg-tertiary-container text-on-tertiary-container" },
-  listo: { label: "Listo", cls: "bg-secondary-container text-on-secondary-container" },
-  error: { label: "Error", cls: "bg-error-container text-on-error-container" },
+const ESTADO_TO_CHIP: Record<RegistroEstado, EstadoChip> = {
+  encolado: "en-cola",
+  subiendo: "subiendo",
+  procesando: "procesando",
+  listo: "listo",
+  error: "error",
 };
+
+// Mismo formato que /tablero: "16 jun · 12:30" — fecha consistente en toda la app.
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
 function fmtFecha(ms: number): string {
   const d = new Date(ms);
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getDate()} ${MESES[d.getMonth()]} · ${hh}:${mm}`;
 }
 
 // Mock SOLO dev para ver la UI sin IndexedDB con datos. No afecta prod.
 const IS_DEV = process.env.NODE_ENV === "development";
 const MOCK_REGISTROS: Registro[] = [
-  { id: "r1", titular: "Gómez Mateo", tipo: "individual", estado: "listo", createdAt: Date.now() - 3600_000 },
-  { id: "r2", titular: "Pérez Sofía", tipo: "individual", estado: "procesando", createdAt: Date.now() - 2 * 3600_000 },
-  { id: "r3", titular: "Sosa Jorge", tipo: "individual", estado: "error", createdAt: Date.now() - 5 * 3600_000 },
-  { id: "r4", titular: "Luna Valentina", tipo: "individual", estado: "encolado", createdAt: Date.now() - 26 * 3600_000 },
-  { id: "r5", titular: "Actividad grupal", tipo: "grupal", estado: "subiendo", createdAt: Date.now() - 27 * 3600_000 },
+  { id: "r1", titular: "Gómez Mateo", tipo: "individual", programa: "ninez-adolescencia", estado: "listo", createdAt: Date.now() - 3600_000 },
+  { id: "r2", titular: "Pérez Sofía", tipo: "individual", programa: "primera-infancia", estado: "procesando", createdAt: Date.now() - 2 * 3600_000 },
+  { id: "r3", titular: "Sosa Jorge", tipo: "individual", programa: "oficios", estado: "error", createdAt: Date.now() - 5 * 3600_000 },
+  { id: "r4", titular: "Luna Valentina", tipo: "individual", programa: "primera-infancia", estado: "encolado", createdAt: Date.now() - 26 * 3600_000 },
+  { id: "r5", titular: "Actividad grupal", tipo: "grupal", programa: "ninez-adolescencia", estado: "subiendo", createdAt: Date.now() - 27 * 3600_000 },
 ];
 
 export default function RegistrosPage() {
@@ -56,6 +63,8 @@ export default function RegistrosPage() {
   const [items, setItems] = useState<Registro[] | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [reintentando, setReintentando] = useState<string | null>(null);
+  const [reintentoMsg, setReintentoMsg] = useState<{ id: string; msg: string } | null>(null);
 
   // Lee IndexedDB y reconcilia los registros no terminados con el servidor,
   // para que "procesando" avance a "listo"/"error" sin tener que abrir cada uno.
@@ -123,6 +132,28 @@ export default function RegistrosPage() {
     }
   }
 
+  async function reintentar(id: string) {
+    setReintentando(id);
+    setReintentoMsg(null);
+    try {
+      const res = await fetch(`/api/informe/${id}/reprocesar`, { method: "POST" });
+      if (res.ok) {
+        setReintentoMsg({ id, msg: "Reprocesando…" });
+        // Optimista: volver a "procesando" hasta que reconcile actualice.
+        setItems((prev) =>
+          prev ? prev.map((r) => (r.id === id ? { ...r, estado: "procesando" } : r)) : prev,
+        );
+      } else {
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
+        setReintentoMsg({ id, msg: d.error ?? `Error ${res.status}` });
+      }
+    } catch {
+      setReintentoMsg({ id, msg: "No se pudo conectar." });
+    } finally {
+      setReintentando(null);
+    }
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-4 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
@@ -157,36 +188,70 @@ export default function RegistrosPage() {
         ) : (
           <ul className="stagger space-y-3">
             {items.map((r) => {
-              const b = BADGE[r.estado];
               return (
                 <li
                   key={r.id}
-                  className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex items-stretch"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
                 >
-                  <button
-                    onClick={() => router.push(`/estado/${r.id}`)}
-                    className="flex-grow min-w-0 text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
-                        {r.titular}
-                      </p>
-                      <p className="font-caption text-caption text-on-surface-variant">
-                        {fmtFecha(r.createdAt)}
-                      </p>
+                  <div className="flex items-stretch">
+                    <button
+                      onClick={() => router.push(`/estado/${r.id}`)}
+                      className="flex-grow min-w-0 text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
+                          {r.titular}
+                        </p>
+                        <p className="font-caption text-caption text-on-surface-variant">
+                          {r.programa ? `${programaLabel(r.programa)} · ` : ""}
+                          {fmtFecha(r.createdAt)}
+                        </p>
+                      </div>
+                      <StatusChip estado={ESTADO_TO_CHIP[r.estado]} />
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(r.id)}
+                      title="Borrar"
+                      aria-label="Borrar registro"
+                      className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  </div>
+
+                  {r.estado === "listo" && (
+                    <div className="border-t border-outline-variant px-2 py-1.5">
+                      <button
+                        onClick={() => router.push(`/informe/${r.id}`)}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">rate_review</span>
+                        <span className="font-caption text-caption">Revisar y enviar</span>
+                      </button>
                     </div>
-                    <span className={`shrink-0 px-2 py-1 rounded text-[11px] font-bold ${b.cls}`}>
-                      {b.label}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setConfirmId(r.id)}
-                    title="Borrar"
-                    aria-label="Borrar registro"
-                    className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[20px]">delete</span>
-                  </button>
+                  )}
+
+                  {r.estado === "error" && (
+                    <div className="border-t border-outline-variant px-2 py-1.5">
+                      <button
+                        onClick={() => reintentar(r.id)}
+                        disabled={reintentando === r.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary disabled:opacity-40 transition-colors"
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[18px] ${reintentando === r.id ? "animate-spin" : ""}`}
+                        >
+                          {reintentando === r.id ? "progress_activity" : "refresh"}
+                        </span>
+                        <span className="font-caption text-caption">Reintentar</span>
+                      </button>
+                      {reintentoMsg?.id === r.id && (
+                        <span className="ml-2 font-caption text-caption text-on-surface-variant">
+                          {reintentoMsg.msg}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}

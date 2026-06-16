@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   SECCION_IDS,
@@ -18,7 +19,10 @@ interface InformeData {
   estado: string;
   informe: FieldReport | null;
   campos: CamposConfig | null;
+  enviado: boolean;
 }
+
+const PRIORIDADES: Prioridad[] = ["ALTA", "MEDIA", "BAJA"];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -52,6 +56,17 @@ export default function InformePage() {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
+  // Edición del output (corrección del promotor antes de enviar).
+  const [resumen, setResumen] = useState("");
+  const [prioridad, setPrioridad] = useState<Prioridad>("MEDIA");
+  const [motivo, setMotivo] = useState("");
+  const [accionesText, setAccionesText] = useState("");
+
+  // Gate de envío a coordinación.
+  const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+
   // ── Load informe ───────────────────────────────────────────────────────────
 
   useEffect(() => {
@@ -66,8 +81,15 @@ export default function InformePage() {
         const d = (await res.json()) as InformeData;
         if (!active) return;
         setData(d);
+        setEnviado(d.enviado);
         if (d.campos?.secciones?.length) {
           setSecciones(new Set(d.campos.secciones));
+        }
+        if (d.informe) {
+          setResumen(d.informe.resumen ?? "");
+          setPrioridad(d.informe.prioridad ?? "MEDIA");
+          setMotivo(d.informe.motivoCriticidad ?? "");
+          setAccionesText((d.informe.accionesPendientes ?? []).join("\n"));
         }
       } catch {
         if (active) setFetchError("No se pudo conectar con el servidor.");
@@ -99,11 +121,28 @@ export default function InformePage() {
     setSaveError(null);
     setSaved(false);
     try {
-      const body: CamposConfig = { secciones: [...secciones] };
+      // 1) Edición del output (resumen/prioridad/motivo/acciones).
+      const editRes = await fetch(`/api/informe/${id}/editar`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resumen,
+          prioridad,
+          motivoCriticidad: motivo,
+          accionesPendientes: accionesText.split("\n").map((a) => a.trim()).filter(Boolean),
+        }),
+      });
+      if (!editRes.ok) {
+        const err = (await editRes.json().catch(() => ({}))) as { error?: string };
+        setSaveError(err.error ?? `Error ${editRes.status}`);
+        return;
+      }
+      // 2) Secciones del .docx.
+      const camposBody: CamposConfig = { secciones: [...secciones] };
       const res = await fetch(`/api/informe/${id}/campos`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify(camposBody),
       });
       if (!res.ok) {
         const err = (await res.json().catch(() => ({}))) as { error?: string };
@@ -116,7 +155,37 @@ export default function InformePage() {
     } finally {
       setSaving(false);
     }
-  }, [id, secciones]);
+  }, [id, secciones, resumen, prioridad, motivo, accionesText]);
+
+  const enviar = useCallback(async () => {
+    setEnviando(true);
+    setSendError(null);
+    try {
+      // Guardar la edición antes de enviar (best-effort; no bloquea si campos falla).
+      await fetch(`/api/informe/${id}/editar`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          resumen,
+          prioridad,
+          motivoCriticidad: motivo,
+          accionesPendientes: accionesText.split("\n").map((a) => a.trim()).filter(Boolean),
+        }),
+      }).catch(() => {});
+      const res = await fetch(`/api/informe/${id}/enviar`, { method: "POST" });
+      if (!res.ok) {
+        const err = (await res.json().catch(() => ({}))) as { error?: string };
+        setSendError(err.error ?? `Error ${res.status}`);
+        return;
+      }
+      setEnviado(true);
+      router.push("/registros");
+    } catch {
+      setSendError("No se pudo conectar con el servidor.");
+    } finally {
+      setEnviando(false);
+    }
+  }, [id, resumen, prioridad, motivo, accionesText, router]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -167,7 +236,7 @@ export default function InformePage() {
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="font-headline-sm text-headline-sm text-on-surface truncate">
-            Editar campos del informe
+            Revisar y enviar
           </h1>
           {titular && (
             <p className="font-caption text-caption text-on-surface-variant truncate">
@@ -184,41 +253,92 @@ export default function InformePage() {
           <section className="anim-enter bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md space-y-stack-sm">
             <div className="flex items-start justify-between gap-3">
               <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
-                Resumen
+                Revisión
               </h2>
-              {informe.prioridad && (
-                <span
-                  className={`shrink-0 px-2 py-0.5 rounded text-[11px] font-bold ${PRIORIDAD_CLS[informe.prioridad]}`}
-                >
-                  {informe.prioridad}
+              {enviado ? (
+                <span className="shrink-0 px-2 py-0.5 rounded text-[11px] font-bold bg-secondary-container text-on-secondary-container">
+                  En coordinación
+                </span>
+              ) : (
+                <span className={`shrink-0 px-2 py-0.5 rounded text-[11px] font-bold ${PRIORIDAD_CLS[prioridad]}`}>
+                  {prioridad}
                 </span>
               )}
             </div>
-            {informe.motivoCriticidad && (
-              <p className="font-body-sm text-body-sm text-on-surface-variant italic">
-                {informe.motivoCriticidad}
+
+            {enviado && (
+              <p className="font-caption text-caption text-on-surface-variant">
+                Ya enviado a coordinación. No se puede editar.
               </p>
             )}
-            <p className="font-body-md text-body-md text-on-surface leading-relaxed">
-              {informe.resumen || "Sin resumen disponible."}
-            </p>
-            {informe.accionesPendientes?.length > 0 && (
-              <div>
-                <p className="font-label-sm text-label-sm text-on-surface-variant mb-1">
-                  Acciones pendientes
-                </p>
-                <ul className="space-y-1">
-                  {informe.accionesPendientes.map((a, i) => (
-                    <li key={i} className="flex items-start gap-2 font-body-sm text-body-sm text-on-surface">
-                      <span className="material-symbols-outlined text-[16px] text-primary mt-0.5">
-                        task_alt
-                      </span>
-                      {a}
-                    </li>
-                  ))}
-                </ul>
+
+            {/* Prioridad */}
+            <div>
+              <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                Prioridad
+              </label>
+              <div className="flex gap-2">
+                {PRIORIDADES.map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    disabled={enviado}
+                    onClick={() => setPrioridad(p)}
+                    className={`flex-1 h-10 rounded-lg font-label-sm text-label-sm transition-colors disabled:opacity-60 ${
+                      prioridad === p
+                        ? PRIORIDAD_CLS[p]
+                        : "bg-surface-container-low text-on-surface-variant"
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
+
+            {/* Motivo de criticidad */}
+            <div>
+              <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                Motivo de criticidad
+              </label>
+              <input
+                type="text"
+                value={motivo}
+                disabled={enviado}
+                onChange={(e) => { setMotivo(e.target.value); setSaved(false); }}
+                placeholder="Por qué esta prioridad (máx. ~15 palabras)"
+                className="w-full h-11 px-3 bg-white border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:border-primary outline-none disabled:bg-surface-container-low disabled:text-on-surface-variant"
+              />
+            </div>
+
+            {/* Resumen */}
+            <div>
+              <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                Resumen
+              </label>
+              <textarea
+                value={resumen}
+                disabled={enviado}
+                onChange={(e) => { setResumen(e.target.value); setSaved(false); }}
+                rows={4}
+                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface leading-relaxed focus:border-primary outline-none resize-y disabled:bg-surface-container-low disabled:text-on-surface-variant"
+              />
+            </div>
+
+            {/* Acciones pendientes (una por línea) */}
+            <div>
+              <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
+                Acciones pendientes <span className="font-caption text-caption">(una por línea)</span>
+              </label>
+              <textarea
+                value={accionesText}
+                disabled={enviado}
+                onChange={(e) => { setAccionesText(e.target.value); setSaved(false); }}
+                rows={3}
+                placeholder="Ej: Turno pediátrico\nContactar a trabajo social"
+                className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:border-primary outline-none resize-y disabled:bg-surface-container-low disabled:text-on-surface-variant"
+              />
+            </div>
 
             {informe.transcripcion && (
               <div className="pt-1 border-t border-outline-variant">
@@ -291,39 +411,65 @@ export default function InformePage() {
         {saveError && (
           <p className="font-body-sm text-body-sm text-error px-1">{saveError}</p>
         )}
+        {sendError && (
+          <p className="font-body-sm text-body-sm text-error px-1">{sendError}</p>
+        )}
         {saved && (
           <div className="flex items-center gap-2 text-secondary">
             <span className="material-symbols-outlined text-[20px]">check_circle</span>
-            <p className="font-body-sm text-body-sm">Informe regenerado correctamente.</p>
+            <p className="font-body-sm text-body-sm">Cambios guardados.</p>
           </div>
         )}
       </main>
 
       {/* Sticky bottom bar */}
       <div className="fixed bottom-0 w-full bg-surface border-t border-outline-variant px-container-margin py-3 flex gap-3 max-w-xl mx-auto left-0 right-0">
-        <button
-          onClick={guardar}
-          disabled={saving}
-          className="flex-1 h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
-        >
-          {saving ? (
-            <span className="material-symbols-outlined text-[20px] animate-spin">
-              progress_activity
-            </span>
-          ) : (
-            <span className="material-symbols-outlined text-[20px]">save</span>
-          )}
-          {saving ? "Generando…" : "Guardar y regenerar"}
-        </button>
-
-        <a
-          href={`/api/informe/${id}/docx`}
-          className="h-14 px-4 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
-          title="Descargar .docx"
-        >
-          <span className="material-symbols-outlined text-[20px]">download</span>
-          .docx
-        </a>
+        {enviado ? (
+          <>
+            <Link
+              href={`/informe/${id}/preview`}
+              className="flex-1 h-14 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2"
+            >
+              <span className="material-symbols-outlined text-[20px]">visibility</span>
+              Ver informe
+            </Link>
+            <a
+              href={`/api/informe/${id}/docx`}
+              className="h-14 px-4 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2"
+              title="Descargar .docx"
+            >
+              <span className="material-symbols-outlined text-[20px]">download</span>
+              .docx
+            </a>
+          </>
+        ) : (
+          <>
+            <button
+              onClick={guardar}
+              disabled={saving || enviando}
+              className="h-14 px-4 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
+            >
+              {saving ? (
+                <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+              ) : (
+                <span className="material-symbols-outlined text-[20px]">save</span>
+              )}
+              {saving ? "Guardando…" : "Guardar"}
+            </button>
+            <button
+              onClick={enviar}
+              disabled={saving || enviando}
+              className="flex-1 h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
+            >
+              {enviando ? (
+                <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+              ) : (
+                <span className="material-symbols-outlined text-[20px]">send</span>
+              )}
+              {enviando ? "Enviando…" : "Enviar a coordinación"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

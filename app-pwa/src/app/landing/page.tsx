@@ -252,7 +252,7 @@ export default function LandingPage() {
               <a className="landing-header__link" href="#faq">Preguntas</a>
             </nav>
             <a className="landing-btn landing-btn--primary landing-header__cta" href={`mailto:${CONTACT_EMAIL}`}>
-              Hablemos
+              Contacto
             </a>
           </div>
         </div>

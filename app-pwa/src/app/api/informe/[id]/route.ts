@@ -26,6 +26,8 @@ export async function GET(_request: Request, { params }: Params) {
     error: row.error,
     informe: row.informeJson,
     campos: row.campos,
+    enviado: row.enviado,
+    enviadoAt: row.enviadoAt,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   });
@@ -43,6 +45,16 @@ export async function DELETE(_request: Request, { params }: Params) {
     assertValidId(id);
   } catch {
     return NextResponse.json({ error: "id inválido" }, { status: 400 });
+  }
+
+  // Gate: lo ya enviado a coordinación no lo borra el promotor; solo el admin
+  // (vía /api/admin/informe/[id]). El cliente igual limpia su copia local.
+  const row = getInforme(id);
+  if (row?.enviado) {
+    return NextResponse.json(
+      { error: "el informe ya está en coordinación", enviado: true },
+      { status: 409 },
+    );
   }
 
   deleteInforme(id);

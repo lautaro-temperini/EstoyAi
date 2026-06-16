@@ -53,6 +53,7 @@ export interface Registro {
   id: string;
   titular: string;
   tipo: TipoRegistro | null;
+  programa: Programa | null;
   estado: RegistroEstado;
   createdAt: number;
 }

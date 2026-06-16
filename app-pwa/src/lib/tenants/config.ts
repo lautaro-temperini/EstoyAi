@@ -123,3 +123,16 @@ export function tenantPassword(tenant: Tenant): string {
     ""
   );
 }
+
+/** Nombre de la env var con la contraseña ADMIN del tenant. */
+export function adminPasswordEnvKey(slug: string): string {
+  return `TENANT_${slug.toUpperCase().replace(/-/g, "_")}_ADMIN_PASSWORD`;
+}
+
+/**
+ * Contraseña admin del tenant (habilita borrar en coordinación). "" si no está
+ * definida → no hay rol admin para ese tenant.
+ */
+export function tenantAdminPassword(tenant: Tenant): string {
+  return process.env[adminPasswordEnvKey(tenant.slug)] || "";
+}

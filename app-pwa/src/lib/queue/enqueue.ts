@@ -63,6 +63,7 @@ export async function enqueueRegistro(input: EnqueueInput): Promise<string> {
     id,
     titular: titularOf(input.tipo, input.beneficiario),
     tipo: input.tipo,
+    programa: input.programa,
     estado: "encolado",
     createdAt: now,
   });

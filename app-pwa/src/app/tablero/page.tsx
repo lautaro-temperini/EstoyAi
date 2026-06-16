@@ -11,13 +11,17 @@ import { MOCK_ITEMS } from "./mock";
 export const dynamic = "force-dynamic";
 
 export default async function TableroPage() {
-  const tenant = tenantFromHeaders(await headers());
-  // Dev: mock para ver UI/filtros sin depender de datos. Prod: datos reales de SQLite.
-  const items =
-    process.env.NODE_ENV === "development"
-      ? MOCK_ITEMS
-      : listTriageItems(listInformesByTenant(tenant.slug));
+  const h = await headers();
+  const tenant = tenantFromHeaders(h);
+  const isDev = process.env.NODE_ENV === "development";
+  // El tablero muestra SOLO lo enviado a coordinación (gate del promotor).
+  // Dev: mock (solo los "enviados" = LISTO) para ver UI/filtros sin datos.
+  const items = isDev
+    ? MOCK_ITEMS.filter((i) => i.estado === "LISTO")
+    : listTriageItems(listInformesByTenant(tenant.slug, { soloEnviados: true }));
   const counts = countByCategoria(items);
+  // Borrar en coordinación: solo admin (en dev se habilita para poder probar).
+  const isAdmin = isDev || h.get("x-role") === "admin";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -42,7 +46,7 @@ export default async function TableroPage() {
             Todavía no hay informes en esta sede.
           </p>
         ) : (
-          <TableroClient items={items} counts={counts} />
+          <TableroClient items={items} counts={counts} isAdmin={isAdmin} />
         )}
       </main>
     </div>
