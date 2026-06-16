@@ -33,9 +33,14 @@ const REFRESH: RegistroEstado[] = ["encolado", "procesando"];
 const ESTADO_TO_CHIP: Record<RegistroEstado, EstadoChip> = {
   encolado: "en-cola",
   procesando: "procesando",
-  listo: "listo",
+  listo: "por-revisar",
   error: "error",
 };
+
+/** Chip del registro: si ya fue enviado a coordinación, prevalece sobre el estado. */
+function chipDe(r: Registro): EstadoChip {
+  return r.enviado ? "enviado" : ESTADO_TO_CHIP[r.estado];
+}
 
 // Mismo formato que /tablero: "16 jun · 12:30" — fecha consistente en toda la app.
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
@@ -50,7 +55,7 @@ function fmtFecha(ms: number): string {
 // Mock SOLO dev para ver la UI sin IndexedDB con datos. No afecta prod.
 const IS_DEV = process.env.NODE_ENV === "development";
 const MOCK_REGISTROS: Registro[] = [
-  { id: "r1", titular: "Gómez Mateo", tipo: "individual", programa: "ninez-adolescencia", estado: "listo", createdAt: Date.now() - 3600_000 },
+  { id: "r1", titular: "Gómez Mateo", tipo: "individual", programa: "ninez-adolescencia", estado: "listo", enviado: true, createdAt: Date.now() - 3600_000 },
   { id: "r2", titular: "Pérez Sofía", tipo: "individual", programa: "primera-infancia", estado: "procesando", createdAt: Date.now() - 2 * 3600_000 },
   { id: "r3", titular: "Sosa Jorge", tipo: "individual", programa: "oficios", estado: "error", createdAt: Date.now() - 5 * 3600_000 },
   { id: "r4", titular: "Luna Valentina", tipo: "individual", programa: "primera-infancia", estado: "encolado", createdAt: Date.now() - 26 * 3600_000 },
@@ -76,14 +81,18 @@ export default function RegistrosPage() {
     let changed = false;
     const next = await Promise.all(
       local.map(async (r) => {
-        if (!REFRESH.includes(r.estado)) return r;
+        // Refresca mientras no es terminal, y los listo aún no enviados (para captar `enviado`).
+        const needsFetch = REFRESH.includes(r.estado) || (r.estado === "listo" && !r.enviado);
+        if (!needsFetch) return r;
         try {
           const res = await fetch(`/api/informe/${r.id}`, { cache: "no-store" });
           if (!res.ok) return r; // el servidor todavía no lo tiene (404) — sigue igual
-          const data = (await res.json()) as { estado?: string };
+          const data = (await res.json()) as { estado?: string; enviado?: boolean };
           const mapped = data.estado ? mapServerEstado(data.estado) : null;
-          if (mapped && mapped !== r.estado) {
-            const updated = { ...r, estado: mapped };
+          const nextEstado = mapped ?? r.estado;
+          const nextEnviado = data.enviado ?? r.enviado ?? false;
+          if (nextEstado !== r.estado || nextEnviado !== (r.enviado ?? false)) {
+            const updated = { ...r, estado: nextEstado, enviado: nextEnviado };
             await putRegistro(updated); // persiste en IndexedDB
             changed = true;
             return updated;
@@ -207,7 +216,7 @@ export default function RegistrosPage() {
                         {fmtFecha(r.createdAt)}
                       </p>
                     </div>
-                    <StatusChip estado={ESTADO_TO_CHIP[r.estado]} />
+                    <StatusChip estado={chipDe(r)} />
                   </button>
 
                   {/* Barra de acciones: acción contextual (izq) + borrar (der). */}

@@ -10,12 +10,16 @@ import { PreviewBack, PreviewActions } from "./preview-actions";
 
 export const dynamic = "force-dynamic";
 
-type Params = { params: Promise<{ id: string }> };
+type Params = {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ ctx?: string }>;
+};
 
 const PRIORIDAD_CHIP: Record<string, EstadoChip> = { ALTA: "alta", MEDIA: "media", BAJA: "baja" };
 
-export default async function PreviewPage({ params }: Params) {
+export default async function PreviewPage({ params, searchParams }: Params) {
   const { id } = await params;
+  const { ctx } = await searchParams;
   let valid = true;
   try {
     assertValidId(id);
@@ -116,7 +120,7 @@ export default async function PreviewPage({ params }: Params) {
         </article>
       </main>
 
-      <PreviewActions id={id} enviado={enviado} />
+      <PreviewActions id={id} enviado={enviado} ctx={ctx} />
     </div>
   );
 }

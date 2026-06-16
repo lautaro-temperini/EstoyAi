@@ -45,10 +45,11 @@ Paleta Tailwind por defecto (no son tokens custom de `globals.css`; conviven con
 | `alta`       | ALTA        | `bg-pink-100 text-pink-700`   |
 | `media`      | MEDIA       | `bg-orange-100 text-orange-700` |
 | `baja`       | BAJA        | `bg-yellow-100 text-yellow-800` |
-| `en-cola`    | En cola     | `bg-gray-100 text-gray-600`   |
-| `procesando` | Procesando  | `bg-cyan-100 text-cyan-700`   |
-| `listo`      | Listo       | `bg-green-100 text-green-700` |
-| `error`      | Error       | `bg-red-100 text-red-700`     |
+| `en-cola`     | En cola                | `bg-gray-100 text-gray-600`       |
+| `procesando`  | Procesando             | `bg-cyan-100 text-cyan-700`       |
+| `por-revisar` | Listo para revisar     | `bg-green-100 text-green-700`     |
+| `enviado`     | Enviado a coordinación | `bg-emerald-100 text-emerald-700` |
+| `error`       | Error                  | `bg-red-100 text-red-700`         |
 
 Cada pantalla mapea su propio enum (`TriageCategoria`, `RegistroEstado`) a uno de estos 8 estados; `StatusChip` no conoce esos enums, solo el estado estandarizado.
 

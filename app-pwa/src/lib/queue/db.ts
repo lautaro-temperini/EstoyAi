@@ -54,6 +54,8 @@ export interface Registro {
   tipo: TipoRegistro | null;
   programa: Programa | null;
   estado: RegistroEstado;
+  /** Enviado a coordinación (gate). Se sincroniza desde el servidor en reconcile. */
+  enviado?: boolean;
   createdAt: number;
 }
 

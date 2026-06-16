@@ -19,14 +19,28 @@ export function PreviewBack() {
 }
 
 /**
- * Acciones del preview, según el estado:
- *  - borrador (no enviado): Editar + Enviar a coordinación.
- *  - en coordinación (enviado): solo Editar.
+ * Acciones del preview, según contexto + estado:
+ *  - Coordinación (ctx="coord", desde /tablero): solo Editar.
+ *  - Promotor borrador (no enviado): Editar + Enviar a coordinación.
+ *  - Promotor ya enviado: sin opciones (solo lectura) → no se renderiza barra.
  */
-export function PreviewActions({ id, enviado }: { id: string; enviado: boolean }) {
+export function PreviewActions({
+  id,
+  enviado,
+  ctx,
+}: {
+  id: string;
+  enviado: boolean;
+  ctx?: string;
+}) {
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isCoord = ctx === "coord";
+  // Promotor sobre un informe ya enviado: solo lectura, sin barra de acciones.
+  if (!isCoord && enviado) return null;
+  const showEnviar = !isCoord && !enviado;
 
   async function enviar() {
     setEnviando(true);
@@ -53,15 +67,15 @@ export function PreviewActions({ id, enviado }: { id: string; enviado: boolean }
         <Link
           href={`/informe/${id}`}
           className={`h-14 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform ${
-            enviado
-              ? "flex-1 bg-primary text-on-primary"
-              : "px-4 bg-surface-container-low border border-outline-variant text-primary"
+            showEnviar
+              ? "px-4 bg-surface-container-low border border-outline-variant text-primary"
+              : "flex-1 bg-primary text-on-primary"
           }`}
         >
           <span className="material-symbols-outlined text-[20px]">edit</span>
           Editar
         </Link>
-        {!enviado && (
+        {showEnviar && (
           <button
             onClick={enviar}
             disabled={enviando}

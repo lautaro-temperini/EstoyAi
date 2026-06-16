@@ -230,7 +230,7 @@ export default function InformePage() {
       {/* Header */}
       <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-3 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
         <button
-          onClick={() => router.push(`/informe/${id}/preview`)}
+          onClick={() => router.back()}
           aria-label="Volver"
           className="p-2 -ml-2 hover:bg-surface-container-low rounded-full text-primary"
         >

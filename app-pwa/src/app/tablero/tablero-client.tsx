@@ -259,7 +259,7 @@ export function TableroClient({
                 className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
               >
                 <Link
-                  href={`/informe/${i.id}/preview`}
+                  href={`/informe/${i.id}/preview?ctx=coord`}
                   className="block p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                 >
                   <div className="flex items-start justify-between gap-3">
