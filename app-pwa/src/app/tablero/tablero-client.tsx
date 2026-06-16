@@ -2,7 +2,6 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { CloudflareIcon, PodioIcon } from "@/components/brand-icons";
 import { StatusChip, type EstadoChip } from "@/components/status-chip";
 import { programaLabel } from "@/lib/reports/programa";
 import type { Programa } from "@/lib/reports/schema";
@@ -49,8 +48,6 @@ function benefKey(b: TriageItem["beneficiario"]): string | null {
 }
 
 type Feedback = { id: string; ok: boolean; msg: string } | null;
-type Accion = "r2" | "podio";
-type Busy = { id: string; accion: Accion } | null;
 
 export function TableroClient({
   items,
@@ -65,7 +62,6 @@ export function TableroClient({
   const [prog, setProg] = useState<Programa | "todos">("todos");
   const [query, setQuery] = useState("");
   const [benef, setBenef] = useState<{ key: string; label: string } | null>(null);
-  const [busy, setBusy] = useState<Busy>(null);
   const [feedback, setFeedback] = useState<Feedback>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -101,26 +97,6 @@ export function TableroClient({
     { id: "MEDIA", label: "Media", n: counts.MEDIA },
     { id: "BAJA", label: "Baja", n: counts.BAJA },
   ];
-
-  async function ejecutarAccion(id: string, accion: Accion) {
-    setBusy({ id, accion });
-    setFeedback(null);
-    const endpoint = accion === "r2" ? "subir-r2" : "podio";
-    const okMsg = accion === "r2" ? "Subido a Cloudflare." : "Anexado a Podio.";
-    try {
-      const res = await fetch(`/api/informe/${id}/${endpoint}`, { method: "POST" });
-      if (res.ok) {
-        setFeedback({ id, ok: true, msg: okMsg });
-      } else {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setFeedback({ id, ok: false, msg: data.error ?? `Error ${res.status}` });
-      }
-    } catch {
-      setFeedback({ id, ok: false, msg: "No se pudo conectar con el servidor." });
-    } finally {
-      setBusy(null);
-    }
-  }
 
   async function borrar(id: string) {
     setDeleting(true);
@@ -252,87 +228,52 @@ export function TableroClient({
         <ul className="space-y-3">
           {filtrados.map((i) => {
             const fb = feedback?.id === i.id ? feedback : null;
-            const isBusy = busy?.id === i.id;
             return (
               <li
                 key={i.id}
                 className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
               >
-                <Link
-                  href={`/informe/${i.id}/preview?ctx=coord`}
-                  className="block p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
-                >
-                  <div className="flex justify-end">
-                    <StatusChip estado={CATEGORIA_TO_ESTADO[i.categoria]} />
-                  </div>
-                  <p className="mt-1 font-label-md text-label-md text-on-surface font-semibold truncate">
-                    {nombreBeneficiario(i.beneficiario)}
-                  </p>
-                  <p className="font-caption text-caption text-on-surface-variant">
-                    {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
-                  </p>
-
-                  {i.motivoCriticidad && (
-                    <p className="mt-2 font-body-md text-body-md text-on-surface-variant line-clamp-2">
-                      {i.motivoCriticidad}
+                <div className="flex items-stretch">
+                  <Link
+                    href={`/informe/${i.id}/preview?ctx=coord`}
+                    className="flex-grow min-w-0 block p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
+                        {nombreBeneficiario(i.beneficiario)}
+                      </p>
+                      <StatusChip estado={CATEGORIA_TO_ESTADO[i.categoria]} />
+                    </div>
+                    <p className="mt-0.5 font-caption text-caption text-on-surface-variant">
+                      {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
                     </p>
-                  )}
 
-                  {i.accionesPendientes.length > 0 && (
-                    <ul className="mt-2 space-y-1">
-                      {i.accionesPendientes.map((a, idx) => (
-                        <li
-                          key={idx}
-                          className="flex items-start gap-1.5 font-caption text-caption text-on-surface-variant"
-                        >
-                          <span className="text-primary shrink-0 leading-none">•</span>
-                          <span className="min-w-0">{a}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </Link>
+                    {i.motivoCriticidad && (
+                      <p className="mt-1.5 font-caption text-caption text-on-surface-variant line-clamp-2">
+                        {i.motivoCriticidad}
+                      </p>
+                    )}
 
-                <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
-                  <a
-                    href={`/api/informe/${i.id}/docx`}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">description</span>
-                    <span className="font-caption text-caption">.docx</span>
-                  </a>
-                  <button
-                    onClick={() => ejecutarAccion(i.id, "r2")}
-                    disabled={isBusy}
-                    title="Subir a Cloudflare"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-on-surface-variant disabled:opacity-40 transition-colors"
-                  >
-                    {isBusy && busy.accion === "r2" ? (
-                      <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                    ) : (
-                      <CloudflareIcon className="shrink-0" />
+                    {i.accionesPendientes.length > 0 && (
+                      <ul className="mt-1.5 space-y-1">
+                        {i.accionesPendientes.map((a, idx) => (
+                          <li
+                            key={idx}
+                            className="flex items-start gap-1.5 font-caption text-caption text-on-surface-variant"
+                          >
+                            <span className="text-primary shrink-0 leading-none">•</span>
+                            <span className="min-w-0">{a}</span>
+                          </li>
+                        ))}
+                      </ul>
                     )}
-                    <span className="font-caption text-caption">Cloudflare</span>
-                  </button>
-                  <button
-                    onClick={() => ejecutarAccion(i.id, "podio")}
-                    disabled={isBusy}
-                    title="Anexar con Podio"
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-on-surface-variant disabled:opacity-40 transition-colors"
-                  >
-                    {isBusy && busy.accion === "podio" ? (
-                      <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
-                    ) : (
-                      <PodioIcon className="shrink-0" />
-                    )}
-                    <span className="font-caption text-caption">Podio</span>
-                  </button>
+                  </Link>
                   {isAdmin && (
                     <button
                       onClick={() => setConfirmDel(i.id)}
                       title="Borrar de coordinación"
                       aria-label="Borrar de coordinación"
-                      className="ml-auto flex items-center justify-center w-9 h-9 rounded-lg hover:bg-error-container text-error transition-colors"
+                      className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
                     >
                       <span className="material-symbols-outlined text-[20px]">delete</span>
                     </button>

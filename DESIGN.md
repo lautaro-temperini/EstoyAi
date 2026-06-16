@@ -69,12 +69,13 @@ Pills de filtro (criticidad, programa) en `/tablero`. Distinto de los chips de e
 
 ## Acciones de card
 
-Cards con acciones (`/registros`, `/tablero`) usan **una barra inferior** (`border-t border-outline-variant px-2 py-1.5`), no botones al costado.
+Layout de card en `/registros` y `/tablero`:
 
-- **Acciones contextuales** (Revisar y enviar, Reintentar, Ver, .docx, Cloudflare, Podio): a la izquierda, `inline-flex … rounded-lg hover:bg-surface-container-low`, ícono 18px + `font-caption`.
-- **Borrar** (destructiva): siempre **al final** (`ml-auto`), `w-9 h-9 rounded-lg hover:bg-error-container text-error`, ícono 20px. Confirmación en modal antes de borrar.
-- El cuerpo de la card (título + metadatos) es el área navegable; las acciones nunca van ahí.
-- **`StatusChip` arriba a la derecha**, en su propia fila sobre el título (no al lado de los metadatos: en mobile los labels largos —"Enviado a coordinación"— rompían línea).
+- **Cuerpo navegable** (`flex-grow`, área clickeable → preview/estado): primera fila `flex items-start justify-between gap-2` con **título** (`truncate`) a la izquierda y **`StatusChip`** a la derecha (el título trunca, el chip no rompe línea). Debajo: metadatos (`font-caption`), y en `/tablero` el motivo de criticidad + acciones pendientes, todo en `font-caption` (jerarquía: el título es lo único en `label-md`).
+- **Borrar** (destructiva): botón **al costado**, `shrink-0 px-4 border-l border-outline-variant hover:bg-error-container text-error`, ícono 20px, alto completo de la card. Confirmación en modal. En `/tablero` solo visible para admin.
+- **Acción contextual puntual** (ej. "Reintentar" en error): barra inferior `border-t … px-2 py-1.5`, solo cuando aplica.
+- **Descargar `.docx`** vive en el preview (arriba a la derecha), no en la card.
+- R2/Podio: endpoints abiertos en el código pero **fuera de la UI** por ahora.
 
 ---
 

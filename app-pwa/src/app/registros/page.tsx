@@ -201,27 +201,36 @@ export default function RegistrosPage() {
                   key={r.id}
                   className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
                 >
-                  <button
-                    onClick={() =>
-                      router.push(r.estado === "listo" ? `/informe/${r.id}/preview` : `/estado/${r.id}`)
-                    }
-                    className="w-full text-left p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
-                  >
-                    <div className="flex justify-end">
-                      <StatusChip estado={chipDe(r)} />
-                    </div>
-                    <p className="mt-1 font-label-md text-label-md text-on-surface font-semibold truncate">
-                      {r.titular}
-                    </p>
-                    <p className="font-caption text-caption text-on-surface-variant">
-                      {r.programa ? `${programaLabel(r.programa)} · ` : ""}
-                      {fmtFecha(r.createdAt)}
-                    </p>
-                  </button>
+                  <div className="flex items-stretch">
+                    <button
+                      onClick={() =>
+                        router.push(r.estado === "listo" ? `/informe/${r.id}/preview` : `/estado/${r.id}`)
+                      }
+                      className="flex-grow min-w-0 text-left p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
+                          {r.titular}
+                        </p>
+                        <StatusChip estado={chipDe(r)} />
+                      </div>
+                      <p className="mt-0.5 font-caption text-caption text-on-surface-variant">
+                        {r.programa ? `${programaLabel(r.programa)} · ` : ""}
+                        {fmtFecha(r.createdAt)}
+                      </p>
+                    </button>
+                    <button
+                      onClick={() => setConfirmId(r.id)}
+                      title="Borrar"
+                      aria-label="Borrar registro"
+                      className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  </div>
 
-                  {/* Barra de acciones: acción contextual (izq) + borrar (der). */}
-                  <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
-                    {r.estado === "error" && (
+                  {r.estado === "error" && (
+                    <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
                       <button
                         onClick={() => reintentar(r.id)}
                         disabled={reintentando === r.id}
@@ -234,21 +243,13 @@ export default function RegistrosPage() {
                         </span>
                         <span className="font-caption text-caption">Reintentar</span>
                       </button>
-                    )}
-                    {reintentoMsg?.id === r.id && (
-                      <span className="font-caption text-caption text-on-surface-variant">
-                        {reintentoMsg.msg}
-                      </span>
-                    )}
-                    <button
-                      onClick={() => setConfirmId(r.id)}
-                      title="Borrar"
-                      aria-label="Borrar registro"
-                      className="ml-auto flex items-center justify-center w-9 h-9 rounded-lg hover:bg-error-container text-error transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
-                  </div>
+                      {reintentoMsg?.id === r.id && (
+                        <span className="font-caption text-caption text-on-surface-variant">
+                          {reintentoMsg.msg}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </li>
               );
             })}
