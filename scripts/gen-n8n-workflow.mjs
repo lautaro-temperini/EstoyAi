@@ -39,13 +39,13 @@ const ESTRUCTURA_CAMPOS = [
   "- entidades.fechas: fechas mencionadas; convierte las relativas (\"hoy\", \"el martes\") a fecha absoluta usando la \"Fecha del registro\"; si no hay, [].",
   "- accionesPendientes: tareas de seguimiento dichas literalmente; si no hay, [].",
   "Objeto datos (columna vertebral del registro; deja vacío lo no mencionado):",
-  "- datos.demografia: nombre, edad, fechaNacimiento del beneficiario; esMenor=true SOLO si se indica o se deduce que es menor de edad.",
+  "- datos.demografia: edad, fechaNacimiento del beneficiario; esMenor=true SOLO si se indica o se deduce que es menor de edad. NO extraigas el nombre del beneficiario: ya viene cargado en los campos fijos del registro.",
   "- datos.metricas: peso y talla (antropométricos para nutrición), diagnosticos (lista de diagnósticos médicos específicos: oncología, discapacidad, VIH…), avanceObra (estado de una obra habitacional).",
   "- datos.socioeconomico: familia (condición familiar), ingresos, vivienda, vulnerabilidades (lista de situaciones de riesgo mencionadas literalmente: violencia, situación de calle, sin documentación, etc.; si no se mencionan, []).",
-  "- datos.intervencion: fecha exacta, lugar (clave en operativos móviles), tipoActividad (taller, consulta médica, asesoría legal, entrega…), profesionales (lista de profesionales o voluntarios presentes).",
+  "- datos.intervencion: fecha exacta, lugar (clave en operativos móviles), tipoActividad (taller, consulta médica, asesoría legal, entrega…).",
   "- datos.seguimiento: situacionLaboral, desempenoAcademico. No uses este campo para acciones pendientes — esas van en accionesPendientes.",
   "- datos.narrativa: detalles cualitativos sutiles pero valiosos (reacción emocional, percepción de una madre sobre su vivienda…). Si no hay, \"\".",
-  "Regla crítica para listas: si un campo de tipo array no se menciona explícitamente en la transcripción, devolvé [] sin excepción. Nunca uses los nombres de campos como ejemplos de valores. \"compromisos\", \"vulnerabilidades\", \"profesionales\" son etiquetas, no datos.",
+  "Regla crítica para listas: si un campo de tipo array no se menciona explícitamente en la transcripción, devolvé [] sin excepción. Nunca uses los nombres de campos como ejemplos de valores. \"compromisos\", \"vulnerabilidades\", \"diagnosticos\" son etiquetas, no datos.",
   "Responde en español. /no_think",
 ];
 
@@ -93,12 +93,11 @@ const EXTRACTION_JSON_SCHEMA = {
         demografia: {
           type: "object",
           properties: {
-            nombre: { type: "string" },
             edad: { type: "string" },
             fechaNacimiento: { type: "string" },
             esMenor: { type: "boolean" },
           },
-          required: ["nombre", "edad", "fechaNacimiento", "esMenor"],
+          required: ["edad", "fechaNacimiento", "esMenor"],
           additionalProperties: false,
         },
         metricas: {
@@ -129,9 +128,8 @@ const EXTRACTION_JSON_SCHEMA = {
             fecha: { type: "string" },
             lugar: { type: "string" },
             tipoActividad: { type: "string" },
-            profesionales: strArray,
           },
-          required: ["fecha", "lugar", "tipoActividad", "profesionales"],
+          required: ["fecha", "lugar", "tipoActividad"],
           additionalProperties: false,
         },
         seguimiento: {

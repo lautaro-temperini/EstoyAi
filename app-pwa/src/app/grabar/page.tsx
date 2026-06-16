@@ -16,7 +16,7 @@ const RING_C = 2 * Math.PI * RING_R;
 
 export default function RecordingPage() {
   const router = useRouter();
-  const { tipo, beneficiario, programa } = useFlow();
+  const { tipo, beneficiario, programa, profesional } = useFlow();
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -35,6 +35,7 @@ export default function RecordingPage() {
         durationMs: result.durationMs,
         tipo: tipo ?? null,
         programa: programa ?? null,
+        profesional: profesional ?? null,
         beneficiario:
           beneficiario?.nombre || beneficiario?.dni
             ? {

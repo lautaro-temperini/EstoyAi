@@ -9,7 +9,6 @@ import {
   type Registro,
   type RegistroEstado,
 } from "@/lib/queue/db";
-import { CloudflareIcon, PodioIcon } from "@/components/brand-icons";
 
 /** Map the server-side processing estado onto the device-side estado. */
 function mapServerEstado(s: string): RegistroEstado | null {
@@ -42,16 +41,11 @@ function fmtFecha(ms: number): string {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-type AccionPendiente = { id: string; accion: "r2" | "podio" } | null;
-type Feedback = { id: string; ok: boolean; msg: string } | null;
-
 export default function RegistrosPage() {
   const router = useRouter();
   const [items, setItems] = useState<Registro[] | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [busy, setBusy] = useState<AccionPendiente>(null);
-  const [feedback, setFeedback] = useState<Feedback>(null);
 
   // Lee IndexedDB y reconcilia los registros no terminados con el servidor,
   // para que "procesando" avance a "listo"/"error" sin tener que abrir cada uno.
@@ -115,26 +109,6 @@ export default function RegistrosPage() {
     }
   }
 
-  async function ejecutarAccion(id: string, accion: "r2" | "podio") {
-    setBusy({ id, accion });
-    setFeedback(null);
-    const endpoint = accion === "r2" ? "subir-r2" : "podio";
-    const okMsg = accion === "r2" ? "Subido a Cloudflare." : "Anexado a Podio.";
-    try {
-      const res = await fetch(`/api/informe/${id}/${endpoint}`, { method: "POST" });
-      if (res.ok) {
-        setFeedback({ id, ok: true, msg: okMsg });
-      } else {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setFeedback({ id, ok: false, msg: data.error ?? `Error ${res.status}` });
-      }
-    } catch {
-      setFeedback({ id, ok: false, msg: "No se pudo conectar con el servidor." });
-    } finally {
-      setBusy(null);
-    }
-  }
-
   return (
     <div className="min-h-screen flex flex-col">
       <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-4 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
@@ -170,9 +144,6 @@ export default function RegistrosPage() {
           <ul className="stagger space-y-3">
             {items.map((r) => {
               const b = BADGE[r.estado];
-              const listo = r.estado === "listo";
-              const isBusy = busy?.id === r.id;
-              const fb = feedback?.id === r.id ? feedback : null;
               return (
                 <li
                   key={r.id}
@@ -198,38 +169,6 @@ export default function RegistrosPage() {
                   {/* Barra de acciones */}
                   <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
                     <button
-                      onClick={() => ejecutarAccion(r.id, "r2")}
-                      disabled={!listo || isBusy}
-                      title="Subir a Cloudflare"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-on-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {busy?.id === r.id && busy.accion === "r2" ? (
-                        <span className="material-symbols-outlined text-[18px] animate-spin">
-                          progress_activity
-                        </span>
-                      ) : (
-                        <CloudflareIcon className="shrink-0" />
-                      )}
-                      <span className="font-caption text-caption">Subir a Cloudflare</span>
-                    </button>
-
-                    <button
-                      onClick={() => ejecutarAccion(r.id, "podio")}
-                      disabled={!listo || isBusy}
-                      title="Anexar con Podio"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-on-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {busy?.id === r.id && busy.accion === "podio" ? (
-                        <span className="material-symbols-outlined text-[18px] animate-spin">
-                          progress_activity
-                        </span>
-                      ) : (
-                        <PodioIcon className="shrink-0" />
-                      )}
-                      <span className="font-caption text-caption">Anexar con Podio</span>
-                    </button>
-
-                    <button
                       onClick={() => setConfirmId(r.id)}
                       title="Borrar"
                       className="ml-auto flex items-center justify-center w-9 h-9 rounded-lg hover:bg-error-container text-error transition-colors"
@@ -238,14 +177,6 @@ export default function RegistrosPage() {
                       <span className="material-symbols-outlined text-[20px]">delete</span>
                     </button>
                   </div>
-
-                  {fb && (
-                    <p
-                      className={`px-4 pb-2 font-caption text-caption ${fb.ok ? "text-secondary" : "text-error"}`}
-                    >
-                      {fb.msg}
-                    </p>
-                  )}
                 </li>
               );
             })}

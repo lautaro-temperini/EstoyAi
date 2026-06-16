@@ -40,6 +40,7 @@ export interface PendingUpload {
   tipo: TipoRegistro | null;
   beneficiario: Beneficiario | null;
   programa: Programa | null;
+  profesional: string | null;
   capturedAt: number;
   durationMs: number | null;
   intentos: number;

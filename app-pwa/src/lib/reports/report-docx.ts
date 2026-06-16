@@ -146,6 +146,13 @@ function buildDocumentFromContent(c: ReportContent): Document {
       ],
     }),
     new Paragraph({
+      spacing: { after: 60, ...LINE_SPACING },
+      children: [
+        new TextRun({ text: "Registrado por: ", bold: true, size: SZ_META, color: MUTED, font: FONT }),
+        new TextRun({ text: c.registradoPor, size: SZ_META, color: MUTED, font: FONT }),
+      ],
+    }),
+    new Paragraph({
       spacing: { after: 200, ...LINE_SPACING },
       children: [
         new TextRun({ text: "Prioridad: ", bold: true, size: SZ_BODY, color: MUTED, font: FONT }),

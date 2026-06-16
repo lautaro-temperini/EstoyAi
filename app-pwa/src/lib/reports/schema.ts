@@ -26,9 +26,9 @@ export type Estado = "PENDIENTE" | "CONFIRMADO";
  * the model must never invent values.
  */
 export interface DatosInforme {
-  /** Identificación y demografía crítica (rigor extra si es menor de edad). */
+  /** Identificación y demografía crítica (rigor extra si es menor de edad).
+   *  El nombre NO se extrae del audio: viene de los campos fijos (beneficiario). */
   demografia: {
-    nombre: string;
     edad: string;
     fechaNacimiento: string;
     esMenor: boolean;
@@ -57,8 +57,6 @@ export interface DatosInforme {
     lugar: string;
     /** taller, consulta médica, asesoría legal, entrega, … */
     tipoActividad: string;
-    /** Profesionales o voluntarios presentes. */
-    profesionales: string[];
   };
   /** Seguimiento de compromisos (microcréditos, becas, situación laboral). */
   seguimiento: {
@@ -104,6 +102,8 @@ export interface ReportMetadata {
   beneficiario: { nombre: string; apellido: string; dni: string } | null;
   /** Programa seleccionado en el flujo de captura; orienta el system prompt. */
   programa: Programa | null;
+  /** Profesional/promotor que tomó el registro (atribución; lo carga el dispositivo). */
+  profesional: string | null;
   sector: string | null;
   unidad: string | null;
   /** When the audio was captured on-device (epoch ms). */
@@ -148,12 +148,11 @@ export const EXTRACTION_JSON_SCHEMA: Record<string, unknown> = {
         demografia: {
           type: "object",
           properties: {
-            nombre: { type: "string" },
             edad: { type: "string" },
             fechaNacimiento: { type: "string" },
             esMenor: { type: "boolean" },
           },
-          required: ["nombre", "edad", "fechaNacimiento", "esMenor"],
+          required: ["edad", "fechaNacimiento", "esMenor"],
           additionalProperties: false,
         },
         metricas: {
@@ -184,9 +183,8 @@ export const EXTRACTION_JSON_SCHEMA: Record<string, unknown> = {
             fecha: { type: "string" },
             lugar: { type: "string" },
             tipoActividad: { type: "string" },
-            profesionales: strArray,
           },
-          required: ["fecha", "lugar", "tipoActividad", "profesionales"],
+          required: ["fecha", "lugar", "tipoActividad"],
           additionalProperties: false,
         },
         seguimiento: {

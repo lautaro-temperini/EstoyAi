@@ -29,6 +29,7 @@ interface EnqueueInput {
   tipo: TipoRegistro | null;
   beneficiario: Beneficiario | null;
   programa: Programa | null;
+  profesional: string | null;
 }
 
 function titularOf(tipo: TipoRegistro | null, b: Beneficiario | null): string {
@@ -49,6 +50,7 @@ export async function enqueueRegistro(input: EnqueueInput): Promise<string> {
     tipo: input.tipo,
     beneficiario: input.beneficiario,
     programa: input.programa,
+    profesional: input.profesional,
     capturedAt: now,
     durationMs: input.durationMs,
     intentos: 0,
@@ -112,6 +114,7 @@ async function uploadOne(p: PendingUpload): Promise<void> {
         tipo: p.tipo,
         beneficiario: p.beneficiario,
         programa: p.programa,
+        profesional: p.profesional,
         capturedAt: p.capturedAt,
         durationMs: p.durationMs,
       }),

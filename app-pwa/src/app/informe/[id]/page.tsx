@@ -148,9 +148,10 @@ export default function InformePage() {
   }
 
   const informe = data.informe;
+  // El nombre del beneficiario sale de los campos fijos, nunca del audio.
+  const b = informe?.metadatos?.beneficiario;
   const titular =
-    informe?.datos?.demografia?.nombre ||
-    informe?.metadatos?.beneficiario?.nombre ||
+    (b?.apellido && b?.nombre ? `${b.apellido} ${b.nombre}` : b?.nombre) ||
     (informe?.metadatos?.tipo === "grupal" ? "Actividad Grupal" : "Registro");
 
   return (
