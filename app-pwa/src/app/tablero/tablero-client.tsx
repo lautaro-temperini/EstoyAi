@@ -4,7 +4,10 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { CloudflareIcon, PodioIcon } from "@/components/brand-icons";
 import { programaLabel } from "@/lib/reports/programa";
+import type { Programa } from "@/lib/reports/schema";
 import type { TriageItem, TriageCounts, TriageCategoria } from "@/lib/reports/triage";
+
+const PROGRAMAS: Programa[] = ["primera-infancia", "ninez-adolescencia", "oficios"];
 
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
@@ -39,10 +42,12 @@ function benefKey(b: TriageItem["beneficiario"]): string | null {
 }
 
 type Feedback = { id: string; ok: boolean; msg: string } | null;
-type Busy = { id: string; accion: "r2" | "podio" } | null;
+type Accion = "r2" | "podio" | "reprocesar";
+type Busy = { id: string; accion: Accion } | null;
 
 export function TableroClient({ items, counts }: { items: TriageItem[]; counts: TriageCounts }) {
   const [filtro, setFiltro] = useState<Filtro>("todos");
+  const [prog, setProg] = useState<Programa | "todos">("todos");
   const [query, setQuery] = useState("");
   const [benef, setBenef] = useState<{ key: string; label: string } | null>(null);
   const [busy, setBusy] = useState<Busy>(null);
@@ -65,10 +70,11 @@ export function TableroClient({ items, counts }: { items: TriageItem[]; counts: 
   const filtrados = useMemo(() => {
     return items.filter((i) => {
       if (filtro !== "todos" && i.categoria !== filtro) return false;
+      if (prog !== "todos" && i.programa !== prog) return false;
       if (benef && benefKey(i.beneficiario) !== benef.key) return false;
       return true;
     });
-  }, [items, filtro, benef]);
+  }, [items, filtro, prog, benef]);
 
   const chips: { id: Filtro; label: string; n: number }[] = [
     { id: "todos", label: "Todos", n: counts.total },
@@ -78,11 +84,16 @@ export function TableroClient({ items, counts }: { items: TriageItem[]; counts: 
     { id: "error", label: "Errores", n: counts.error },
   ];
 
-  async function ejecutarAccion(id: string, accion: "r2" | "podio") {
+  async function ejecutarAccion(id: string, accion: Accion) {
     setBusy({ id, accion });
     setFeedback(null);
-    const endpoint = accion === "r2" ? "subir-r2" : "podio";
-    const okMsg = accion === "r2" ? "Subido a Cloudflare." : "Anexado a Podio.";
+    const endpoint = accion === "r2" ? "subir-r2" : accion === "podio" ? "podio" : "reprocesar";
+    const okMsg =
+      accion === "r2"
+        ? "Subido a Cloudflare."
+        : accion === "podio"
+        ? "Anexado a Podio."
+        : "Reprocesando…";
     try {
       const res = await fetch(`/api/informe/${id}/${endpoint}`, { method: "POST" });
       if (res.ok) {
@@ -156,7 +167,7 @@ export function TableroClient({ items, counts }: { items: TriageItem[]; counts: 
       </div>
 
       {/* Chips de criticidad */}
-      <div className="flex flex-wrap gap-2 mb-stack-lg">
+      <div className="flex flex-wrap gap-2 mb-2">
         {chips.map((c) => {
           const active = filtro === c.id;
           return (
@@ -173,6 +184,26 @@ export function TableroClient({ items, counts }: { items: TriageItem[]; counts: 
               <span className={`text-[11px] font-bold ${active ? "opacity-90" : "opacity-70"}`}>
                 {c.n}
               </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Chips de programa */}
+      <div className="flex flex-wrap gap-2 mb-stack-lg">
+        {(["todos", ...PROGRAMAS] as const).map((p) => {
+          const active = prog === p;
+          return (
+            <button
+              key={p}
+              onClick={() => setProg(p)}
+              className={`px-3 py-1.5 rounded-full font-label-md text-label-md transition-colors ${
+                active
+                  ? "bg-secondary-container text-on-secondary-container"
+                  : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
+              }`}
+            >
+              {p === "todos" ? "Todos los programas" : programaLabel(p)}
             </button>
           );
         })}
@@ -205,14 +236,6 @@ export function TableroClient({ items, counts }: { items: TriageItem[]; counts: 
                       <p className="font-caption text-caption text-on-surface-variant">
                         {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
                       </p>
-                      {i.profesional && (
-                        <p className="font-caption text-caption text-on-surface-variant mt-0.5">
-                          <span className="material-symbols-outlined text-[14px] align-middle mr-0.5">
-                            assignment_ind
-                          </span>
-                          {i.profesional}
-                        </p>
-                      )}
                     </div>
                     <span className={`shrink-0 px-2 py-1 rounded text-[11px] font-bold ${badge.cls}`}>
                       {badge.label}
@@ -236,9 +259,7 @@ export function TableroClient({ items, counts }: { items: TriageItem[]; counts: 
                           key={idx}
                           className="flex items-start gap-1.5 font-caption text-caption text-on-surface-variant"
                         >
-                          <span className="material-symbols-outlined text-[16px] text-primary shrink-0">
-                            check_circle
-                          </span>
+                          <span className="text-primary shrink-0 leading-none">•</span>
                           <span className="min-w-0">{a}</span>
                         </li>
                       ))}
@@ -248,13 +269,19 @@ export function TableroClient({ items, counts }: { items: TriageItem[]; counts: 
 
                 {i.categoria === "error" ? (
                   <div className="border-t border-outline-variant px-2 py-1.5">
-                    <Link
-                      href={`/estado/${i.id}`}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
+                    <button
+                      onClick={() => ejecutarAccion(i.id, "reprocesar")}
+                      disabled={isBusy}
+                      title="Reprocesar (el audio está en el servidor)"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary disabled:opacity-40 transition-colors"
                     >
-                      <span className="material-symbols-outlined text-[18px]">refresh</span>
+                      <span
+                        className={`material-symbols-outlined text-[18px] ${isBusy && busy.accion === "reprocesar" ? "animate-spin" : ""}`}
+                      >
+                        {isBusy && busy.accion === "reprocesar" ? "progress_activity" : "refresh"}
+                      </span>
                       <span className="font-caption text-caption">Reintentar</span>
-                    </Link>
+                    </button>
                   </div>
                 ) : (
                   i.tieneDocx && (

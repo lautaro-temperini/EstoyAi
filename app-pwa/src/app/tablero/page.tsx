@@ -5,13 +5,18 @@ import { listInformesByTenant } from "@/lib/db/sqlite";
 import { listTriageItems, countByCategoria } from "@/lib/reports/triage";
 import { AutoRefresh } from "./auto-refresh";
 import { TableroClient } from "./tablero-client";
+import { MOCK_ITEMS } from "./mock";
 
 // Siempre fresco: lee SQLite en cada request (estados cambian a medida que n8n procesa).
 export const dynamic = "force-dynamic";
 
 export default async function TableroPage() {
   const tenant = tenantFromHeaders(await headers());
-  const items = listTriageItems(listInformesByTenant(tenant.slug));
+  // Dev: mock para ver UI/filtros sin depender de datos. Prod: datos reales de SQLite.
+  const items =
+    process.env.NODE_ENV === "development"
+      ? MOCK_ITEMS
+      : listTriageItems(listInformesByTenant(tenant.slug));
   const counts = countByCategoria(items);
 
   return (

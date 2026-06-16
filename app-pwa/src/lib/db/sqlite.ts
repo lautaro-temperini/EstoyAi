@@ -170,6 +170,16 @@ export function setInformeListo(id: string): InformeRow | null {
   return getInforme(id);
 }
 
+/** Vuelve un informe a RECIBIDO para reprocesarlo (retry desde el server). */
+export function resetInformeRecibido(id: string): InformeRow | null {
+  const now = Date.now();
+  const result = getDb()
+    .prepare(`UPDATE informes SET estado = 'RECIBIDO', error = NULL, updated_at = ? WHERE id = ?`)
+    .run(now, id);
+  if (result.changes === 0) return null;
+  return getInforme(id);
+}
+
 /** Permanently delete an informe row. Returns true if a row was removed. */
 export function deleteInforme(id: string): boolean {
   const result = getDb().prepare(`DELETE FROM informes WHERE id = ?`).run(id);

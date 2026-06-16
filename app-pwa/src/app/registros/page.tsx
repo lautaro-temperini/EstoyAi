@@ -41,6 +41,16 @@ function fmtFecha(ms: number): string {
   return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+// Mock SOLO dev para ver la UI sin IndexedDB con datos. No afecta prod.
+const IS_DEV = process.env.NODE_ENV === "development";
+const MOCK_REGISTROS: Registro[] = [
+  { id: "r1", titular: "Gómez Mateo", tipo: "individual", estado: "listo", createdAt: Date.now() - 3600_000 },
+  { id: "r2", titular: "Pérez Sofía", tipo: "individual", estado: "procesando", createdAt: Date.now() - 2 * 3600_000 },
+  { id: "r3", titular: "Sosa Jorge", tipo: "individual", estado: "error", createdAt: Date.now() - 5 * 3600_000 },
+  { id: "r4", titular: "Luna Valentina", tipo: "individual", estado: "encolado", createdAt: Date.now() - 26 * 3600_000 },
+  { id: "r5", titular: "Actividad grupal", tipo: "grupal", estado: "subiendo", createdAt: Date.now() - 27 * 3600_000 },
+];
+
 export default function RegistrosPage() {
   const router = useRouter();
   const [items, setItems] = useState<Registro[] | null>(null);
@@ -50,6 +60,10 @@ export default function RegistrosPage() {
   // Lee IndexedDB y reconcilia los registros no terminados con el servidor,
   // para que "procesando" avance a "listo"/"error" sin tener que abrir cada uno.
   const reconcile = useCallback(async () => {
+    if (IS_DEV) {
+      setItems(MOCK_REGISTROS);
+      return;
+    }
     const local = await listRegistros();
     let changed = false;
     const next = await Promise.all(
@@ -147,11 +161,11 @@ export default function RegistrosPage() {
               return (
                 <li
                   key={r.id}
-                  className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden flex items-stretch"
                 >
                   <button
                     onClick={() => router.push(`/estado/${r.id}`)}
-                    className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
+                    className="flex-grow min-w-0 text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                   >
                     <div className="min-w-0">
                       <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
@@ -165,18 +179,14 @@ export default function RegistrosPage() {
                       {b.label}
                     </span>
                   </button>
-
-                  {/* Barra de acciones */}
-                  <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
-                    <button
-                      onClick={() => setConfirmId(r.id)}
-                      title="Borrar"
-                      className="ml-auto flex items-center justify-center w-9 h-9 rounded-lg hover:bg-error-container text-error transition-colors"
-                      aria-label="Borrar registro"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => setConfirmId(r.id)}
+                    title="Borrar"
+                    aria-label="Borrar registro"
+                    className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">delete</span>
+                  </button>
                 </li>
               );
             })}
