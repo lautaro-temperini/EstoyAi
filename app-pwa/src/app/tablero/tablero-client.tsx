@@ -262,17 +262,15 @@ export function TableroClient({
                   href={`/informe/${i.id}/preview?ctx=coord`}
                   className="block p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
-                        {nombreBeneficiario(i.beneficiario)}
-                      </p>
-                      <p className="font-caption text-caption text-on-surface-variant">
-                        {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
-                      </p>
-                    </div>
+                  <div className="flex justify-end">
                     <StatusChip estado={CATEGORIA_TO_ESTADO[i.categoria]} />
                   </div>
+                  <p className="mt-1 font-label-md text-label-md text-on-surface font-semibold truncate">
+                    {nombreBeneficiario(i.beneficiario)}
+                  </p>
+                  <p className="font-caption text-caption text-on-surface-variant">
+                    {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
+                  </p>
 
                   {i.motivoCriticidad && (
                     <p className="mt-2 font-body-md text-body-md text-on-surface-variant line-clamp-2">

@@ -205,18 +205,18 @@ export default function RegistrosPage() {
                     onClick={() =>
                       router.push(r.estado === "listo" ? `/informe/${r.id}/preview` : `/estado/${r.id}`)
                     }
-                    className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
+                    className="w-full text-left p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                   >
-                    <div className="min-w-0">
-                      <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
-                        {r.titular}
-                      </p>
-                      <p className="font-caption text-caption text-on-surface-variant">
-                        {r.programa ? `${programaLabel(r.programa)} · ` : ""}
-                        {fmtFecha(r.createdAt)}
-                      </p>
+                    <div className="flex justify-end">
+                      <StatusChip estado={chipDe(r)} />
                     </div>
-                    <StatusChip estado={chipDe(r)} />
+                    <p className="mt-1 font-label-md text-label-md text-on-surface font-semibold truncate">
+                      {r.titular}
+                    </p>
+                    <p className="font-caption text-caption text-on-surface-variant">
+                      {r.programa ? `${programaLabel(r.programa)} · ` : ""}
+                      {fmtFecha(r.createdAt)}
+                    </p>
                   </button>
 
                   {/* Barra de acciones: acción contextual (izq) + borrar (der). */}

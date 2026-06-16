@@ -73,7 +73,8 @@ Cards con acciones (`/registros`, `/tablero`) usan **una barra inferior** (`bord
 
 - **Acciones contextuales** (Revisar y enviar, Reintentar, Ver, .docx, Cloudflare, Podio): a la izquierda, `inline-flex … rounded-lg hover:bg-surface-container-low`, ícono 18px + `font-caption`.
 - **Borrar** (destructiva): siempre **al final** (`ml-auto`), `w-9 h-9 rounded-lg hover:bg-error-container text-error`, ícono 20px. Confirmación en modal antes de borrar.
-- La fila superior de la card (contenido + `StatusChip`) es el área navegable; las acciones nunca van en esa fila.
+- El cuerpo de la card (título + metadatos) es el área navegable; las acciones nunca van ahí.
+- **`StatusChip` arriba a la derecha**, en su propia fila sobre el título (no al lado de los metadatos: en mobile los labels largos —"Enviado a coordinación"— rompían línea).
 
 ---
 
