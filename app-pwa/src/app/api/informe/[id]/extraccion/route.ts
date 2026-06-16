@@ -13,6 +13,7 @@ const FALLBACK_META: ReportMetadata = {
   tipo: null,
   beneficiario: null,
   programa: null,
+  profesional: null,
   sector: null,
   unidad: null,
   capturedAt: Date.now(),

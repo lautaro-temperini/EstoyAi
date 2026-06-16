@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "EstoyAi — Registro de campo por voz para ONGs",
+  title: "EstoyAi",
   description:
     "El promotor dicta dos minutos; tu sede genera un informe .docx estructurado. Funciona sin internet en campo, corre en hardware modesto y los datos de beneficiarios nunca salen de la organización.",
   keywords: [

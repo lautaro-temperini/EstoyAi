@@ -32,6 +32,53 @@ Contenedores de surface (`surface-container-*`, `surface-variant`) dan profundid
 
 ---
 
+## Chips de estado
+
+Fuente de verdad en código: `app-pwa/src/components/status-chip.tsx` (`StatusChip`, `ESTADO_CHIP`). Un solo componente para todos los chips de severidad y de procesamiento — no duplicar mapas de label/color por pantalla.
+
+Casing: capitalizado normal en estados de procesamiento (En cola, Procesando, Listo, Error). **Excepción: severidad** (`alta`/`media`/`baja`) va en MAYÚSCULA como énfasis de triage.
+
+Paleta Tailwind por defecto (no son tokens custom de `globals.css`; conviven con la paleta de marca solo para este componente):
+
+| Estado       | Label       | Clases                       |
+| ------------ | ----------- | ----------------------------- |
+| `alta`       | ALTA        | `bg-pink-100 text-pink-700`   |
+| `media`      | MEDIA       | `bg-orange-100 text-orange-700` |
+| `baja`       | BAJA        | `bg-yellow-100 text-yellow-800` |
+| `en-cola`     | En cola                | `bg-gray-100 text-gray-600`       |
+| `procesando`  | Procesando             | `bg-cyan-100 text-cyan-700`       |
+| `por-revisar` | Listo para revisar     | `bg-green-100 text-green-700`     |
+| `enviado`     | Enviado a coordinación | `bg-emerald-100 text-emerald-700` |
+| `error`       | Error                  | `bg-red-100 text-red-700`         |
+
+Cada pantalla mapea su propio enum (`TriageCategoria`, `RegistroEstado`) a uno de estos 8 estados; `StatusChip` no conoce esos enums, solo el estado estandarizado.
+
+**Prioridad usa SIEMPRE `StatusChip`** (`alta`/`media`/`baja`) — no definir tablas de color de prioridad por pantalla. El selector de prioridad en `/informe` reusa `ESTADO_CHIP[...].cls` y `.label` para el estado activo.
+
+---
+
+## Chips de filtro
+
+Pills de filtro (criticidad, programa) en `/tablero`. Distinto de los chips de estado: comunican **selección**, no severidad.
+
+- **Seleccionado:** `bg-primary text-on-primary` (azul institucional). Un único color de selección en toda la app — el verde (`secondary`) está reservado a "éxito / se queda en la sede", nunca a selección.
+- **No seleccionado:** `bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high`.
+- Forma: `rounded-full px-3 py-1.5 font-label-md`. Contador opcional al lado del label.
+
+---
+
+## Acciones de card
+
+Layout de card en `/registros` y `/tablero`:
+
+- **Cuerpo navegable** (`flex-grow`, área clickeable → preview/estado): primera fila `flex items-start justify-between gap-2` con **título** (`label-md` semibold, `truncate`) a la izquierda y **`StatusChip`** a la derecha (el título trunca, el chip no rompe línea). Debajo: metadatos en `font-caption`; luego el **insight** (síntesis: `motivoCriticidad` o, si está vacío, `resumen` — siempre presente en todas las prioridades) y las **acciones pendientes** en bullets `•`, ambos en `label-md font-normal` (mismo tamaño que el título, sin negrita).
+- **Borrar** (destructiva): botón **al costado**, `shrink-0 px-4 border-l border-outline-variant hover:bg-error-container text-error`, ícono 20px, alto completo de la card. Confirmación en modal. En `/tablero` solo visible para admin.
+- **Acción contextual puntual** (ej. "Reintentar" en error): barra inferior `border-t … px-2 py-1.5`, solo cuando aplica.
+- **Descargar `.docx`** vive en el preview (arriba a la derecha), no en la card.
+- R2/Podio: endpoints abiertos en el código pero **fuera de la UI** por ahora.
+
+---
+
 ## Tipografía
 
 - **Display / Headlines:** Atkinson Hyperlegible Next — legibilidad en móvil, pesos 600–700.

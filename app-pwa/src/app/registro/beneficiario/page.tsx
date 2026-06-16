@@ -1,18 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useFlow } from "../../flow-context";
 import { Stepper } from "@/components/stepper";
 
 export default function BeneficiaryPage() {
   const router = useRouter();
-  const { beneficiario, setBeneficiario } = useFlow();
+  const { beneficiario, setBeneficiario, profesional, setProfesional } = useFlow();
+  const [prof, setProf] = useState(profesional ?? "");
   const [nombre, setNombre] = useState(beneficiario?.nombre ?? "");
   const [apellido, setApellido] = useState(beneficiario?.apellido ?? "");
   const [dni, setDni] = useState(beneficiario?.dni ?? "");
 
+  // El profesional se recuerda entre registros (localStorage); prellenar al hidratar.
+  useEffect(() => {
+    if (profesional && !prof) setProf(profesional);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profesional]);
+
   const valid =
+    prof.trim().length > 0 &&
     nombre.trim().length > 0 &&
     apellido.trim().length > 0 &&
     dni.trim().length > 0;
@@ -20,6 +28,7 @@ export default function BeneficiaryPage() {
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!valid) return;
+    setProfesional(prof.trim());
     setBeneficiario({
       nombre: nombre.trim(),
       apellido: apellido.trim(),
@@ -57,6 +66,31 @@ export default function BeneficiaryPage() {
         </section>
 
         <form className="stagger space-y-stack-lg" id="beneficiary-form" onSubmit={onSubmit}>
+          {/* Profesional que registra */}
+          <div className="group">
+            <label
+              className="block font-label-md text-label-md text-on-surface-variant mb-2 transition-colors group-focus-within:text-primary"
+              htmlFor="profesional"
+            >
+              Profesional que registra <span className="text-error">*</span>
+            </label>
+            <div className="relative">
+              <input
+                id="profesional"
+                name="profesional"
+                type="text"
+                placeholder="Tu nombre y apellido"
+                value={prof}
+                onChange={(e) => setProf(e.target.value)}
+                required
+                className="w-full h-14 px-4 bg-white border-2 border-outline-variant rounded-lg font-body-lg text-body-lg text-on-surface focus:border-primary focus:ring-0 transition-all outline-none"
+              />
+              <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-on-surface-variant">
+                assignment_ind
+              </span>
+            </div>
+          </div>
+
           {/* Nombre */}
           <div className="group">
             <label

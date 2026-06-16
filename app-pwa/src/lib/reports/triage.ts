@@ -2,24 +2,29 @@ import type { InformeRow } from "@/lib/db/sqlite";
 import type { Prioridad, Programa } from "./schema";
 
 /**
- * Modelo de la vista de triage del coordinador. Transforma las filas crudas de
- * SQLite en buckets accionables: "qué necesita atención hoy".
+ * Modelo de la vista de coordinación. Aplana las filas de SQLite en items
+ * ordenables y filtrables. La vista es cronológica por defecto; los filtros
+ * (criticidad, beneficiario) se aplican del lado del cliente.
  *
- * Distinción clave: problema CLÍNICO ≠ problema TÉCNICO.
- *   - `ERROR` es un fallo del pipeline → acción: reintentar el informe.
- *   - `ALTA` es criticidad clínica → acción: contactar a la familia.
- * Son respuestas distintas del coordinador, así que van en buckets separados y
- * nunca se mezclan en "atención hoy".
+ * `categoria` resume el estado para los chips de filtro:
+ *   - "ALTA"/"MEDIA"/"BAJA": informe LISTO con esa prioridad clínica.
+ *   - "error": fallo técnico del pipeline (acción: reintentar).
+ *   - "proceso": recibido/extraído, todavía sin prioridad.
  */
+
+export type TriageCategoria = Prioridad | "error" | "proceso";
 
 export interface TriageItem {
   id: string;
   estado: InformeRow["estado"];
+  categoria: TriageCategoria;
   prioridad: Prioridad | null;
   motivoCriticidad: string;
   resumen: string;
   beneficiario: { nombre: string; apellido: string; dni: string } | null;
   programa: Programa | null;
+  /** Profesional/promotor que tomó el registro (atribución). */
+  profesional: string | null;
   accionesPendientes: string[];
   createdAt: number;
   /** El .docx ya está disponible para descargar. */
@@ -28,37 +33,26 @@ export interface TriageItem {
   error: string | null;
 }
 
-export interface TriageBuckets {
-  /** CLÍNICO: prioridad ALTA o con acciones pendientes. NO incluye ERROR. */
-  atencionHoy: TriageItem[];
-  /** TÉCNICO: estado ERROR (acción: reintentar). */
-  errores: TriageItem[];
-  alta: TriageItem[];
-  media: TriageItem[];
-  baja: TriageItem[];
-  /** RECIBIDO/EXTRAIDO sin docx todavía (procesando). */
-  enProceso: TriageItem[];
-  resumen: {
-    alta: number;
-    media: number;
-    baja: number;
-    pendientes: number;
-    errores: number;
-    total: number;
-  };
+function categoriaOf(estado: InformeRow["estado"], prioridad: Prioridad | null): TriageCategoria {
+  if (estado === "ERROR") return "error";
+  if (estado === "LISTO" && prioridad) return prioridad;
+  return "proceso";
 }
 
-function toItem(row: InformeRow): TriageItem {
+export function toTriageItem(row: InformeRow): TriageItem {
   const j = row.informeJson;
   const meta = row.metadata;
+  const prioridad = row.estado === "LISTO" ? j?.prioridad ?? null : null;
   return {
     id: row.id,
     estado: row.estado,
-    prioridad: j?.prioridad ?? null,
+    categoria: categoriaOf(row.estado, prioridad),
+    prioridad,
     motivoCriticidad: j?.motivoCriticidad ?? "",
     resumen: j?.resumen ?? "",
     beneficiario: meta?.beneficiario ?? j?.metadatos?.beneficiario ?? null,
     programa: meta?.programa ?? j?.metadatos?.programa ?? null,
+    profesional: meta?.profesional ?? j?.metadatos?.profesional ?? null,
     accionesPendientes: (j?.accionesPendientes ?? []).filter((a) => a && a.trim()),
     createdAt: row.createdAt,
     tieneDocx: row.estado === "LISTO",
@@ -66,46 +60,25 @@ function toItem(row: InformeRow): TriageItem {
   };
 }
 
-export function buildTriage(rows: InformeRow[]): TriageBuckets {
-  const items = rows.map(toItem);
+/** Items aplanados y ordenados cronológicamente (más reciente primero). */
+export function listTriageItems(rows: InformeRow[]): TriageItem[] {
+  return rows.map(toTriageItem).sort((a, b) => b.createdAt - a.createdAt);
+}
 
-  const errores = items.filter((i) => i.estado === "ERROR");
-  // "Procesando": recibido/extraído que todavía no llegó a LISTO ni falló.
-  const enProceso = items.filter(
-    (i) => i.estado === "RECIBIDO" || i.estado === "EXTRAIDO",
-  );
-  // Solo los informes con extracción válida (LISTO) entran al triage por prioridad.
-  const conPrioridad = items.filter((i) => i.estado === "LISTO");
+export interface TriageCounts {
+  total: number;
+  ALTA: number;
+  MEDIA: number;
+  BAJA: number;
+  error: number;
+}
 
-  const alta = conPrioridad.filter((i) => i.prioridad === "ALTA");
-  const media = conPrioridad.filter((i) => i.prioridad === "MEDIA");
-  const baja = conPrioridad.filter((i) => i.prioridad === "BAJA");
-
-  // Atención clínica de hoy: ALTA primero, luego cualquier informe con acciones
-  // pendientes que no sea ya ALTA. Sin duplicados, sin errores técnicos.
-  const conAcciones = conPrioridad.filter(
-    (i) => i.prioridad !== "ALTA" && i.accionesPendientes.length > 0,
-  );
-  const atencionHoy = [...alta, ...conAcciones];
-
-  const pendientes = conPrioridad.filter(
-    (i) => i.accionesPendientes.length > 0,
-  ).length;
-
+export function countByCategoria(items: TriageItem[]): TriageCounts {
   return {
-    atencionHoy,
-    errores,
-    alta,
-    media,
-    baja,
-    enProceso,
-    resumen: {
-      alta: alta.length,
-      media: media.length,
-      baja: baja.length,
-      pendientes,
-      errores: errores.length,
-      total: items.length,
-    },
+    total: items.length,
+    ALTA: items.filter((i) => i.categoria === "ALTA").length,
+    MEDIA: items.filter((i) => i.categoria === "MEDIA").length,
+    BAJA: items.filter((i) => i.categoria === "BAJA").length,
+    error: items.filter((i) => i.categoria === "error").length,
   };
 }

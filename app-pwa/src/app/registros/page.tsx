@@ -9,7 +9,8 @@ import {
   type Registro,
   type RegistroEstado,
 } from "@/lib/queue/db";
-import { CloudflareIcon, PodioIcon } from "@/components/brand-icons";
+import { StatusChip, type EstadoChip } from "@/components/status-chip";
+import { programaLabel } from "@/lib/reports/programa";
 
 /** Map the server-side processing estado onto the device-side estado. */
 function mapServerEstado(s: string): RegistroEstado | null {
@@ -27,47 +28,92 @@ function mapServerEstado(s: string): RegistroEstado | null {
 }
 
 /** Estados que vale la pena re-consultar contra el servidor (no terminales). */
-const REFRESH: RegistroEstado[] = ["encolado", "subiendo", "procesando"];
+const REFRESH: RegistroEstado[] = ["encolado", "procesando"];
 
-const BADGE: Record<RegistroEstado, { label: string; cls: string }> = {
-  encolado: { label: "En cola", cls: "bg-surface-container-high text-on-surface-variant" },
-  subiendo: { label: "Subiendo", cls: "bg-primary-container/20 text-primary" },
-  procesando: { label: "Procesando", cls: "bg-tertiary-container text-on-tertiary-container" },
-  listo: { label: "Listo", cls: "bg-secondary-container text-on-secondary-container" },
-  error: { label: "Error", cls: "bg-error-container text-on-error-container" },
+const ESTADO_TO_CHIP: Record<RegistroEstado, EstadoChip> = {
+  encolado: "en-cola",
+  procesando: "procesando",
+  listo: "por-revisar",
+  error: "error",
 };
+
+/** Chip del registro: si ya fue enviado a coordinación, prevalece sobre el estado. */
+function chipDe(r: Registro): EstadoChip {
+  return r.enviado ? "enviado" : ESTADO_TO_CHIP[r.estado];
+}
+
+// Mismo formato que /tablero: "16 jun · 12:30" — fecha consistente en toda la app.
+const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
 function fmtFecha(ms: number): string {
   const d = new Date(ms);
-  return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
+  return `${d.getDate()} ${MESES[d.getMonth()]} · ${hh}:${mm}`;
 }
 
-type AccionPendiente = { id: string; accion: "r2" | "podio" } | null;
-type Feedback = { id: string; ok: boolean; msg: string } | null;
+// Mock SOLO dev para ver la UI sin IndexedDB con datos. No afecta prod.
+const IS_DEV = process.env.NODE_ENV === "development";
+const MOCK_REGISTROS: Registro[] = [
+  { id: "r1", titular: "Gómez Mateo", tipo: "individual", programa: "ninez-adolescencia", estado: "listo", enviado: true, insight: "Asiste regular a apoyo escolar; buen vínculo con pares.", acciones: ["Confirmar inscripción al taller"], createdAt: Date.now() - 3600_000 },
+  { id: "r2", titular: "Pérez Sofía", tipo: "individual", programa: "primera-infancia", estado: "procesando", createdAt: Date.now() - 2 * 3600_000 },
+  { id: "r3", titular: "Sosa Jorge", tipo: "individual", programa: "oficios", estado: "error", createdAt: Date.now() - 5 * 3600_000 },
+  { id: "r4", titular: "Luna Valentina", tipo: "individual", programa: "primera-infancia", estado: "encolado", createdAt: Date.now() - 26 * 3600_000 },
+  { id: "r5", titular: "Actividad grupal", tipo: "grupal", programa: "ninez-adolescencia", estado: "procesando", createdAt: Date.now() - 27 * 3600_000 },
+];
 
 export default function RegistrosPage() {
   const router = useRouter();
   const [items, setItems] = useState<Registro[] | null>(null);
   const [confirmId, setConfirmId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [busy, setBusy] = useState<AccionPendiente>(null);
-  const [feedback, setFeedback] = useState<Feedback>(null);
+  const [reintentando, setReintentando] = useState<string | null>(null);
+  const [reintentoMsg, setReintentoMsg] = useState<{ id: string; msg: string } | null>(null);
 
   // Lee IndexedDB y reconcilia los registros no terminados con el servidor,
   // para que "procesando" avance a "listo"/"error" sin tener que abrir cada uno.
   const reconcile = useCallback(async () => {
+    if (IS_DEV) {
+      setItems(MOCK_REGISTROS);
+      return;
+    }
     const local = await listRegistros();
     let changed = false;
     const next = await Promise.all(
       local.map(async (r) => {
-        if (!REFRESH.includes(r.estado)) return r;
+        // Refresca mientras no es terminal, y los listo aún no enviados (para captar `enviado`).
+        const needsFetch = REFRESH.includes(r.estado) || (r.estado === "listo" && !r.enviado);
+        if (!needsFetch) return r;
         try {
           const res = await fetch(`/api/informe/${r.id}`, { cache: "no-store" });
           if (!res.ok) return r; // el servidor todavía no lo tiene (404) — sigue igual
-          const data = (await res.json()) as { estado?: string };
+          const data = (await res.json()) as {
+            estado?: string;
+            enviado?: boolean;
+            informe?: {
+              resumen?: string;
+              motivoCriticidad?: string;
+              accionesPendientes?: string[];
+            } | null;
+          };
           const mapped = data.estado ? mapServerEstado(data.estado) : null;
-          if (mapped && mapped !== r.estado) {
-            const updated = { ...r, estado: mapped };
+          const nextEstado = mapped ?? r.estado;
+          const nextEnviado = data.enviado ?? r.enviado ?? false;
+          const inf = data.informe;
+          const nextInsight = inf ? (inf.motivoCriticidad?.trim() || inf.resumen?.trim() || "") : r.insight ?? "";
+          const nextAcciones = inf?.accionesPendientes ?? r.acciones ?? [];
+          if (
+            nextEstado !== r.estado ||
+            nextEnviado !== (r.enviado ?? false) ||
+            nextInsight !== (r.insight ?? "")
+          ) {
+            const updated = {
+              ...r,
+              estado: nextEstado,
+              enviado: nextEnviado,
+              insight: nextInsight,
+              acciones: nextAcciones,
+            };
             await putRegistro(updated); // persiste en IndexedDB
             changed = true;
             return updated;
@@ -115,23 +161,25 @@ export default function RegistrosPage() {
     }
   }
 
-  async function ejecutarAccion(id: string, accion: "r2" | "podio") {
-    setBusy({ id, accion });
-    setFeedback(null);
-    const endpoint = accion === "r2" ? "subir-r2" : "podio";
-    const okMsg = accion === "r2" ? "Subido a Cloudflare." : "Anexado a Podio.";
+  async function reintentar(id: string) {
+    setReintentando(id);
+    setReintentoMsg(null);
     try {
-      const res = await fetch(`/api/informe/${id}/${endpoint}`, { method: "POST" });
+      const res = await fetch(`/api/informe/${id}/reprocesar`, { method: "POST" });
       if (res.ok) {
-        setFeedback({ id, ok: true, msg: okMsg });
+        setReintentoMsg({ id, msg: "Reprocesando…" });
+        // Optimista: volver a "procesando" hasta que reconcile actualice.
+        setItems((prev) =>
+          prev ? prev.map((r) => (r.id === id ? { ...r, estado: "procesando" } : r)) : prev,
+        );
       } else {
-        const data = (await res.json().catch(() => ({}))) as { error?: string };
-        setFeedback({ id, ok: false, msg: data.error ?? `Error ${res.status}` });
+        const d = (await res.json().catch(() => ({}))) as { error?: string };
+        setReintentoMsg({ id, msg: d.error ?? `Error ${res.status}` });
       }
     } catch {
-      setFeedback({ id, ok: false, msg: "No se pudo conectar con el servidor." });
+      setReintentoMsg({ id, msg: "No se pudo conectar." });
     } finally {
-      setBusy(null);
+      setReintentando(null);
     }
   }
 
@@ -147,11 +195,11 @@ export default function RegistrosPage() {
         </button>
         <h1 className="font-headline-sm text-headline-sm text-on-surface">Mis registros</h1>
         <button
-          onClick={() => router.push("/tablero")}
+          onClick={() => router.push("/informes")}
           className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
         >
-          <span className="material-symbols-outlined text-[20px]">dashboard</span>
-          <span className="font-caption text-caption">Coordinación</span>
+          <span className="material-symbols-outlined text-[20px]">groups</span>
+          <span className="font-caption text-caption">Informes del equipo</span>
         </button>
       </header>
 
@@ -169,82 +217,79 @@ export default function RegistrosPage() {
         ) : (
           <ul className="stagger space-y-3">
             {items.map((r) => {
-              const b = BADGE[r.estado];
-              const listo = r.estado === "listo";
-              const isBusy = busy?.id === r.id;
-              const fb = feedback?.id === r.id ? feedback : null;
               return (
                 <li
                   key={r.id}
                   className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
                 >
-                  <button
-                    onClick={() => router.push(`/estado/${r.id}`)}
-                    className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
-                        {r.titular}
-                      </p>
-                      <p className="font-caption text-caption text-on-surface-variant">
+                  <div className="flex items-stretch">
+                    <button
+                      onClick={() =>
+                        router.push(r.estado === "listo" ? `/informe/${r.id}/preview` : `/estado/${r.id}`)
+                      }
+                      className="flex-grow min-w-0 text-left p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
+                          {r.titular}
+                        </p>
+                        <StatusChip estado={chipDe(r)} />
+                      </div>
+                      <p className="mt-0.5 font-caption text-caption text-on-surface-variant">
+                        {r.programa ? `${programaLabel(r.programa)} · ` : ""}
                         {fmtFecha(r.createdAt)}
                       </p>
-                    </div>
-                    <span className={`shrink-0 px-2 py-1 rounded text-[11px] font-bold ${b.cls}`}>
-                      {b.label}
-                    </span>
-                  </button>
 
-                  {/* Barra de acciones */}
-                  <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
-                    <button
-                      onClick={() => ejecutarAccion(r.id, "r2")}
-                      disabled={!listo || isBusy}
-                      title="Subir a Cloudflare"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-on-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {busy?.id === r.id && busy.accion === "r2" ? (
-                        <span className="material-symbols-outlined text-[18px] animate-spin">
-                          progress_activity
-                        </span>
-                      ) : (
-                        <CloudflareIcon className="shrink-0" />
+                      {r.insight && (
+                        <p className="mt-1.5 font-label-md text-label-md font-normal text-on-surface-variant line-clamp-2">
+                          {r.insight}
+                        </p>
                       )}
-                      <span className="font-caption text-caption">Subir a Cloudflare</span>
-                    </button>
 
-                    <button
-                      onClick={() => ejecutarAccion(r.id, "podio")}
-                      disabled={!listo || isBusy}
-                      title="Anexar con Podio"
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-on-surface-variant disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    >
-                      {busy?.id === r.id && busy.accion === "podio" ? (
-                        <span className="material-symbols-outlined text-[18px] animate-spin">
-                          progress_activity
-                        </span>
-                      ) : (
-                        <PodioIcon className="shrink-0" />
+                      {r.acciones && r.acciones.length > 0 && (
+                        <ul className="mt-1.5 space-y-1">
+                          {r.acciones.map((a, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-start gap-1.5 font-label-md text-label-md font-normal text-on-surface-variant"
+                            >
+                              <span className="text-primary shrink-0 leading-none">•</span>
+                              <span className="min-w-0">{a}</span>
+                            </li>
+                          ))}
+                        </ul>
                       )}
-                      <span className="font-caption text-caption">Anexar con Podio</span>
                     </button>
-
                     <button
                       onClick={() => setConfirmId(r.id)}
                       title="Borrar"
-                      className="ml-auto flex items-center justify-center w-9 h-9 rounded-lg hover:bg-error-container text-error transition-colors"
                       aria-label="Borrar registro"
+                      className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
                     >
                       <span className="material-symbols-outlined text-[20px]">delete</span>
                     </button>
                   </div>
 
-                  {fb && (
-                    <p
-                      className={`px-4 pb-2 font-caption text-caption ${fb.ok ? "text-secondary" : "text-error"}`}
-                    >
-                      {fb.msg}
-                    </p>
+                  {r.estado === "error" && (
+                    <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
+                      <button
+                        onClick={() => reintentar(r.id)}
+                        disabled={reintentando === r.id}
+                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary disabled:opacity-40 transition-colors"
+                      >
+                        <span
+                          className={`material-symbols-outlined text-[18px] ${reintentando === r.id ? "animate-spin" : ""}`}
+                        >
+                          {reintentando === r.id ? "progress_activity" : "refresh"}
+                        </span>
+                        <span className="font-caption text-caption">Reintentar</span>
+                      </button>
+                      {reintentoMsg?.id === r.id && (
+                        <span className="font-caption text-caption text-on-surface-variant">
+                          {reintentoMsg.msg}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </li>
               );

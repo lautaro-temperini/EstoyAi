@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import {
   tenantForHost,
   tenantPassword,
+  tenantAdminPassword,
   isLandingHost,
   normalizeHost,
   ROOT_DOMAIN,
@@ -52,16 +53,21 @@ export function middleware(req: NextRequest) {
 
   const tenant = tenantForHost(host);
   const password = tenantPassword(tenant);
+  const adminPassword = tenantAdminPassword(tenant);
+  const isAdminPath = req.nextUrl.pathname.startsWith("/api/admin");
 
-  // Propaga el tenant a los handlers río abajo.
+  // Propaga el tenant + rol a los handlers río abajo.
   const requestHeaders = new Headers(req.headers);
   requestHeaders.set("x-tenant", tenant.slug);
-  const pass = () =>
-    NextResponse.next({ request: { headers: requestHeaders } });
+  const pass = (role: "admin" | "user") => {
+    requestHeaders.set("x-role", role);
+    return NextResponse.next({ request: { headers: requestHeaders } });
+  };
+  const forbidden = () => new NextResponse("Prohibido", { status: 403 });
 
-  // Sin contraseña configurada → solo inyecta el tenant y sigue.
+  // Sin contraseña configurada → dev sin auth: rol admin para poder probar todo.
   if (!password) {
-    return pass();
+    return pass("admin");
   }
 
   const header = req.headers.get("authorization");
@@ -72,8 +78,16 @@ export function middleware(req: NextRequest) {
       const decoded = atob(encoded);
       const sep = decoded.indexOf(":");
       const provided = sep === -1 ? "" : decoded.slice(sep + 1);
-      if (provided === password) {
-        return pass();
+      const role =
+        adminPassword && provided === adminPassword
+          ? "admin"
+          : provided === password
+          ? "user"
+          : null;
+      if (role) {
+        // Rutas admin: exigen rol admin (un user autenticado recibe 403).
+        if (isAdminPath && role !== "admin") return forbidden();
+        return pass(role);
       }
     }
   }

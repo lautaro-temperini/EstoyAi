@@ -6,6 +6,7 @@ export interface UploadMeta {
   tipo: TipoRegistro | null;
   beneficiario: { nombre: string; apellido: string; dni: string } | null;
   programa: Programa | null;
+  profesional: string | null;
   capturedAt: number;
   durationMs: number | null;
 }
@@ -20,6 +21,7 @@ export function parseUploadMeta(raw: string): UploadMeta | null {
       tipo: m.tipo ?? null,
       beneficiario: m.beneficiario ?? null,
       programa: m.programa ?? null,
+      profesional: m.profesional ?? null,
       capturedAt: m.capturedAt,
       durationMs: m.durationMs ?? null,
     };
@@ -34,6 +36,7 @@ export function toReportMetadata(meta: UploadMeta, tenant: string | null = null)
     tipo: meta.tipo,
     beneficiario: meta.beneficiario,
     programa: meta.programa,
+    profesional: meta.profesional,
     sector: null,
     unidad: null,
     capturedAt: meta.capturedAt,

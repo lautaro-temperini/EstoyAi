@@ -8,6 +8,7 @@ import {
   type RegistroEstado,
 } from "@/lib/queue/db";
 import { requestFlush } from "@/lib/queue/enqueue";
+import { IS_DEV, devEstado } from "@/lib/dev-mock";
 
 /** Map the server-side processing estado onto the device-side estado. */
 function mapServerEstado(s: string): RegistroEstado | null {
@@ -28,11 +29,6 @@ const VIEW: Record<RegistroEstado, { icon: string; label: string; sub: string; s
   encolado: {
     icon: "save",
     label: "Guardado en este dispositivo",
-    sub: "",
-  },
-  subiendo: {
-    icon: "cloud_upload",
-    label: "Enviando a la sede…",
     sub: "",
   },
   procesando: {
@@ -63,6 +59,10 @@ export default function EstadoPage() {
       if (r) {
         setEstado(r.estado);
         setTitular(r.titular);
+      } else if (IS_DEV) {
+        const m = devEstado(id); // dev: ver UI con ids mock (r1, r2…)
+        setEstado(m.estado);
+        setTitular(m.titular);
       }
       setLoading(false);
     })();
@@ -127,8 +127,8 @@ export default function EstadoPage() {
 
   const v = estado ? VIEW[estado] : null;
 
-  // Estados "en el dispositivo": audio guardado localmente, sin conexión o subiendo.
-  const isOffline = estado === "encolado" || estado === "subiendo";
+  // Estado "en el dispositivo": audio guardado localmente, sin conexión.
+  const isOffline = estado === "encolado";
 
   const iconColor =
     estado === "error"
@@ -174,7 +174,7 @@ export default function EstadoPage() {
 
             <h1 className="font-headline-md text-headline-md text-on-surface">{v.label}</h1>
 
-            {/* ── Guardado en dispositivo (encolado / subiendo) ─────────────── */}
+            {/* ── Guardado en dispositivo (encolado) ────────────────────────── */}
             {isOffline && (
               <div className="w-full bg-secondary-container/30 border border-secondary/20 rounded-xl p-4 text-left">
                 <p className="font-body-md text-body-md text-on-surface leading-relaxed">

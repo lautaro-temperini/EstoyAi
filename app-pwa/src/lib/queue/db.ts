@@ -21,8 +21,7 @@ const REGISTROS = "registros";
 /** UI/queue state of a registro, from capture to downloadable .docx. */
 export type RegistroEstado =
   | "encolado" // saved on device, not yet sent
-  | "subiendo" // upload in flight
-  | "procesando" // server has the audio, whisper+LLM running
+  | "procesando" // subiendo o ya en el servidor (whisper+LLM) — un solo estado visible
   | "listo" // .docx ready to download
   | "error"; // upload or processing failed
 
@@ -40,6 +39,7 @@ export interface PendingUpload {
   tipo: TipoRegistro | null;
   beneficiario: Beneficiario | null;
   programa: Programa | null;
+  profesional: string | null;
   capturedAt: number;
   durationMs: number | null;
   intentos: number;
@@ -52,7 +52,14 @@ export interface Registro {
   id: string;
   titular: string;
   tipo: TipoRegistro | null;
+  programa: Programa | null;
   estado: RegistroEstado;
+  /** Enviado a coordinación (gate). Se sincroniza desde el servidor en reconcile. */
+  enviado?: boolean;
+  /** Síntesis del informe (motivoCriticidad o resumen). Se sincroniza en reconcile. */
+  insight?: string;
+  /** Acciones pendientes extraídas. Se sincroniza en reconcile. */
+  acciones?: string[];
   createdAt: number;
 }
 

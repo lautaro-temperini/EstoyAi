@@ -26,6 +26,8 @@ export interface ReportContent {
   motivoCriticidad: string;
   fecha: string;
   lugar: string;
+  /** Profesional/promotor que tomó el registro (atribución). */
+  registradoPor: string;
   resumenEjecutivo: string;
   sections: Section[];
   generadoEl: string;
@@ -59,15 +61,12 @@ export function buildReportContent(report: FieldReport): ReportContent {
   const d = report.datos;
   const meta = report.metadatos;
 
+  // El nombre del beneficiario sale SIEMPRE de los campos fijos, nunca del audio.
   const titular =
     meta.beneficiario?.apellido && meta.beneficiario?.nombre
       ? `${meta.beneficiario.apellido} ${meta.beneficiario.nombre}`
       : meta.beneficiario?.nombre ||
-        (d.demografia.nombre && d.demografia.nombre.trim()
-          ? d.demografia.nombre
-          : meta.tipo === "grupal"
-          ? "Actividad Grupal"
-          : "Beneficiario");
+        (meta.tipo === "grupal" ? "Actividad Grupal" : "Beneficiario");
 
   const lugar = val(d.intervencion.lugar || [meta.sector, meta.unidad].filter(Boolean).join(", ") || "");
   const fecha = d.intervencion.fecha?.trim() ? d.intervencion.fecha : fmtFecha(report.createdAt);
@@ -84,7 +83,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
         value:
           meta.beneficiario?.apellido && meta.beneficiario?.nombre
             ? `${meta.beneficiario.apellido}, ${meta.beneficiario.nombre}`
-            : val(d.demografia.nombre || meta.beneficiario?.nombre || ""),
+            : val(meta.beneficiario?.nombre || ""),
       },
       { label: "DNI", value: val(meta.beneficiario?.dni || "") },
       { label: "Fecha de nacimiento", value: val(d.demografia.fechaNacimiento) },
@@ -123,7 +122,6 @@ export function buildReportContent(report: FieldReport): ReportContent {
         label: "Tipo de actividad",
         value: val(d.intervencion.tipoActividad || (meta.tipo === "grupal" ? "Actividad grupal" : "")),
       },
-      { label: "Profesionales / voluntarios", value: listAsField(d.intervencion.profesionales) },
     ],
   });
 
@@ -159,6 +157,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
     motivoCriticidad: report.motivoCriticidad?.trim() ?? "",
     fecha,
     lugar,
+    registradoPor: val(meta.profesional),
     resumenEjecutivo: report.resumen,
     sections,
     generadoEl: fmtFecha(report.createdAt),
