@@ -71,7 +71,7 @@ Pills de filtro (criticidad, programa) en `/tablero`. Distinto de los chips de e
 
 Layout de card en `/registros` y `/tablero`:
 
-- **Cuerpo navegable** (`flex-grow`, área clickeable → preview/estado): primera fila `flex items-start justify-between gap-2` con **título** (`truncate`) a la izquierda y **`StatusChip`** a la derecha (el título trunca, el chip no rompe línea). Debajo: metadatos (`font-caption`), y en `/tablero` el motivo de criticidad + acciones pendientes, todo en `font-caption` (jerarquía: el título es lo único en `label-md`).
+- **Cuerpo navegable** (`flex-grow`, área clickeable → preview/estado): primera fila `flex items-start justify-between gap-2` con **título** (`label-md` semibold, `truncate`) a la izquierda y **`StatusChip`** a la derecha (el título trunca, el chip no rompe línea). Debajo: metadatos en `font-caption`; luego el **insight** (síntesis: `motivoCriticidad` o, si está vacío, `resumen` — siempre presente en todas las prioridades) y las **acciones pendientes** en bullets `•`, ambos en `label-md font-normal` (mismo tamaño que el título, sin negrita).
 - **Borrar** (destructiva): botón **al costado**, `shrink-0 px-4 border-l border-outline-variant hover:bg-error-container text-error`, ícono 20px, alto completo de la card. Confirmación en modal. En `/tablero` solo visible para admin.
 - **Acción contextual puntual** (ej. "Reintentar" en error): barra inferior `border-t … px-2 py-1.5`, solo cuando aplica.
 - **Descargar `.docx`** vive en el preview (arriba a la derecha), no en la card.

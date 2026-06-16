@@ -55,7 +55,7 @@ function fmtFecha(ms: number): string {
 // Mock SOLO dev para ver la UI sin IndexedDB con datos. No afecta prod.
 const IS_DEV = process.env.NODE_ENV === "development";
 const MOCK_REGISTROS: Registro[] = [
-  { id: "r1", titular: "Gómez Mateo", tipo: "individual", programa: "ninez-adolescencia", estado: "listo", enviado: true, createdAt: Date.now() - 3600_000 },
+  { id: "r1", titular: "Gómez Mateo", tipo: "individual", programa: "ninez-adolescencia", estado: "listo", enviado: true, insight: "Asiste regular a apoyo escolar; buen vínculo con pares.", acciones: ["Confirmar inscripción al taller"], createdAt: Date.now() - 3600_000 },
   { id: "r2", titular: "Pérez Sofía", tipo: "individual", programa: "primera-infancia", estado: "procesando", createdAt: Date.now() - 2 * 3600_000 },
   { id: "r3", titular: "Sosa Jorge", tipo: "individual", programa: "oficios", estado: "error", createdAt: Date.now() - 5 * 3600_000 },
   { id: "r4", titular: "Luna Valentina", tipo: "individual", programa: "primera-infancia", estado: "encolado", createdAt: Date.now() - 26 * 3600_000 },
@@ -87,12 +87,33 @@ export default function RegistrosPage() {
         try {
           const res = await fetch(`/api/informe/${r.id}`, { cache: "no-store" });
           if (!res.ok) return r; // el servidor todavía no lo tiene (404) — sigue igual
-          const data = (await res.json()) as { estado?: string; enviado?: boolean };
+          const data = (await res.json()) as {
+            estado?: string;
+            enviado?: boolean;
+            informe?: {
+              resumen?: string;
+              motivoCriticidad?: string;
+              accionesPendientes?: string[];
+            } | null;
+          };
           const mapped = data.estado ? mapServerEstado(data.estado) : null;
           const nextEstado = mapped ?? r.estado;
           const nextEnviado = data.enviado ?? r.enviado ?? false;
-          if (nextEstado !== r.estado || nextEnviado !== (r.enviado ?? false)) {
-            const updated = { ...r, estado: nextEstado, enviado: nextEnviado };
+          const inf = data.informe;
+          const nextInsight = inf ? (inf.motivoCriticidad?.trim() || inf.resumen?.trim() || "") : r.insight ?? "";
+          const nextAcciones = inf?.accionesPendientes ?? r.acciones ?? [];
+          if (
+            nextEstado !== r.estado ||
+            nextEnviado !== (r.enviado ?? false) ||
+            nextInsight !== (r.insight ?? "")
+          ) {
+            const updated = {
+              ...r,
+              estado: nextEstado,
+              enviado: nextEnviado,
+              insight: nextInsight,
+              acciones: nextAcciones,
+            };
             await putRegistro(updated); // persiste en IndexedDB
             changed = true;
             return updated;
@@ -174,11 +195,11 @@ export default function RegistrosPage() {
         </button>
         <h1 className="font-headline-sm text-headline-sm text-on-surface">Mis registros</h1>
         <button
-          onClick={() => router.push("/tablero")}
+          onClick={() => router.push("/informes")}
           className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
         >
-          <span className="material-symbols-outlined text-[20px]">dashboard</span>
-          <span className="font-caption text-caption">Coordinación</span>
+          <span className="material-symbols-outlined text-[20px]">groups</span>
+          <span className="font-caption text-caption">Informes del equipo</span>
         </button>
       </header>
 
@@ -218,6 +239,26 @@ export default function RegistrosPage() {
                         {r.programa ? `${programaLabel(r.programa)} · ` : ""}
                         {fmtFecha(r.createdAt)}
                       </p>
+
+                      {r.insight && (
+                        <p className="mt-1.5 font-label-md text-label-md font-normal text-on-surface-variant line-clamp-2">
+                          {r.insight}
+                        </p>
+                      )}
+
+                      {r.acciones && r.acciones.length > 0 && (
+                        <ul className="mt-1.5 space-y-1">
+                          {r.acciones.map((a, idx) => (
+                            <li
+                              key={idx}
+                              className="flex items-start gap-1.5 font-label-md text-label-md font-normal text-on-surface-variant"
+                            >
+                              <span className="text-primary shrink-0 leading-none">•</span>
+                              <span className="min-w-0">{a}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
                     </button>
                     <button
                       onClick={() => setConfirmId(r.id)}

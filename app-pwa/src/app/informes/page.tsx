@@ -10,7 +10,7 @@ import { MOCK_ITEMS } from "./mock";
 // Siempre fresco: lee SQLite en cada request (estados cambian a medida que n8n procesa).
 export const dynamic = "force-dynamic";
 
-export default async function TableroPage() {
+export default async function InformesPage() {
   const h = await headers();
   const tenant = tenantFromHeaders(h);
   const isDev = process.env.NODE_ENV === "development";
@@ -35,7 +35,7 @@ export default async function TableroPage() {
         >
           <span className="material-symbols-outlined">arrow_back</span>
         </Link>
-        <h1 className="font-headline-sm text-headline-sm text-on-surface">Coordinación</h1>
+        <h1 className="font-headline-sm text-headline-sm text-on-surface">Informes del equipo</h1>
       </header>
 
       <main className="flex-grow pt-20 px-container-margin pb-12 max-w-xl mx-auto w-full">

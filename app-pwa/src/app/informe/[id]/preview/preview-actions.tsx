@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { ConfirmEnviarModal } from "@/components/confirm-enviar-modal";
 
 /** Botón volver del preview (usa el historial, así respeta de dónde viniste). */
 export function PreviewBack() {
@@ -36,6 +37,7 @@ export function PreviewActions({
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState(false);
 
   const isCoord = ctx === "coord";
   // Promotor sobre un informe ya enviado: solo lectura, sin barra de acciones.
@@ -48,6 +50,7 @@ export function PreviewActions({
     try {
       const res = await fetch(`/api/informe/${id}/enviar`, { method: "POST" });
       if (res.ok) {
+        setConfirm(false);
         router.push("/registros");
       } else {
         const d = (await res.json().catch(() => ({}))) as { error?: string };
@@ -77,19 +80,22 @@ export function PreviewActions({
         </Link>
         {showEnviar && (
           <button
-            onClick={enviar}
+            onClick={() => setConfirm(true)}
             disabled={enviando}
             className="flex-1 h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
           >
-            {enviando ? (
-              <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-            ) : (
-              <span className="material-symbols-outlined text-[20px]">send</span>
-            )}
-            {enviando ? "Enviando…" : "Enviar a coordinación"}
+            <span className="material-symbols-outlined text-[20px]">send</span>
+            Enviar a coordinación
           </button>
         )}
       </div>
+
+      <ConfirmEnviarModal
+        open={confirm}
+        enviando={enviando}
+        onCancel={() => setConfirm(false)}
+        onConfirm={enviar}
+      />
     </div>
   );
 }

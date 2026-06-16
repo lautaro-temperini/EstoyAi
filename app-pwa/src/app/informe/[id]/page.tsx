@@ -12,6 +12,7 @@ import {
 import type { FieldReport, Prioridad } from "@/lib/reports/schema";
 import { StatusChip, ESTADO_CHIP, type EstadoChip } from "@/components/status-chip";
 import { IS_DEV, devInformeData } from "@/lib/dev-mock";
+import { ConfirmEnviarModal } from "@/components/confirm-enviar-modal";
 
 // ── Tipos locales ────────────────────────────────────────────────────────────
 
@@ -64,6 +65,7 @@ export default function InformePage() {
   const [enviado, setEnviado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [confirmEnviar, setConfirmEnviar] = useState(false);
 
   // ── Load informe ───────────────────────────────────────────────────────────
 
@@ -432,19 +434,22 @@ export default function InformePage() {
         </button>
         {!enviado && (
           <button
-            onClick={enviar}
+            onClick={() => setConfirmEnviar(true)}
             disabled={saving || enviando}
             className="flex-1 h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
           >
-            {enviando ? (
-              <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-            ) : (
-              <span className="material-symbols-outlined text-[20px]">send</span>
-            )}
-            {enviando ? "Enviando…" : "Enviar a coordinación"}
+            <span className="material-symbols-outlined text-[20px]">send</span>
+            Enviar a coordinación
           </button>
         )}
       </div>
+
+      <ConfirmEnviarModal
+        open={confirmEnviar}
+        enviando={enviando}
+        onCancel={() => setConfirmEnviar(false)}
+        onConfirm={enviar}
+      />
     </div>
   );
 }

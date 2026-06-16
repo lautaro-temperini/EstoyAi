@@ -56,6 +56,10 @@ export interface Registro {
   estado: RegistroEstado;
   /** Enviado a coordinación (gate). Se sincroniza desde el servidor en reconcile. */
   enviado?: boolean;
+  /** Síntesis del informe (motivoCriticidad o resumen). Se sincroniza en reconcile. */
+  insight?: string;
+  /** Acciones pendientes extraídas. Se sincroniza en reconcile. */
+  acciones?: string[];
   createdAt: number;
 }
 

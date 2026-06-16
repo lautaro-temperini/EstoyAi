@@ -125,7 +125,7 @@ export function TableroClient({
             <button
               key={p}
               onClick={() => setProg(p)}
-              className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md transition-colors ${
+              className={`flex items-center justify-center gap-1.5 px-3 h-10 text-center leading-tight rounded-full font-label-md text-label-md transition-colors ${
                 active
                   ? "bg-primary text-on-primary"
                   : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
@@ -248,9 +248,9 @@ export function TableroClient({
                       {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
                     </p>
 
-                    {i.motivoCriticidad && (
-                      <p className="mt-1.5 font-caption text-caption text-on-surface-variant line-clamp-2">
-                        {i.motivoCriticidad}
+                    {(i.motivoCriticidad || i.resumen) && (
+                      <p className="mt-1.5 font-label-md text-label-md font-normal text-on-surface-variant line-clamp-2">
+                        {i.motivoCriticidad || i.resumen}
                       </p>
                     )}
 
@@ -259,7 +259,7 @@ export function TableroClient({
                         {i.accionesPendientes.map((a, idx) => (
                           <li
                             key={idx}
-                            className="flex items-start gap-1.5 font-caption text-caption text-on-surface-variant"
+                            className="flex items-start gap-1.5 font-label-md text-label-md font-normal text-on-surface-variant"
                           >
                             <span className="text-primary shrink-0 leading-none">•</span>
                             <span className="min-w-0">{a}</span>
