@@ -151,7 +151,7 @@ export function TableroClient({
               onClick={() => setProg(p)}
               className={`flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md transition-colors ${
                 active
-                  ? "bg-secondary-container text-on-secondary-container"
+                  ? "bg-primary text-on-primary"
                   : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
               }`}
             >

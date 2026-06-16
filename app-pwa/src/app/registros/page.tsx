@@ -193,34 +193,25 @@ export default function RegistrosPage() {
                   key={r.id}
                   className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
                 >
-                  <div className="flex items-stretch">
-                    <button
-                      onClick={() => router.push(`/estado/${r.id}`)}
-                      className="flex-grow min-w-0 text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
-                    >
-                      <div className="min-w-0">
-                        <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
-                          {r.titular}
-                        </p>
-                        <p className="font-caption text-caption text-on-surface-variant">
-                          {r.programa ? `${programaLabel(r.programa)} · ` : ""}
-                          {fmtFecha(r.createdAt)}
-                        </p>
-                      </div>
-                      <StatusChip estado={ESTADO_TO_CHIP[r.estado]} />
-                    </button>
-                    <button
-                      onClick={() => setConfirmId(r.id)}
-                      title="Borrar"
-                      aria-label="Borrar registro"
-                      className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => router.push(`/estado/${r.id}`)}
+                    className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-label-md text-label-md text-on-surface font-semibold truncate">
+                        {r.titular}
+                      </p>
+                      <p className="font-caption text-caption text-on-surface-variant">
+                        {r.programa ? `${programaLabel(r.programa)} · ` : ""}
+                        {fmtFecha(r.createdAt)}
+                      </p>
+                    </div>
+                    <StatusChip estado={ESTADO_TO_CHIP[r.estado]} />
+                  </button>
 
-                  {r.estado === "listo" && (
-                    <div className="border-t border-outline-variant px-2 py-1.5">
+                  {/* Barra de acciones: acción contextual (izq) + borrar (der). */}
+                  <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
+                    {r.estado === "listo" && (
                       <button
                         onClick={() => router.push(`/informe/${r.id}`)}
                         className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
@@ -228,11 +219,8 @@ export default function RegistrosPage() {
                         <span className="material-symbols-outlined text-[18px]">rate_review</span>
                         <span className="font-caption text-caption">Revisar y enviar</span>
                       </button>
-                    </div>
-                  )}
-
-                  {r.estado === "error" && (
-                    <div className="border-t border-outline-variant px-2 py-1.5">
+                    )}
+                    {r.estado === "error" && (
                       <button
                         onClick={() => reintentar(r.id)}
                         disabled={reintentando === r.id}
@@ -245,13 +233,21 @@ export default function RegistrosPage() {
                         </span>
                         <span className="font-caption text-caption">Reintentar</span>
                       </button>
-                      {reintentoMsg?.id === r.id && (
-                        <span className="ml-2 font-caption text-caption text-on-surface-variant">
-                          {reintentoMsg.msg}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                    )}
+                    {reintentoMsg?.id === r.id && (
+                      <span className="font-caption text-caption text-on-surface-variant">
+                        {reintentoMsg.msg}
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setConfirmId(r.id)}
+                      title="Borrar"
+                      aria-label="Borrar registro"
+                      className="ml-auto flex items-center justify-center w-9 h-9 rounded-lg hover:bg-error-container text-error transition-colors"
+                    >
+                      <span className="material-symbols-outlined text-[20px]">delete</span>
+                    </button>
+                  </div>
                 </li>
               );
             })}

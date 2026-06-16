@@ -42,9 +42,9 @@ Paleta Tailwind por defecto (no son tokens custom de `globals.css`; conviven con
 
 | Estado       | Label       | Clases                       |
 | ------------ | ----------- | ----------------------------- |
-| `alta`       | ALTA        | `bg-pink-100 text-pink-700`   |
-| `media`      | MEDIA       | `bg-orange-100 text-orange-700` |
-| `baja`       | BAJA        | `bg-yellow-100 text-yellow-800` |
+| `alta`       | Alta        | `bg-pink-100 text-pink-700`   |
+| `media`      | Media       | `bg-orange-100 text-orange-700` |
+| `baja`       | Baja        | `bg-yellow-100 text-yellow-800` |
 | `en-cola`    | En cola     | `bg-gray-100 text-gray-600`   |
 | `subiendo`   | Subiendo    | `bg-cyan-100 text-cyan-700`   |
 | `procesando` | Procesando  | `bg-cyan-100 text-cyan-700`   |
@@ -52,6 +52,28 @@ Paleta Tailwind por defecto (no son tokens custom de `globals.css`; conviven con
 | `error`      | Error       | `bg-red-100 text-red-700`     |
 
 Cada pantalla mapea su propio enum (`TriageCategoria`, `RegistroEstado`) a uno de estos 8 estados; `StatusChip` no conoce esos enums, solo el estado estandarizado.
+
+**Prioridad usa SIEMPRE `StatusChip`** (`alta`/`media`/`baja`) — no definir tablas de color de prioridad por pantalla. El selector de prioridad en `/informe` reusa `ESTADO_CHIP[...].cls` y `.label` para el estado activo.
+
+---
+
+## Chips de filtro
+
+Pills de filtro (criticidad, programa) en `/tablero`. Distinto de los chips de estado: comunican **selección**, no severidad.
+
+- **Seleccionado:** `bg-primary text-on-primary` (azul institucional). Un único color de selección en toda la app — el verde (`secondary`) está reservado a "éxito / se queda en la sede", nunca a selección.
+- **No seleccionado:** `bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high`.
+- Forma: `rounded-full px-3 py-1.5 font-label-md`. Contador opcional al lado del label.
+
+---
+
+## Acciones de card
+
+Cards con acciones (`/registros`, `/tablero`) usan **una barra inferior** (`border-t border-outline-variant px-2 py-1.5`), no botones al costado.
+
+- **Acciones contextuales** (Revisar y enviar, Reintentar, Ver, .docx, Cloudflare, Podio): a la izquierda, `inline-flex … rounded-lg hover:bg-surface-container-low`, ícono 18px + `font-caption`.
+- **Borrar** (destructiva): siempre **al final** (`ml-auto`), `w-9 h-9 rounded-lg hover:bg-error-container text-error`, ícono 20px. Confirmación en modal antes de borrar.
+- La fila superior de la card (contenido + `StatusChip`) es el área navegable; las acciones nunca van en esa fila.
 
 ---
 

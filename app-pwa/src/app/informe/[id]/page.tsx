@@ -11,6 +11,7 @@ import {
   type CamposConfig,
 } from "@/lib/reports/campos";
 import type { FieldReport, Prioridad } from "@/lib/reports/schema";
+import { StatusChip, ESTADO_CHIP, type EstadoChip } from "@/components/status-chip";
 
 // ── Tipos locales ────────────────────────────────────────────────────────────
 
@@ -26,11 +27,8 @@ const PRIORIDADES: Prioridad[] = ["ALTA", "MEDIA", "BAJA"];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-const PRIORIDAD_CLS: Record<Prioridad, string> = {
-  ALTA: "bg-error-container text-on-error-container",
-  MEDIA: "bg-tertiary-container text-on-tertiary-container",
-  BAJA: "bg-secondary-container text-on-secondary-container",
-};
+/** Prioridad → estado estandarizado del StatusChip (un solo sistema de color). */
+const PRIO_CHIP: Record<Prioridad, EstadoChip> = { ALTA: "alta", MEDIA: "media", BAJA: "baja" };
 
 /** secciones that cannot be deselected */
 const LOCKED: SeccionId[] = ["identificacion"];
@@ -256,13 +254,11 @@ export default function InformePage() {
                 Revisión
               </h2>
               {enviado ? (
-                <span className="shrink-0 px-2 py-0.5 rounded text-[11px] font-bold bg-secondary-container text-on-secondary-container">
+                <span className="shrink-0 px-2 py-1 rounded text-[11px] font-bold bg-secondary-container text-on-secondary-container">
                   En coordinación
                 </span>
               ) : (
-                <span className={`shrink-0 px-2 py-0.5 rounded text-[11px] font-bold ${PRIORIDAD_CLS[prioridad]}`}>
-                  {prioridad}
-                </span>
+                <StatusChip estado={PRIO_CHIP[prioridad]} />
               )}
             </div>
 
@@ -286,11 +282,11 @@ export default function InformePage() {
                     onClick={() => setPrioridad(p)}
                     className={`flex-1 h-10 rounded-lg font-label-sm text-label-sm transition-colors disabled:opacity-60 ${
                       prioridad === p
-                        ? PRIORIDAD_CLS[p]
+                        ? ESTADO_CHIP[PRIO_CHIP[p]].cls
                         : "bg-surface-container-low text-on-surface-variant"
                     }`}
                   >
-                    {p}
+                    {ESTADO_CHIP[PRIO_CHIP[p]].label}
                   </button>
                 ))}
               </div>
