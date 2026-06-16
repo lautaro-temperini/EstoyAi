@@ -259,7 +259,7 @@ export function TableroClient({
                 className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
               >
                 <Link
-                  href={`/informe/${i.id}`}
+                  href={`/informe/${i.id}/preview`}
                   className="block p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -296,13 +296,6 @@ export function TableroClient({
                 </Link>
 
                 <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
-                  <Link
-                    href={`/informe/${i.id}/preview`}
-                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
-                  >
-                    <span className="material-symbols-outlined text-[18px]">visibility</span>
-                    <span className="font-caption text-caption">Ver</span>
-                  </Link>
                   <a
                     href={`/api/informe/${i.id}/docx`}
                     className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"

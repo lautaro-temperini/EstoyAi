@@ -33,9 +33,7 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!row || !row.informeJson) {
     return NextResponse.json({ error: "informe sin datos para editar" }, { status: 404 });
   }
-  if (row.enviado) {
-    return NextResponse.json({ error: "ya enviado a coordinación; no se puede editar" }, { status: 409 });
-  }
+  // Editable también si ya está enviado: el coordinador puede corregir desde /tablero.
 
   let body: EditBody;
   try {

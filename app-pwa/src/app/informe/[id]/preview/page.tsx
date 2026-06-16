@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getInforme } from "@/lib/db/sqlite";
 import { buildReportContent } from "@/lib/reports/content";
@@ -7,6 +6,7 @@ import { assertValidId } from "@/lib/api/validate";
 import { StatusChip, type EstadoChip } from "@/components/status-chip";
 import { IS_DEV, devFieldReport } from "@/lib/dev-mock";
 import { DEFAULT_CAMPOS } from "@/lib/reports/campos";
+import { PreviewBack, PreviewActions } from "./preview-actions";
 
 export const dynamic = "force-dynamic";
 
@@ -29,17 +29,12 @@ export default async function PreviewPage({ params }: Params) {
   if (!report) notFound();
 
   const content = filterReportContent(buildReportContent(report), row?.campos ?? DEFAULT_CAMPOS);
+  const enviado = row?.enviado ?? false;
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-3 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
-        <Link
-          href="/tablero"
-          aria-label="Volver"
-          className="p-2 -ml-2 hover:bg-surface-container-low rounded-full text-primary"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </Link>
+        <PreviewBack />
         <h1 className="font-headline-sm text-headline-sm text-on-surface flex-1 truncate">Vista del informe</h1>
         <a
           href={`/api/informe/${id}/docx`}
@@ -50,7 +45,7 @@ export default async function PreviewPage({ params }: Params) {
         </a>
       </header>
 
-      <main className="flex-grow pt-20 px-container-margin pb-12 max-w-2xl mx-auto w-full">
+      <main className="flex-grow pt-20 px-container-margin pb-28 max-w-2xl mx-auto w-full">
         {/* Hoja del informe */}
         <article className="bg-surface-container-lowest border border-outline-variant rounded-xl p-6 sm:p-8 space-y-stack-md">
           <div className="flex items-start justify-between gap-3">
@@ -120,6 +115,8 @@ export default async function PreviewPage({ params }: Params) {
           </p>
         </article>
       </main>
+
+      <PreviewActions id={id} enviado={enviado} />
     </div>
   );
 }

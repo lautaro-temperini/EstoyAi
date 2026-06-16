@@ -193,7 +193,9 @@ export default function RegistrosPage() {
                   className="bg-surface-container-lowest border border-outline-variant rounded-xl overflow-hidden"
                 >
                   <button
-                    onClick={() => router.push(`/estado/${r.id}`)}
+                    onClick={() =>
+                      router.push(r.estado === "listo" ? `/informe/${r.id}/preview` : `/estado/${r.id}`)
+                    }
                     className="w-full text-left p-4 flex items-center justify-between gap-3 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                   >
                     <div className="min-w-0">
@@ -210,15 +212,6 @@ export default function RegistrosPage() {
 
                   {/* Barra de acciones: acción contextual (izq) + borrar (der). */}
                   <div className="flex items-center gap-1 border-t border-outline-variant px-2 py-1.5">
-                    {r.estado === "listo" && (
-                      <button
-                        onClick={() => router.push(`/informe/${r.id}`)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">rate_review</span>
-                        <span className="font-caption text-caption">Revisar y enviar</span>
-                      </button>
-                    )}
                     {r.estado === "error" && (
                       <button
                         onClick={() => reintentar(r.id)}

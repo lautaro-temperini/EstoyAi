@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import {
   SECCION_IDS,
@@ -231,7 +230,7 @@ export default function InformePage() {
       {/* Header */}
       <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-3 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
         <button
-          onClick={() => router.push(`/estado/${id}`)}
+          onClick={() => router.push(`/informe/${id}/preview`)}
           aria-label="Volver"
           className="p-2 -ml-2 hover:bg-surface-container-low rounded-full text-primary"
         >
@@ -239,7 +238,7 @@ export default function InformePage() {
         </button>
         <div className="flex-1 min-w-0">
           <h1 className="font-headline-sm text-headline-sm text-on-surface truncate">
-            Revisar y enviar
+            Editar informe
           </h1>
           {titular && (
             <p className="font-caption text-caption text-on-surface-variant truncate">
@@ -267,12 +266,6 @@ export default function InformePage() {
               )}
             </div>
 
-            {enviado && (
-              <p className="font-caption text-caption text-on-surface-variant">
-                Ya enviado a coordinación. No se puede editar.
-              </p>
-            )}
-
             {/* Prioridad */}
             <div>
               <label className="block font-label-sm text-label-sm text-on-surface-variant mb-1">
@@ -283,7 +276,6 @@ export default function InformePage() {
                   <button
                     key={p}
                     type="button"
-                    disabled={enviado}
                     onClick={() => setPrioridad(p)}
                     className={`flex-1 h-10 rounded-lg font-label-sm text-label-sm transition-colors disabled:opacity-60 ${
                       prioridad === p
@@ -305,7 +297,6 @@ export default function InformePage() {
               <input
                 type="text"
                 value={motivo}
-                disabled={enviado}
                 onChange={(e) => { setMotivo(e.target.value); setSaved(false); }}
                 placeholder="Por qué esta prioridad (máx. ~15 palabras)"
                 className="w-full h-11 px-3 bg-white border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface focus:border-primary outline-none disabled:bg-surface-container-low disabled:text-on-surface-variant"
@@ -319,7 +310,6 @@ export default function InformePage() {
               </label>
               <textarea
                 value={resumen}
-                disabled={enviado}
                 onChange={(e) => { setResumen(e.target.value); setSaved(false); }}
                 rows={4}
                 className="w-full px-3 py-2 bg-white border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface leading-relaxed focus:border-primary outline-none resize-y disabled:bg-surface-container-low disabled:text-on-surface-variant"
@@ -333,7 +323,6 @@ export default function InformePage() {
               </label>
               <textarea
                 value={accionesText}
-                disabled={enviado}
                 onChange={(e) => { setAccionesText(e.target.value); setSaved(false); }}
                 rows={3}
                 placeholder="Ej: Turno pediátrico\nContactar a trabajo social"
@@ -423,53 +412,37 @@ export default function InformePage() {
         )}
       </main>
 
-      {/* Sticky bottom bar */}
+      {/* Sticky bottom bar — Guardar siempre; Enviar solo si es borrador. */}
       <div className="fixed bottom-0 w-full bg-surface border-t border-outline-variant px-container-margin py-3 flex gap-3 max-w-xl mx-auto left-0 right-0">
-        {enviado ? (
-          <>
-            <Link
-              href={`/informe/${id}/preview`}
-              className="flex-1 h-14 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2"
-            >
-              <span className="material-symbols-outlined text-[20px]">visibility</span>
-              Ver informe
-            </Link>
-            <a
-              href={`/api/informe/${id}/docx`}
-              className="h-14 px-4 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2"
-              title="Descargar .docx"
-            >
-              <span className="material-symbols-outlined text-[20px]">download</span>
-              .docx
-            </a>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={guardar}
-              disabled={saving || enviando}
-              className="h-14 px-4 bg-surface-container-low border border-outline-variant text-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
-            >
-              {saving ? (
-                <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-              ) : (
-                <span className="material-symbols-outlined text-[20px]">save</span>
-              )}
-              {saving ? "Guardando…" : "Guardar"}
-            </button>
-            <button
-              onClick={enviar}
-              disabled={saving || enviando}
-              className="flex-1 h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
-            >
-              {enviando ? (
-                <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
-              ) : (
-                <span className="material-symbols-outlined text-[20px]">send</span>
-              )}
-              {enviando ? "Enviando…" : "Enviar a coordinación"}
-            </button>
-          </>
+        <button
+          onClick={guardar}
+          disabled={saving || enviando}
+          className={`h-14 px-4 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform ${
+            enviado
+              ? "flex-1 bg-primary text-on-primary"
+              : "bg-surface-container-low border border-outline-variant text-primary"
+          }`}
+        >
+          {saving ? (
+            <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+          ) : (
+            <span className="material-symbols-outlined text-[20px]">save</span>
+          )}
+          {saving ? "Guardando…" : "Guardar"}
+        </button>
+        {!enviado && (
+          <button
+            onClick={enviar}
+            disabled={saving || enviando}
+            className="flex-1 h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 disabled:opacity-60 active:scale-[0.97] transition-transform"
+          >
+            {enviando ? (
+              <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
+            ) : (
+              <span className="material-symbols-outlined text-[20px]">send</span>
+            )}
+            {enviando ? "Enviando…" : "Enviar a coordinación"}
+          </button>
         )}
       </div>
     </div>
