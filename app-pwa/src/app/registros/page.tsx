@@ -185,25 +185,12 @@ export default function RegistrosPage() {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-4 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
-        <button
-          onClick={() => router.push("/")}
-          aria-label="Inicio"
-          className="p-2 -ml-2 hover:bg-surface-container-low rounded-full text-primary"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </button>
+      {/* Header solo mobile (en desktop navega la barra superior). */}
+      <header className="md:hidden anim-fade fixed top-0 w-full z-40 flex items-center px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
         <h1 className="font-headline-sm text-headline-sm text-on-surface">Mis registros</h1>
-        <button
-          onClick={() => router.push("/informes")}
-          className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-lg hover:bg-surface-container-low text-primary transition-colors"
-        >
-          <span className="material-symbols-outlined text-[20px]">groups</span>
-          <span className="font-caption text-caption">Informes del equipo</span>
-        </button>
       </header>
 
-      <main className="flex-grow pt-20 px-container-margin pb-12 max-w-xl mx-auto w-full">
+      <main className="flex-grow pt-20 md:pt-24 px-container-margin pb-28 md:pb-12 max-w-xl mx-auto w-full">
         {items === null ? (
           <div className="flex justify-center pt-12">
             <span className="material-symbols-outlined text-primary text-[32px] animate-spin">

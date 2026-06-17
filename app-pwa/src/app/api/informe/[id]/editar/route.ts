@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getInforme, updateInformeJson } from "@/lib/db/sqlite";
+import { generarDocxParaInforme } from "@/lib/reports/generar-docx";
 import { assertValidId } from "@/lib/api/validate";
 import type { Prioridad } from "@/lib/reports/schema";
 
@@ -33,7 +34,14 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!row || !row.informeJson) {
     return NextResponse.json({ error: "informe sin datos para editar" }, { status: 404 });
   }
-  // Editable también si ya está enviado: el coordinador puede corregir desde /tablero.
+  // Gate server-side: lo ya enviado a coordinación solo lo edita el admin
+  // (x-role lo setea el middleware). El borrador lo edita cualquier usuario de la sede.
+  if (row.enviado && request.headers.get("x-role") !== "admin") {
+    return NextResponse.json(
+      { error: "ya está en coordinación; solo el administrador puede editarlo" },
+      { status: 403 },
+    );
+  }
 
   let body: EditBody;
   try {
@@ -54,5 +62,10 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const updated = updateInformeJson(id, next);
+  // Regenerar el .docx para que la descarga refleje la edición (cualquier camino:
+  // guardar, o editar+enviar sin guardar). Best-effort: si falla, el dato ya quedó.
+  if (updated?.informeJson) {
+    await generarDocxParaInforme(id, updated.informeJson, updated.campos);
+  }
   return NextResponse.json({ ok: true, informe: updated?.informeJson });
 }

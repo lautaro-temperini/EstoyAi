@@ -21,7 +21,10 @@ import {
  * API routes sepan qué ONG sirve esta petición (branding, system prompt).
  *
  * Rutas EXCLUIDAS (ver `config.matcher`):
- * - `/api/informe/[id]/*` → las llama n8n desde la red Docker; sin Basic Auth.
+ * - Callbacks de n8n: `/api/informe/[id]/(extraccion|generar-docx|error|docx)` →
+ *   los llama n8n desde la red Docker (sin credenciales). El resto de
+ *   `/api/informe/*` (enviar, editar, reprocesar, campos, subir-r2, podio, estado)
+ *   SÍ pasa por auth: el gate de coordinación se valida server-side, no solo en UI.
  * - Assets estáticos (`_next`, íconos, sw.js, manifest) → sin gatear.
  */
 export function middleware(req: NextRequest) {
@@ -103,6 +106,6 @@ export function middleware(req: NextRequest) {
 export const config = {
   // Corre en todo excepto los callbacks de n8n y los assets estáticos.
   matcher: [
-    "/((?!api/informe|_next/static|_next/image|favicon.ico|icon.svg|sw.js|manifest.webmanifest).*)",
+    "/((?!api/informe/[^/]+/(?:extraccion|generar-docx|error|docx)|_next/static|_next/image|favicon.ico|icon.svg|sw.js|manifest.webmanifest).*)",
   ],
 };

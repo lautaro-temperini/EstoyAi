@@ -75,12 +75,14 @@ Una sola instalación de sede puede servir **varias ONGs** vía subdominios ([MU
 │  Dispositivo del promotor                                   │
 │  ┌─────────────────────────────────────────────────────┐   │
 │  │  PWA (Next.js 15)   :3000                           │   │
-│  │  ├─ /registro             elige programa            │   │
-│  │  ├─ /registro/beneficiario nombre/apellido/dni      │   │
+│  │  ├─ /registrar            elige programa + profesional│  │
+│  │  ├─ /registrar/beneficiario nombre/apellido/dni     │   │
 │  │  ├─ /grabar               graba WAV (WebAudio,16kHz)│   │
 │  │  ├─ /estado/[id]          polling del progreso      │   │
-│  │  ├─ /informe/[id]         descarga .docx/toggle     │   │
-│  │  └─ /registros            historial del dispositivo │   │
+│  │  ├─ /informe/[id]/preview vista; editar/enviar      │   │
+│  │  ├─ /informe/[id]         editar campos + valores    │   │
+│  │  ├─ /registros            historial del dispositivo │   │
+│  │  └─ /informes             informes del equipo (sede)│   │
 │  │                                                     │   │
 │  │  Service Worker (sw.js)                             │   │
 │  │  ├─ Background Sync → POST /api/audio               │   │
@@ -144,8 +146,8 @@ EstoyAi/
 
 ```
 [Promotor]
-  1. /registro              → elige programa (flow-context → sessionStorage)
-     /registro/beneficiario → ingresa nombre/apellido/DNI
+  1. /registrar             → elige programa (flow-context → sessionStorage)
+     /registrar/beneficiario → ingresa profesional + nombre/apellido/DNI
   2. /grabar    → graba WAV (WebAudio ScriptProcessorNode, 16 kHz mono PCM)
                 → enqueueRegistro(): UUID generado en dispositivo
                   WAV + meta guardados en IndexedDB (pending store)
@@ -209,11 +211,18 @@ RECIBIDO  (POST /api/audio)
   ├──▶ EXTRAIDO  (POST /extraccion — n8n tras Ollama)
   │       │
   │       └──▶ LISTO   (POST /generar-docx — n8n tras render)
+  │              │
+  │              └──▶ enviado=1  (POST /enviar — el promotor confirma; aparece en /informes)
   │
-  └──▶ ERROR    (POST /error — rama de error n8n)
+  └──▶ ERROR    (POST /error — rama de error n8n; POST /reprocesar re-dispara)
 ```
 
-`/estado/[id]` fusiona ambas: SW postMessage conduce `encolado→subiendo`, el polling del servidor conduce `procesando→listo/error`.
+Además del estado, un flag **`enviado`** separa borrador (del promotor) de "en
+coordinación": un LISTO no aparece en `/informes` hasta `POST /enviar`. Una vez enviado,
+solo el admin puede editar (`POST /editar` con rol) o borrar (`DELETE /api/admin/...`).
+
+`/estado/[id]` fusiona cliente/servidor: SW postMessage + polling del servidor conducen
+`encolado→procesando→listo/error` (el estado "subiendo" se unificó en "procesando").
 
 ---
 
@@ -257,10 +266,10 @@ FieldReport
        ├─ entidades: { nombres[], fechas[] }
        ├─ accionesPendientes: string[]
        └─ datos: DatosInforme
-            ├─ demografia  (nombre, edad, fechaNacimiento, esMenor)
+            ├─ demografia  (edad, fechaNacimiento, esMenor)   ← el nombre viene de campos fijos
             ├─ metricas    (peso, talla, diagnosticos[], avanceObra)
             ├─ socioeconomico (familia, ingresos, vivienda, vulnerabilidades[])
-            ├─ intervencion  (fecha, lugar, tipoActividad, profesionales[])
+            ├─ intervencion  (fecha, lugar, tipoActividad)
             ├─ seguimiento   (compromisos[], situacionLaboral, desempenoAcademico)
             └─ narrativa: string
 ```
@@ -428,7 +437,7 @@ Lista completa: `.env.example`.
 | Extender | Dónde |
 |---|---|
 | Nueva ONG | `tenants/config.ts`, `.env`, Cloudflare hostname |
-| Nuevo programa | `Programa` (`schema.ts`), opción en `/registro`, prompt en `assemble.ts` + `gen-n8n-workflow.mjs` → regenerar workflow |
+| Nuevo programa | `Programa` (`schema.ts`), opción en `/registrar`, prompt en `assemble.ts` + `gen-n8n-workflow.mjs` → regenerar workflow |
 | Prompt por programa / ONG | `assemble.ts` (`SYSTEM_PROMPT_*`) + `PROMPTS` en `gen-n8n-workflow.mjs` → regenerar |
 | Integración R2/Podio | Workflows n8n + env en `docker-compose.yml` |
 | Schema de extracción | `schema.ts` (sincronizar en gen script) |

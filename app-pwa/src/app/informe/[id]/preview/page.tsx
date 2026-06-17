@@ -1,3 +1,4 @@
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getInforme } from "@/lib/db/sqlite";
 import { buildReportContent } from "@/lib/reports/content";
@@ -34,6 +35,8 @@ export default async function PreviewPage({ params, searchParams }: Params) {
 
   const content = filterReportContent(buildReportContent(report), row?.campos ?? DEFAULT_CAMPOS);
   const enviado = row?.enviado ?? false;
+  // Rol: en coordinación, solo el admin ve "Editar" (el resto es lectura). Dev = admin.
+  const isAdmin = IS_DEV || (await headers()).get("x-role") === "admin";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -120,7 +123,7 @@ export default async function PreviewPage({ params, searchParams }: Params) {
         </article>
       </main>
 
-      <PreviewActions id={id} enviado={enviado} ctx={ctx} />
+      <PreviewActions id={id} enviado={enviado} ctx={ctx} isAdmin={isAdmin} />
     </div>
   );
 }

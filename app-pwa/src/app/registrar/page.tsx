@@ -39,23 +39,12 @@ export default function ProgramaPage() {
   const choose = (programa: Programa) => {
     setPrograma(programa);
     setTipo("individual");
-    router.push("/registro/beneficiario");
+    router.push("/registrar/beneficiario");
   };
 
   return (
     <>
-      <header className="anim-fade fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
-        <div className="flex items-center gap-2" />
-        <button
-          onClick={() => router.push("/registros")}
-          className="font-label-md text-label-md text-primary px-3 py-2 rounded-lg hover:bg-primary/10 flex items-center gap-1"
-        >
-          <span className="material-symbols-outlined text-[20px]">history</span>
-          Mis registros
-        </button>
-      </header>
-
-      <main className="min-h-screen pt-24 pb-12 px-container-margin max-w-lg mx-auto flex flex-col items-center">
+      <main className="min-h-screen pt-12 md:pt-24 pb-28 md:pb-12 px-container-margin max-w-lg mx-auto flex flex-col items-center">
         <div className="w-full mb-stack-lg">
           <Stepper current={1} />
         </div>

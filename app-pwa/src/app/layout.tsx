@@ -4,6 +4,7 @@ import "./globals.css";
 import { ServiceWorkerRegister } from "./sw-register";
 import { QueueFlusher } from "./queue-flusher";
 import { FlowProvider } from "./flow-context";
+import { MainNav } from "@/components/main-nav";
 import { tenantFromHeaders } from "@/lib/tenants/config";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -57,6 +58,7 @@ export default function RootLayout({
         <FlowProvider>
           {children}
         </FlowProvider>
+        <MainNav />
         <ServiceWorkerRegister />
         <QueueFlusher />
       </body>

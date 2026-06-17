@@ -1,5 +1,4 @@
 import { headers } from "next/headers";
-import Link from "next/link";
 import { tenantFromHeaders } from "@/lib/tenants/config";
 import { listInformesByTenant } from "@/lib/db/sqlite";
 import { listTriageItems, countByCategoria } from "@/lib/reports/triage";
@@ -27,18 +26,12 @@ export default async function InformesPage() {
     <div className="min-h-screen flex flex-col">
       <AutoRefresh seconds={20} />
 
-      <header className="anim-fade fixed top-0 w-full z-50 flex items-center gap-4 px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
-        <Link
-          href="/registro"
-          aria-label="Inicio"
-          className="p-2 -ml-2 hover:bg-surface-container-low rounded-full text-primary"
-        >
-          <span className="material-symbols-outlined">arrow_back</span>
-        </Link>
+      {/* Header solo mobile (en desktop navega la barra superior). */}
+      <header className="md:hidden anim-fade fixed top-0 w-full z-40 flex items-center px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
         <h1 className="font-headline-sm text-headline-sm text-on-surface">Informes del equipo</h1>
       </header>
 
-      <main className="flex-grow pt-20 px-container-margin pb-12 max-w-xl mx-auto w-full">
+      <main className="flex-grow pt-20 md:pt-24 px-container-margin pb-28 md:pb-12 max-w-xl mx-auto w-full">
         <p className="font-caption text-caption text-on-surface-variant mb-3">{tenant.orgName}</p>
 
         {counts.total === 0 ? (

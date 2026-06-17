@@ -29,10 +29,12 @@ export function PreviewActions({
   id,
   enviado,
   ctx,
+  isAdmin,
 }: {
   id: string;
   enviado: boolean;
   ctx?: string;
+  isAdmin: boolean;
 }) {
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
@@ -42,6 +44,8 @@ export function PreviewActions({
   const isCoord = ctx === "coord";
   // Promotor sobre un informe ya enviado: solo lectura, sin barra de acciones.
   if (!isCoord && enviado) return null;
+  // Coordinación: solo el admin edita; el resto es lectura (sin barra).
+  if (isCoord && !isAdmin) return null;
   const showEnviar = !isCoord && !enviado;
 
   async function enviar() {
