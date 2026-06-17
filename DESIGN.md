@@ -57,13 +57,21 @@ Cada pantalla mapea su propio enum (`TriageCategoria`, `RegistroEstado`) a uno d
 
 ---
 
-## Chips de filtro
+## Estado "seleccionado" (tabs y chips de filtro)
 
-Pills de filtro (criticidad, programa) en `/tablero`. Distinto de los chips de estado: comunican **selección**, no severidad.
+Regla transversal: el estado **seleccionado NO usa azul**. El azul (`primary`) está
+reservado a **botones/acciones**; el verde (`secondary`) a "éxito / se queda en la sede".
+Un seleccionado es un estado, no una acción → se marca con **relleno gris tonal**.
 
-- **Seleccionado:** `bg-primary text-on-primary` (azul institucional). Un único color de selección en toda la app — el verde (`secondary`) está reservado a "éxito / se queda en la sede", nunca a selección.
-- **No seleccionado:** `bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high`.
-- Forma: `rounded-full px-3 py-1.5 font-label-md`. Contador opcional al lado del label.
+- **Seleccionado:** `bg-surface-container-highest text-on-surface font-semibold` (el
+  rectángulo completo relleno, peso 600).
+- **No seleccionado:** chips `bg-surface-container-low text-on-surface-variant hover:bg-surface-container-low`; tabs/nav `text-on-surface-variant` (sin relleno) + hover suave.
+
+Aplica a:
+- **Navbar** (`components/main-nav.tsx`): desktop = pill gris; mobile = **toda la celda
+  del tab** rellena (no solo el ícono), con ícono `FILL 1`.
+- **Chips de filtro** (criticidad, programa) en `/informes`: `rounded-full px-3 py-1.5`,
+  contador opcional al lado del label.
 
 ---
 
@@ -71,8 +79,8 @@ Pills de filtro (criticidad, programa) en `/tablero`. Distinto de los chips de e
 
 Layout de card en `/registros` y `/tablero`:
 
-- **Cuerpo navegable** (`flex-grow`, área clickeable → preview/estado): primera fila `flex items-start justify-between gap-2` con **título** (`label-md` semibold, `truncate`) a la izquierda y **`StatusChip`** a la derecha (el título trunca, el chip no rompe línea). Debajo: metadatos en `font-caption`; luego el **insight** (síntesis: `motivoCriticidad` o, si está vacío, `resumen` — siempre presente en todas las prioridades) y las **acciones pendientes** en bullets `•`, ambos en `label-md font-normal` (mismo tamaño que el título, sin negrita).
-- **Borrar** (destructiva): botón **al costado**, `shrink-0 px-4 border-l border-outline-variant hover:bg-error-container text-error`, ícono 20px, alto completo de la card. Confirmación en modal. En `/tablero` solo visible para admin.
+- **Cuerpo navegable** (`flex-grow`, área clickeable → preview/estado): primera fila `flex items-start justify-between gap-2` con **título** (`label-md` semibold, `truncate`) a la izquierda y **`StatusChip`** a la derecha (el título trunca, el chip no rompe línea). Debajo: **metadatos** (programa · fecha) en `font-caption text-outline` (gris claro, no `on-surface-variant`: son secundarios, deben pesar menos); luego el **insight** (síntesis: `motivoCriticidad` o, si está vacío, `resumen` — siempre presente en todas las prioridades) y las **acciones pendientes** en bullets `•`, ambos en `label-md font-normal` (mismo tamaño que el título, sin negrita).
+- **Borrar** (destructiva): botón **al costado**, alto completo de la card, con **toda la zona en rojo** (`bg-error-container text-on-error-container hover:bg-error hover:text-on-error`) para que sea pregnante, ícono 20px. Confirmación en modal. En `/informes` solo visible para admin.
 - **Acción contextual puntual** (ej. "Reintentar" en error): barra inferior `border-t … px-2 py-1.5`, solo cuando aplica.
 - **Descargar `.docx`** vive en el preview (arriba a la derecha), no en la card.
 - R2/Podio: endpoints abiertos en el código pero **fuera de la UI** por ahora.

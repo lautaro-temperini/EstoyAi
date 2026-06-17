@@ -127,7 +127,7 @@ export function TableroClient({
               onClick={() => setProg(p)}
               className={`flex items-center justify-center gap-1.5 px-3 h-10 text-center leading-tight rounded-full font-label-md text-label-md transition-colors ${
                 active
-                  ? "bg-primary text-on-primary"
+                  ? "bg-surface-container-highest text-on-surface font-semibold"
                   : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
               }`}
             >
@@ -207,7 +207,7 @@ export function TableroClient({
               onClick={() => setFiltro(c.id)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-label-md text-label-md transition-colors ${
                 active
-                  ? "bg-primary text-on-primary"
+                  ? "bg-surface-container-highest text-on-surface font-semibold"
                   : "bg-surface-container-low text-on-surface-variant hover:bg-surface-container-high"
               }`}
             >
@@ -244,7 +244,7 @@ export function TableroClient({
                       </p>
                       <StatusChip estado={CATEGORIA_TO_ESTADO[i.categoria]} />
                     </div>
-                    <p className="mt-0.5 font-caption text-caption text-on-surface-variant">
+                    <p className="mt-0.5 font-caption text-caption text-outline">
                       {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
                     </p>
 
@@ -273,7 +273,7 @@ export function TableroClient({
                       onClick={() => setConfirmDel(i.id)}
                       title="Borrar de coordinación"
                       aria-label="Borrar de coordinación"
-                      className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
+                      className="shrink-0 flex items-center justify-center px-4 bg-error-container text-on-error-container hover:bg-error hover:text-on-error transition-colors"
                     >
                       <span className="material-symbols-outlined text-[20px]">delete</span>
                     </button>

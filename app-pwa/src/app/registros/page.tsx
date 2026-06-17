@@ -222,7 +222,7 @@ export default function RegistrosPage() {
                         </p>
                         <StatusChip estado={chipDe(r)} />
                       </div>
-                      <p className="mt-0.5 font-caption text-caption text-on-surface-variant">
+                      <p className="mt-0.5 font-caption text-caption text-outline">
                         {r.programa ? `${programaLabel(r.programa)} · ` : ""}
                         {fmtFecha(r.createdAt)}
                       </p>
@@ -251,7 +251,7 @@ export default function RegistrosPage() {
                       onClick={() => setConfirmId(r.id)}
                       title="Borrar"
                       aria-label="Borrar registro"
-                      className="shrink-0 flex items-center justify-center px-4 border-l border-outline-variant text-on-surface-variant hover:bg-error-container hover:text-error transition-colors"
+                      className="shrink-0 flex items-center justify-center px-4 bg-error-container text-on-error-container hover:bg-error hover:text-on-error transition-colors"
                     >
                       <span className="material-symbols-outlined text-[20px]">delete</span>
                     </button>

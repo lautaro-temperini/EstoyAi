@@ -35,7 +35,7 @@ export function MainNav() {
                 href={t.href}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg font-label-md text-label-md transition-colors ${
                   active
-                    ? "bg-primary text-on-primary"
+                    ? "bg-surface-container-highest text-on-surface font-semibold"
                     : "text-on-surface-variant hover:bg-surface-container-low"
                 }`}
               >
@@ -56,7 +56,9 @@ export function MainNav() {
               key={t.href}
               href={t.href}
               className={`flex flex-col items-center justify-center gap-0.5 transition-colors ${
-                active ? "text-primary" : "text-on-surface-variant"
+                active
+                  ? "bg-surface-container-highest text-on-surface font-semibold"
+                  : "text-on-surface-variant"
               }`}
             >
               <span
