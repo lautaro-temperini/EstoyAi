@@ -1,7 +1,7 @@
 import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getInforme } from "@/lib/db/sqlite";
-import { buildReportContent } from "@/lib/reports/content";
+import { buildReportContent } from "@/lib/reports/verticals";
 import { filterReportContent } from "@/lib/reports/campos";
 import { assertValidId } from "@/lib/api/validate";
 import { StatusChip, type EstadoChip } from "@/components/status-chip";

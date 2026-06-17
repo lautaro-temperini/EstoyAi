@@ -40,11 +40,11 @@ Casing: capitalizado normal en estados de procesamiento (En cola, Procesando, Li
 
 Paleta Tailwind por defecto (no son tokens custom de `globals.css`; conviven con la paleta de marca solo para este componente):
 
-| Estado       | Label       | Clases                       |
-| ------------ | ----------- | ----------------------------- |
-| `alta`       | ALTA        | `bg-pink-100 text-pink-700`   |
-| `media`      | MEDIA       | `bg-orange-100 text-orange-700` |
-| `baja`       | BAJA        | `bg-yellow-100 text-yellow-800` |
+| Estado        | Label                  | Clases                            |
+| ------------- | ---------------------- | --------------------------------- |
+| `alta`        | ALTA                   | `bg-pink-100 text-pink-700`       |
+| `media`       | MEDIA                  | `bg-orange-100 text-orange-700`   |
+| `baja`        | BAJA                   | `bg-yellow-100 text-yellow-800`   |
 | `en-cola`     | En cola                | `bg-gray-100 text-gray-600`       |
 | `procesando`  | Procesando             | `bg-cyan-100 text-cyan-700`       |
 | `por-revisar` | Listo para revisar     | `bg-green-100 text-green-700`     |
@@ -68,6 +68,7 @@ Un seleccionado es un estado, no una acción → se marca con **relleno gris ton
 - **No seleccionado:** chips `bg-surface-container-low text-on-surface-variant hover:bg-surface-container-low`; tabs/nav `text-on-surface-variant` (sin relleno) + hover suave.
 
 Aplica a:
+
 - **Navbar** (`components/main-nav.tsx`): desktop = pill gris; mobile = **toda la celda
   del tab** rellena (no solo el ícono), con ícono `FILL 1`.
 - **Chips de filtro** (criticidad, programa) en `/informes`: `rounded-full px-3 py-1.5`,
@@ -77,7 +78,7 @@ Aplica a:
 
 ## Acciones de card
 
-Layout de card en `/registros` y `/tablero`:
+Layout de card en `/registros` y `/informes`:
 
 - **Cuerpo navegable** (`flex-grow`, área clickeable → preview/estado): primera fila `flex items-start justify-between gap-2` con **título** (`label-md` semibold, `truncate`) a la izquierda y **`StatusChip`** a la derecha (el título trunca, el chip no rompe línea). Debajo: **metadatos** (programa · fecha) en `font-caption text-outline` (gris claro, no `on-surface-variant`: son secundarios, deben pesar menos); luego el **insight** (síntesis: `motivoCriticidad` o, si está vacío, `resumen` — siempre presente en todas las prioridades) y las **acciones pendientes** en bullets `•`, ambos en `label-md font-normal` (mismo tamaño que el título, sin negrita).
 - **Borrar** (destructiva): botón **al costado**, alto completo de la card, con **toda la zona en rojo** (`bg-error-container text-on-error-container hover:bg-error hover:text-on-error`) para que sea pregnante, ícono 20px. Confirmación en modal. En `/informes` solo visible para admin.
@@ -197,29 +198,31 @@ Evitar explícitamente:
 
 **Elemento firma:** índice numerado `01 / 02 / 03` a ancho completo, numerales Atkinson gigantes, filas separadas por hairlines (`.landing-index`). **Firma secundaria:** schematic horizontal Campo → Sede → .docx con pulso en el path (`FlowSchematic`, nodos rectangulares).
 
-**Narrativa de secciones** (11 elementos del framework de landing, adaptados a adopción de ONG — no venta SaaS): header (logo + nav + CTA) → hero (título masivo + CTA primario/ghost + social proof: 13 ONGs / 90% / en producción) → **01** problema (3 dolores) → **02** cómo funciona (índice 3 pasos + schematic) → **03** por qué es diferente (7 diferenciales del brief) → soberanía (spotlight oscuro) → **04** caso Pequeños Pasos (social proof real) → **05** para quién + exclusiones → **06** FAQ (accordion `<details>`) → CTA final (bloque ink full-bleed) → footer (contacto, OSS, origen Halketon).
+**Narrativa de secciones** (framework de landing adaptado a adopción de ONG — no venta SaaS): header (logo + nav + CTA) → hero (título masivo + CTA primario/ghost + social proof: «13 de 16 ONGs» + «Gratis · Código abierto») → **01** problema (3 dolores) → **02** cómo funciona (índice 3 pasos + schematic) → en acción (demo/mockup) → **03** por qué es diferente (7 diferenciales del brief) → soberanía (spotlight oscuro) → **05** para quién es → alcance (exclusiones) → **06** FAQ (accordion `<details>`) → de dónde viene (origen Halketon + research, comparación El patrón / El enfoque) → CTA final (bloque ink full-bleed) → footer (contacto, OSS).
 
-Testimonios (elemento 8 del framework): **no se inventan citas**; el caso real Pequeños Pasos cumple esa función. Si hay una cita verificada de la organización, va en ese bloque.
+> El producto aún no está en producción (ver `docs/brief.md`): el **caso de estudio Pequeños Pasos** se retiró de la landing y la CSS `.landing-case__*` fue eliminada. Cuando haya un piloto real, ese bloque vuelve como `04` y los índices subsiguientes se renumeran.
+
+Testimonios: **no se inventan citas ni casos**. Mientras no haya producción, el proof es el research (13 de 16 ONGs) y el origen Halketon. Si hay una cita verificada de una organización, va en el bloque de caso de estudio que se reincorpore.
 
 ### Tokens (scope `.landing`)
 
 Definidos al inicio de `landing.css`. Hex de marca compartidos con la PWA, **reasignados a roles civic** (nombres semánticos por función, no por escala Material).
 
-| Rol                          | Variable        | Valor / notas                                  |
-| ---------------------------- | --------------- | ---------------------------------------------- |
-| Azul institucional (bloques) | `--ink`         | `#0040a1`                                       |
-| Azul links / markers / hover | `--ink-bright`  | `#0056d2`                                       |
-| Tinta (texto + bloque osc.)  | `--ink-deep`    | `#0d1c2e`                                       |
-| Verde — único acento         | `--green`       | `#006c49` (señal «se queda en la sede»)         |
-| Fondo papel                  | `--paper`       | `#f8f9ff`                                       |
-| Banda alterna                | `--paper-2`     | `#eef1fb` (footer)                              |
-| Texto secundario             | `--muted`           | `#424654` (= on-surface-variant de la PWA)  |
-| Reglas / bordes suaves       | `--outline-variant` | `#c3c6d6`                                    |
-| Borde acento                 | `--outline`         | `#737785`                                    |
-| Surface (paneles)            | `--surface`         | `#ffffff` (surface-container-lowest)         |
-| Fill suave / hover           | `--surface-low`     | `#eff4ff` (surface-container-low)            |
-| Banda footer                 | `--surface-band`    | `#e6eeff` (surface-container)                |
-| Sobre tinta                  | `--on-ink`          | `#ffffff`                                    |
+| Rol                          | Variable            | Valor / notas                              |
+| ---------------------------- | ------------------- | ------------------------------------------ |
+| Azul institucional (bloques) | `--ink`             | `#0040a1`                                  |
+| Azul links / markers / hover | `--ink-bright`      | `#0056d2`                                  |
+| Tinta (texto + bloque osc.)  | `--ink-deep`        | `#0d1c2e`                                  |
+| Verde — único acento         | `--green`           | `#006c49` (señal «se queda en la sede»)    |
+| Fondo papel                  | `--paper`           | `#f8f9ff`                                  |
+| Banda alterna                | `--paper-2`         | `#eef1fb` (footer)                         |
+| Texto secundario             | `--muted`           | `#424654` (= on-surface-variant de la PWA) |
+| Reglas / bordes suaves       | `--outline-variant` | `#c3c6d6`                                  |
+| Borde acento                 | `--outline`         | `#737785`                                  |
+| Surface (paneles)            | `--surface`         | `#ffffff` (surface-container-lowest)       |
+| Fill suave / hover           | `--surface-low`     | `#eff4ff` (surface-container-low)          |
+| Banda footer                 | `--surface-band`    | `#e6eeff` (surface-container)              |
+| Sobre tinta                  | `--on-ink`          | `#ffffff`                                  |
 
 Radios `--radius-lg 0.5rem` / `--radius-xl 0.75rem` (idénticos a `globals.css`). **Sin sombras**: la jerarquía es estructural (reglas suaves + radios + tipo), no por elevación.
 
@@ -230,26 +233,26 @@ Radios `--radius-lg 0.5rem` / `--radius-xl 0.75rem` (idénticos a `globals.css`)
 | Display / h1–h3 | Atkinson Hyperlegible Next 600–700 | Google Fonts en `landing.css`                       |
 | Body            | Inter 400–500–600                  | `next/font` en `layout.tsx` → `--font-landing-body` |
 
-| Clase / elemento        | Tamaño                                  | Uso                              |
-| ----------------------- | --------------------------------------- | -------------------------------- |
-| `.landing-hero__title`  | `clamp(2.75rem, 8.5vw, 5.5rem)`, ls −0.045em | H1 masivo, 2–3 palabras por línea |
-| `.landing-index__num`   | `clamp(2.5rem, 7vw, 4.5rem)`, tabular   | Numerales índice 01/02/03 (firma) |
-| `.landing__h2`          | `clamp(1.875rem, 4.5vw, 3rem)`          | H2 de sección                    |
-| `.landing-stat__value`  | `clamp(1.75rem, 4vw, 2.5rem)`, tabular  | Métricas del panel hero          |
-| `.landing__lead`        | `clamp(1.0625rem, 1.6vw, 1.1875rem)`    | Lead / párrafo destacado         |
-| `.landing__eyebrow`     | `0.875rem`, caja normal, peso 600       | Eyebrow + número de sección      |
-| Cuerpo base             | `1.0625rem` / 1.6                       | Default bajo `.landing`          |
+| Clase / elemento       | Tamaño                                       | Uso                               |
+| ---------------------- | -------------------------------------------- | --------------------------------- |
+| `.landing-hero__title` | `clamp(2.75rem, 8.5vw, 5.5rem)`, ls −0.045em | H1 masivo, 2–3 palabras por línea |
+| `.landing-index__num`  | `clamp(2.5rem, 7vw, 4.5rem)`, tabular        | Numerales índice 01/02/03 (firma) |
+| `.landing__h2`         | `clamp(1.875rem, 4.5vw, 3rem)`               | H2 de sección                     |
+| `.landing-stat__value` | `clamp(1.75rem, 4vw, 2.5rem)`, tabular       | Métricas del panel hero           |
+| `.landing__lead`       | `clamp(1.0625rem, 1.6vw, 1.1875rem)`         | Lead / párrafo destacado          |
+| `.landing__eyebrow`    | `0.875rem`, caja normal, peso 600            | Eyebrow + número de sección       |
+| Cuerpo base            | `1.0625rem` / 1.6                            | Default bajo `.landing`           |
 
 Titulares: `letter-spacing: -0.025em` a `-0.04em`, peso 700, line-height 0.98–1.08. Números siempre `font-variant-numeric: tabular-nums`. **Labels en caja normal** (peso + color), nunca uppercase.
 
 ### Espaciado y layout
 
-| Token                     | Valor                            |
-| ------------------------- | -------------------------------- |
-| `--space-1` … `--space-7` | 0.5rem → 6rem (escala 8px-base)  |
-| `--max-width`             | `76rem`                          |
-| `--gutter`                | `clamp(1.25rem, 4vw, 1.75rem)`   |
-| `--touch-min`             | `48px` (links / targets)         |
+| Token                     | Valor                           |
+| ------------------------- | ------------------------------- |
+| `--space-1` … `--space-7` | 0.5rem → 6rem (escala 8px-base) |
+| `--max-width`             | `76rem`                         |
+| `--gutter`                | `clamp(1.25rem, 4vw, 1.75rem)`  |
+| `--touch-min`             | `48px` (links / targets)        |
 
 **Radios** `--radius-lg 0.5rem` / `--radius-xl 0.75rem` (= PWA) en paneles, celdas, chips, cajas de icono.
 
@@ -273,11 +276,11 @@ Titulares: `letter-spacing: -0.025em` a `-0.04em`, peso 700, line-height 0.98–
 
 ### Motion
 
-| Elemento              | Comportamiento                                               |
-| --------------------- | ------------------------------------------------------------ |
-| `.landing-anim --1/4` | Entrada `enter-up` + `translateY(10px)`, delays 60–270ms     |
-| `.landing-rule`       | `landing-draw` 600ms — la regla se dibuja 0 → 100% (scaleX)  |
-| `.landing-flow__pulse`| `landing-travel` 3.6s — dash viaja Campo → Sede → .docx      |
+| Elemento               | Comportamiento                                              |
+| ---------------------- | ----------------------------------------------------------- |
+| `.landing-anim --1/4`  | Entrada `enter-up` + `translateY(10px)`, delays 60–270ms    |
+| `.landing-rule`        | `landing-draw` 600ms — la regla se dibuja 0 → 100% (scaleX) |
+| `.landing-flow__pulse` | `landing-travel` 3.6s — dash viaja Campo → Sede → .docx     |
 
 Curva: `cubic-bezier(0.23, 1, 0.32, 1)` y duración `280ms` — **las mismas de `globals.css`** (Emil Kowalski). Con `prefers-reduced-motion: reduce`: sin entradas, reglas ya dibujadas (`scaleX(1)`), pulse estático, hover sin transición.
 
@@ -285,34 +288,35 @@ Sin gradientes, grano ni grilla de fondo — el civic no decora el fondo.
 
 ### Secciones y componentes
 
-| Bloque         | Clases principales                       | Notas                                                       |
-| -------------- | ---------------------------------------- | ----------------------------------------------------------- |
-| Header         | `.landing-header`, `.landing-header__nav` | Blur 12px, rule-bottom; nav + CTA `Adoptalo` ≥52rem; logo `.active-tap` |
-| Botones / CTA  | `.landing-btn` + `--primary`/`--ghost`/`--on-dark`/`--ghost-on-dark` | Radius-lg, target 48px, `.active-tap`; variantes invertidas para bloques oscuros |
-| Hero           | `.landing-hero`, `.landing-hero__panel`, `.landing-hero__proof` | Título masivo + CTAs + social proof (stats Atkinson) + panel + schematic |
-| Schematic firma| `.landing-flow`, `.landing-flow__*`      | SVG 360×96; nodos redondeados Campo / Sede / .docx          |
-| Problema       | `.landing-problem__*`                     | 3 celdas, `border-top` tertiary (acento cálido del dolor)   |
-| Índice (firma) | `.landing-index`, `.landing-index__num`  | Filas 01/02/03 ancho completo, numerales gigantes, hairlines |
-| Por qué (benefits)| `.landing-why__*`                     | Grid 1→2→3 col; 7 diferenciales con icono; hover en celda   |
-| Soberanía      | `.landing-sov`, `.landing-guarantee`     | Bloque oscuro spotlight; garantías en cajas; `.landing-sov__boundary` |
-| Caso de estudio| `.landing-case__*`, `.landing-compare`   | Status «Activo hoy»; programas en chips; Antes/Ahora en filas |
-| Audiencia      | `.landing-aud`, `.landing-notfor`        | Celdas en grid bordeado; exclusiones en lista con guiones   |
-| FAQ            | `.landing-faq__*`                         | `<details>/<summary>` nativo (sin JS); chevron `expand_more` rota |
-| CTA final      | `.landing-final__*`                       | Bloque `--ink` full-bleed; CTAs invertidos; max 44rem       |
-| Footer         | `.landing-footer`                        | Email, GitHub MIT, origen Halketon, copyright              |
+| Bloque             | Clases principales                                                   | Notas                                                                            |
+| ------------------ | -------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| Header             | `.landing-header`, `.landing-header__nav`                            | Blur 12px, rule-bottom; nav + CTA `Adoptalo` ≥52rem; logo `.active-tap`          |
+| Botones / CTA      | `.landing-btn` + `--primary`/`--ghost`/`--on-dark`/`--ghost-on-dark` | Radius-lg, target 48px, `.active-tap`; variantes invertidas para bloques oscuros |
+| Hero               | `.landing-hero`, `.landing-hero__panel`, `.landing-hero__proof`      | Título masivo + CTAs + social proof (stats Atkinson) + panel + schematic         |
+| Schematic firma    | `.landing-flow`, `.landing-flow__*`                                  | SVG 360×96; nodos redondeados Campo / Sede / .docx                               |
+| Problema           | `.landing-problem__*`                                                | 3 celdas, `border-top` tertiary (acento cálido del dolor)                        |
+| Índice (firma)     | `.landing-index`, `.landing-index__num`                              | Filas 01/02/03 ancho completo, numerales gigantes, hairlines                     |
+| Por qué (benefits) | `.landing-why__*`                                                    | Grid 1→2→3 col; 7 diferenciales con icono; hover en celda                        |
+| Soberanía          | `.landing-sov`, `.landing-guarantee`                                 | Bloque oscuro spotlight; garantías en cajas; `.landing-sov__boundary`            |
+| De dónde viene     | `.landing-compare`                                                   | Origen Halketon + comparación El patrón / El enfoque en filas                    |
+| Caso de estudio    | `.landing-case__*` (CSS latente)                                     | Retirado hasta tener producción; reincorporar con status + programas en chips    |
+| Audiencia          | `.landing-aud`, `.landing-notfor`                                    | Celdas en grid bordeado; exclusiones en lista con guiones                        |
+| FAQ                | `.landing-faq__*`                                                    | `<details>/<summary>` nativo (sin JS); chevron `expand_more` rota                |
+| CTA final          | `.landing-final__*`                                                  | Bloque `--ink` full-bleed; CTAs invertidos; max 44rem                            |
+| Footer             | `.landing-footer`                                                    | Email, GitHub MIT, origen Halketon, copyright                                    |
 
 Eyebrow de sección: `.landing__eyebrow` con `data-index="0N"` — el número (Atkinson) precede al label. Iconos: SVG stroke inline en `page.tsx` (no Material Symbols).
 
 ### Relación con la PWA operativa
 
-| Aspecto            | PWA (`globals.css`)         | Landing (`landing.css`)                 |
-| ------------------ | --------------------------- | --------------------------------------- |
-| Implementación     | Tailwind v4 `@theme`        | CSS vanilla scoped                      |
-| Tipografía display | Atkinson (root layout)      | Atkinson (CDN en landing)               |
-| Objetivo UX        | Táctil, flujo bajo presión  | Lectura, confianza institucional        |
-| Animaciones        | `.anim-enter`, stagger, tap | `.landing-anim`, reglas dibujadas, pulse SVG |
-| Iconos             | Material Symbols (root layout) | Material Symbols (landing/layout.tsx) |
-| Elevación          | Sombras suaves              | Ninguna — reglas hairline + bordes      |
+| Aspecto            | PWA (`globals.css`)            | Landing (`landing.css`)                      |
+| ------------------ | ------------------------------ | -------------------------------------------- |
+| Implementación     | Tailwind v4 `@theme`           | CSS vanilla scoped                           |
+| Tipografía display | Atkinson (root layout)         | Atkinson (CDN en landing)                    |
+| Objetivo UX        | Táctil, flujo bajo presión     | Lectura, confianza institucional             |
+| Animaciones        | `.anim-enter`, stagger, tap    | `.landing-anim`, reglas dibujadas, pulse SVG |
+| Iconos             | Material Symbols (root layout) | Material Symbols (landing/layout.tsx)        |
+| Elevación          | Sombras suaves                 | Ninguna — reglas hairline + bordes           |
 
 Al cambiar un hex de marca, actualizar **ambos** archivos de tokens y esta sección.
 

@@ -12,7 +12,8 @@ import {
   NumberFormat,
 } from "docx";
 import type { FieldReport } from "./schema";
-import { buildReportContent, type ReportContent, type Section } from "./content";
+import { type ReportContent, type Section } from "./content";
+import { buildReportContent } from "./verticals";
 
 /**
  * Editable Word (.docx) version of the field report.
@@ -198,7 +199,7 @@ function buildDocumentFromContent(c: ReportContent): Document {
       alignment: AlignmentType.LEFT,
       children: [
         new TextRun({
-          text: `Generado en sede · Pequeños Pasos · ${c.generadoEl}`,
+          text: `Generado en sede · ${c.orgName} · ${c.generadoEl}`,
           size: SZ_META,
           italics: true,
           color: MUTED,
@@ -223,7 +224,7 @@ function buildDocumentFromContent(c: ReportContent): Document {
   ];
 
   return new Document({
-    creator: "Pequeños Pasos",
+    creator: c.orgName,
     title: `Informe de Campo — ${c.titular}`,
     features: { updateFields: true },
     styles: {

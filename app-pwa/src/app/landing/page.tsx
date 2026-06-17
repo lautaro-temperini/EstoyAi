@@ -8,11 +8,13 @@ import { LandingReveal } from "./reveal";
  * Grilla suiza, alto contraste, tipografía masiva, estructura por reglas
  * suaves + radios. Aislada de globals.css; misma paleta de marca.
  *
- * Estructura (11 elementos, adaptados a adopción de ONG, no venta SaaS):
+ * Estructura (framework adaptado a adopción de ONG, no venta SaaS):
  *   Header (logo + nav + CTA) → Hero (título + CTA + social proof) →
- *   Problema → Cómo funciona (índice + schematic) → Por qué es diferente →
- *   Soberanía (spotlight) → Caso Pequeños Pasos → Para quién → FAQ →
- *   CTA final → Footer.
+ *   Problema → Cómo funciona (índice + schematic) → En acción →
+ *   Por qué es diferente → Soberanía (spotlight) → Para quién → Alcance →
+ *   FAQ → De dónde viene (origen Halketon) → CTA final → Footer.
+ *   (El caso de estudio Pequeños Pasos se reincorporará cuando haya producción;
+ *    cuando vuelva: agregar bloque entre 03 y 04, renumerar 04→05, 05→06.)
  *
  * Fuente de copy: docs/brief.md. Elemento firma: índice 01/02/03.
  */
@@ -490,7 +492,7 @@ export default function LandingPage() {
         {/* ── Para quién es ── */}
         <section className="landing__section" data-reveal aria-labelledby="audience-heading">
           <div className="landing__container">
-            <p className="landing__eyebrow" data-index="05"><span>Para quién es</span></p>
+            <p className="landing__eyebrow" data-index="04"><span>Para quién es</span></p>
             <h2 id="audience-heading" className="landing__h2">
               Equipos de campo, coordinadores de sede y ONGs que rinden cuentas
             </h2>
@@ -534,7 +536,7 @@ export default function LandingPage() {
         {/* ── FAQ ── */}
         <section className="landing__section" id="faq" data-reveal aria-labelledby="faq-heading">
           <div className="landing__container">
-            <p className="landing__eyebrow" data-index="06"><span>Preguntas frecuentes</span></p>
+            <p className="landing__eyebrow" data-index="05"><span>Preguntas frecuentes</span></p>
             <h2 id="faq-heading" className="landing__h2">Lo que toda ONG pregunta primero</h2>
 
             <div className="landing-faq" data-stagger>

@@ -7,14 +7,17 @@ import { programaLabel } from "@/lib/reports/programa";
 import type { Programa } from "@/lib/reports/schema";
 import type { TriageItem, TriageCounts, TriageCategoria } from "@/lib/reports/triage";
 
-const PROGRAMAS: Programa[] = ["primera-infancia", "ninez-adolescencia", "oficios"];
-
 const MESES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
 
 const PROGRAMA_ICON: Record<Programa, string> = {
+  // Pequeños Pasos
   "primera-infancia": "child_care",
   "ninez-adolescencia": "school",
   oficios: "construction",
+  // DTC (SEDRONAR)
+  hpc: "person_add",
+  seguimiento: "event_repeat",
+  taller: "diversity_3",
 };
 
 function fmtFecha(ms: number): string {
@@ -91,6 +94,14 @@ export function TableroClient({
     });
   }, [items, filtro, prog, benef, borrados]);
 
+  // Programas presentes en los datos → chips de filtro. Se adapta a la vertical
+  // del tenant (Pequeños Pasos, DTC, …) sin hardcodear el catálogo.
+  const programasPresentes = useMemo(
+    () =>
+      [...new Set(items.map((i) => i.programa).filter((p): p is Programa => !!p))],
+    [items],
+  );
+
   const chips: { id: Filtro; label: string; n: number }[] = [
     { id: "todos", label: "Todos", n: counts.total },
     { id: "ALTA", label: "Alta", n: counts.ALTA },
@@ -119,7 +130,7 @@ export function TableroClient({
     <>
       {/* Chips de programa */}
       <div className="grid grid-cols-2 gap-2 mb-stack-lg">
-        {(["todos", ...PROGRAMAS] as const).map((p) => {
+        {(["todos", ...programasPresentes] as const).map((p) => {
           const active = prog === p;
           return (
             <button

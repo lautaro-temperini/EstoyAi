@@ -72,10 +72,10 @@ Variables de entorno: copiar `.env.example` → `.env`.
 
 |                                    |                                                                       |
 | ---------------------------------- | --------------------------------------------------------------------- |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Arquitectura completa, flujo de datos, estados, dominio e invariantes |
-| [DESIGN.md](DESIGN.md)             | Design system UI — tokens, tipografía, motion                         |
-| [MULTITENANT.md](MULTITENANT.md)   | Multi-tenant por subdominio y túnel Cloudflare                        |
-| [COMANDOS.md](COMANDOS.md)         | Referencia de todos los comandos del proyecto                         |
+| [ARCHITECTURE.md](ARCHITECTURE.md)     | Arquitectura completa, flujo de datos, estados, dominio e invariantes |
+| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md)   | Design system UI — tokens, tipografía, motion                         |
+| [MULTITENANT.md](MULTITENANT.md)       | Multi-tenant por subdominio y túnel Cloudflare                        |
+| [CLAUDE.md](CLAUDE.md)                 | Guía para agentes de código y comandos frecuentes                     |
 
 ## Licencia
 

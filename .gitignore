@@ -63,8 +63,10 @@ docs/
 skills/
 .agents/
 
-# instalador Windows: carpeta completa local (tokens, binarios, artefactos)
+# instaladores Windows por sede/ONG: carpetas completas locales
+# (tokens, binarios, artefactos, instrucciones privadas — no van al repo)
 PequenosPasos/
+DtcVillaTranquila/
 
 # wrangler (cache/logs locales del deploy a Pages)
 .wrangler/

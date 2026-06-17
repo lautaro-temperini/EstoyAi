@@ -1,9 +1,14 @@
 import type { FieldReport } from "./schema";
+import type { DatosInforme } from "./schema";
 
 /**
  * Shared report content model. The DOCX renderer builds from this single
  * structure. Every section is ALWAYS present in the output — empty fields
  * show "—" and empty lists show a single "—" entry so no section is blank.
+ *
+ * `id` etiqueta la sección de forma estable (independiente del título) para que
+ * el filtrado por toggles (campos.ts) y la UI de edición funcionen en cualquier
+ * vertical. La pantalla de edición deriva los toggles de estos ids/títulos.
  */
 
 export interface Field {
@@ -11,10 +16,11 @@ export interface Field {
   value: string;
 }
 
-export type Section =
+export type Section = { id?: string } & (
   | { kind: "fields"; title: string; fields: Field[] }
   | { kind: "bullets"; title: string; items: string[] }
-  | { kind: "text"; title: string; body: string };
+  | { kind: "text"; title: string; body: string }
+);
 
 export const REPORT_DISCLAIMER =
   "⚠ Este documento fue generado automáticamente a partir de un registro de voz y está sujeto a revisión por un profesional. Los datos deben ser verificados antes de su uso oficial.";
@@ -31,6 +37,8 @@ export interface ReportContent {
   resumenEjecutivo: string;
   sections: Section[];
   generadoEl: string;
+  /** Nombre de la ONG para el pie/creator del .docx (varía por vertical). */
+  orgName: string;
 }
 
 const MESES = [
@@ -38,27 +46,62 @@ const MESES = [
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
 
-function fmtFecha(ms: number): string {
+/** Fecha legible "6 de junio de 2026". Compartida por las verticales. */
+export function fmtFecha(ms: number): string {
   const d = new Date(ms);
   return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
 }
 
-const val = (s: string | undefined | null): string =>
+/** Valor o "—" si vacío. */
+export const val = (s: string | undefined | null): string =>
   s && s.trim() ? s.trim() : "—";
 
 /** Return list items, or ["—"] when none. */
-const items = (a: string[] | undefined): string[] => {
+export const items = (a: string[] | undefined): string[] => {
   const r = (a ?? []).filter((x) => x && x.trim());
   return r.length ? r : ["—"];
 };
 
-const listAsField = (a: string[] | undefined): string => {
+export const listAsField = (a: string[] | undefined): string => {
   const r = (a ?? []).filter((x) => x && x.trim());
   return r.length ? r.join("; ") : "—";
 };
 
-export function buildReportContent(report: FieldReport): ReportContent {
-  const d = report.datos;
+/**
+ * Encabezado común del informe (titular, prioridad, fecha, lugar, etc.).
+ * Lo comparten todas las verticales; cada una agrega sus `sections`.
+ */
+export function buildReportHeader(
+  report: FieldReport,
+  orgName: string,
+  lugarFallback?: string,
+): Omit<ReportContent, "sections"> {
+  const meta = report.metadatos;
+  const titular =
+    meta.beneficiario?.apellido && meta.beneficiario?.nombre
+      ? `${meta.beneficiario.apellido} ${meta.beneficiario.nombre}`
+      : meta.beneficiario?.nombre ||
+        (meta.tipo === "grupal" ? "Actividad Grupal" : "Beneficiario");
+  const lugar = val(
+    lugarFallback || [meta.sector, meta.unidad].filter(Boolean).join(", ") || "",
+  );
+  return {
+    disclaimer: REPORT_DISCLAIMER,
+    titular,
+    prioridad: report.prioridad,
+    motivoCriticidad: report.motivoCriticidad?.trim() ?? "",
+    fecha: fmtFecha(report.createdAt),
+    lugar,
+    registradoPor: val(meta.profesional),
+    resumenEjecutivo: report.resumen,
+    generadoEl: fmtFecha(report.createdAt),
+    orgName,
+  };
+}
+
+/** Pequeños Pasos: cuerpo del informe (nutrición / niñez / oficios). */
+export function buildPpReportContent(report: FieldReport): ReportContent {
+  const d = report.datos as DatosInforme;
   const meta = report.metadatos;
 
   // El nombre del beneficiario sale SIEMPRE de los campos fijos, nunca del audio.
@@ -75,6 +118,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
 
   // 4) Identificación y Demografía — SIEMPRE presente.
   sections.push({
+    id: "identificacion",
     kind: "fields",
     title: "Identificación y Demografía",
     fields: [
@@ -94,6 +138,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
   });
 
   sections.push({
+    id: "diagnosticos",
     kind: "bullets",
     title: "Diagnósticos",
     items: items(d.metricas.diagnosticos),
@@ -101,6 +146,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
 
   // 5) Contexto Socioeconómico — SIEMPRE presente (vulnerabilidades integradas).
   sections.push({
+    id: "socioeconomico",
     kind: "fields",
     title: "Contexto Socioeconómico",
     fields: [
@@ -113,6 +159,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
 
   // 6) Detalles de la Intervención — SIEMPRE presente.
   sections.push({
+    id: "intervencion",
     kind: "fields",
     title: "Detalles de la Intervención",
     fields: [
@@ -127,6 +174,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
 
   // 7) Seguimiento — SIEMPRE presente.
   sections.push({
+    id: "seguimiento",
     kind: "fields",
     title: "Seguimiento",
     fields: [
@@ -138,6 +186,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
 
   // 8) Acciones Pendientes — SIEMPRE presente.
   sections.push({
+    id: "acciones",
     kind: "bullets",
     title: "Acciones Pendientes",
     items: items(report.accionesPendientes),
@@ -145,6 +194,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
 
   // 9) Observaciones y Contexto — SIEMPRE presente.
   sections.push({
+    id: "narrativa",
     kind: "text",
     title: "Observaciones y Contexto",
     body: d.narrativa?.trim() || "—",
@@ -161,6 +211,7 @@ export function buildReportContent(report: FieldReport): ReportContent {
     resumenEjecutivo: report.resumen,
     sections,
     generadoEl: fmtFecha(report.createdAt),
+    orgName: "Pequeños Pasos",
   };
 }
 

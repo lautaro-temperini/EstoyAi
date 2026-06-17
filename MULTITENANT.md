@@ -29,11 +29,12 @@ dashboard, **no** en un `config.yml` local:
 
 **Zero Trust → Networks → Tunnels → (tu tunnel) → Public Hostname → Add a public hostname**
 
-| Subdomain       | Domain      | Type | URL                     |
-| --------------- | ----------- | ---- | ----------------------- |
-| *(vacío)*       | estoyai.com | HTTP | `http://localhost:3000` |
-| `www`           | estoyai.com | HTTP | `http://localhost:3000` |
-| `pequenospasos` | estoyai.com | HTTP | `http://localhost:3000` |
+| Subdomain           | Domain      | Type | URL                     |
+| ------------------- | ----------- | ---- | ----------------------- |
+| *(vacío)*           | estoyai.com | HTTP | `http://localhost:3000` |
+| `www`               | estoyai.com | HTTP | `http://localhost:3000` |
+| `pequenospasos`     | estoyai.com | HTTP | `http://localhost:3000` |
+| `dtcvillatranquila` | estoyai.com | HTTP | `http://localhost:3000` |
 
 Todas apuntan al mismo `localhost:3000`. Cloudflare crea el registro DNS solo.
 Por cada ONG nueva: una fila más con su subdominio.
@@ -42,7 +43,11 @@ Por cada ONG nueva: una fila más con su subdominio.
 
 ## 2. Agregar una ONG
 
-1. **Código** — `app-pwa/src/lib/tenants/config.ts`, sumá a `TENANTS`:
+Hay dos niveles. Si la ONG usa el **mismo modelo de datos** que Pequeños Pasos,
+alcanza con los pasos 1-3 (reusa la vertical default). Si necesita **campos
+propios** (otro informe), sumá su vertical (paso 4).
+
+1. **Tenant** — `app-pwa/src/lib/tenants/config.ts`, sumá a `TENANTS`:
    
    ```ts
    { slug: "otraong", orgName: "Otra ONG", shortName: "Otra ONG" },
@@ -52,32 +57,34 @@ Por cada ONG nueva: una fila más con su subdominio.
    
    ```
    TENANT_OTRAONG_PASSWORD=una-clave-fuerte
+   TENANT_OTRAONG_ADMIN_PASSWORD=otra-clave   # opcional: rol admin en coordinación
    ```
    
    (Variable: `TENANT_<SLUG_EN_MAYÚSCULAS>_PASSWORD`. Sin ella cae a `SITE_PASSWORD`.)
 
 3. **Tunnel** — Public Hostname `otraong.estoyai.com → http://localhost:3000`.
 
-4. **System prompt propio (opcional)** — en `scripts/gen-n8n-workflow.mjs`,
-   dentro de `PROMPTS`, agregá claves `"otraong:<programa>"`:
+4. **Vertical propia (campos/informe distintos)** — creá
+   `app-pwa/src/lib/reports/verticals/otraong.ts` (mirá `dtc.ts` de ejemplo):
+   tipos de `datos`, `programas`, `mergeDatos()`, `buildContent()`, `orgName`;
+   registrala en `verticals/index.ts`. Después, en `scripts/gen-n8n-workflow.mjs`:
    
-   ```js
-   "otraong:primera-infancia": buildSystemPrompt([ "CONTEXTO…", "…" ]),
-   ```
-   
-   Luego regenerá e reimportá el workflow:
+   - sumá sus prompts a `PROMPTS` (por programa) y su schema a `SCHEMAS["otraong"]`;
+   - sumá la ONG a `TENANT_META` (para poder compilar su instalador single-tenant);
+   - regenerá e reimportá el workflow:
    
    ```bash
-   node scripts/gen-n8n-workflow.mjs
+   node scripts/gen-n8n-workflow.mjs            # global (todas las ONGs)
+   # o, para su instalador propio: node scripts/gen-n8n-workflow.mjs --tenant otraong
    # n8n → Workflows → Import from file → n8n/workflows/registro.json
    ```
    
-   Sin claves propias, la ONG usa los prompts por programa (compat).
+   Sin vertical propia, la ONG usa la default (Pequeños Pasos) y sus prompts por programa.
 
 5. **Rebuild** del contenedor app-pwa: `docker compose up -d --build app-pwa`.
 
-La selección de prompt en n8n prueba en orden:
-`"<tenant>:<programa>"` → `"<programa>"` → `"generic"`.
+La selección en n8n prueba: prompt `"<tenant>:<programa>"` → `"<programa>"` →
+`"generic"`; schema `SCHEMAS["<tenant>"]` → `SCHEMAS.default`.
 
 ---
 

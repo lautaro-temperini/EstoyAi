@@ -16,7 +16,48 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const OUT = path.join(__dirname, "..", "n8n", "workflows", "registro.json");
+
+// ── Parametrización: workflow global (todas las ONGs) o por tenant ───────────
+// El flujo (topología) es uno solo y adaptativo. Lo que cambia por ONG es el
+// CONTENIDO inyectado: prompts (por programa) y schema (por tenant).
+//
+//   node scripts/gen-n8n-workflow.mjs
+//     → workflow GLOBAL multi-tenant: lleva los prompts/schemas de todas las
+//       ONGs y elige por meta.tenant. Es el que usa la instalación compartida.
+//
+//   node scripts/gen-n8n-workflow.mjs --tenant dtcvillatranquila [--out ruta.json]
+//     → workflow SINGLE-TENANT: emite SOLO el prompt/schema de esa ONG (para
+//       compilar un instalador por sede). El tenant queda fijo de hecho.
+const argv = process.argv.slice(2);
+const argValue = (flag) => {
+  const i = argv.indexOf(flag);
+  return i !== -1 && argv[i + 1] ? argv[i + 1] : null;
+};
+const TARGET_TENANT = argValue("--tenant");
+
+// Metadatos por tenant para el modo single-tenant (programas que ofrece + clave
+// de schema en SCHEMAS). Mantener en sync con lib/reports/verticals y config.ts.
+const TENANT_META = {
+  pequenospasos: {
+    orgName: "Pequeños Pasos",
+    programas: ["primera-infancia", "ninez-adolescencia", "oficios"],
+    schemaKey: "default",
+  },
+  dtcvillatranquila: {
+    orgName: "DTC Villa Tranquila",
+    programas: ["hpc", "seguimiento", "taller"],
+    schemaKey: "dtcvillatranquila",
+  },
+};
+if (TARGET_TENANT && !TENANT_META[TARGET_TENANT]) {
+  console.error(
+    `Tenant desconocido: "${TARGET_TENANT}". Conocidos: ${Object.keys(TENANT_META).join(", ")}`,
+  );
+  process.exit(1);
+}
+
+const OUT =
+  argValue("--out") || path.join(__dirname, "..", "n8n", "workflows", "registro.json");
 
 // SYNC: este prompt debe mantenerse idéntico en scripts/gen-n8n-workflow.mjs y assemble.ts
 const REGLAS_ABSOLUTAS = [
@@ -52,6 +93,47 @@ const ESTRUCTURA_CAMPOS = [
 const buildSystemPrompt = (enfasis = []) =>
   [...REGLAS_ABSOLUTAS, ...enfasis, ...ESTRUCTURA_CAMPOS].join("\n");
 
+// --- Vertical DTC (SEDRONAR) ------------------------------------------------
+// SYNC: estructura de datos espeja lib/reports/verticals/dtc.ts (DtcDatos /
+// DTC_EXTRACTION_SCHEMA). Estos prompts viven SOLO acá (el runtime de la
+// extracción es n8n; la app no usa system prompts DTC).
+const REGLAS_ABSOLUTAS_DTC = [
+  "Convierte la transcripción de un mensaje de voz en un registro estructurado para un Dispositivo Territorial Comunitario (DTC, modelo SEDRONAR) de acompañamiento integral de consumos problemáticos. El eje no es la sustancia sino la trayectoria de vida y el acceso a derechos de la persona.",
+  "Regla absoluta: extrae EXCLUSIVAMENTE lo que se dice en la transcripción. No inventes datos, sustancias, cifras, nombres, fechas ni diagnósticos. Si un campo no se menciona, deja \"\" (texto) o [] (lista). No uses vocabulario que no esté en el texto.",
+  "Si la transcripción es una prueba o no contiene información real, dilo así en el resumen (p. ej. \"Mensaje de prueba sin información operativa\") y deja el resto vacío.",
+];
+
+const ESTRUCTURA_CAMPOS_DTC = [
+  "Campos de nivel superior:",
+  "- resumen: RESUMEN EJECUTIVO de 1-2 frases que reflejen fielmente SOLO lo dicho.",
+  "- prioridad: clasificá en este orden de precedencia (de ALTA a BAJA, primer nivel que corresponda):",
+  "  ALTA — acción el mismo día: riesgo de vida inminente, intoxicación aguda o sobredosis, ideación o intento de suicidio, violencia o abuso, situación de desprotección de niños/as o adolescentes.",
+  "  MEDIA — acción en 24-72hs: consumo problemático activo sin riesgo vital inmediato; vulneración de derechos que requiere gestión (salud, vivienda, documentación, prestaciones); abandono de tratamiento; turno, visita o derivación pendiente.",
+  "  BAJA — resolución semanal/mensual o registro informativo: evolución estable, participación en talleres sin alertas, datos de contexto sin urgencia.",
+  "- motivoCriticidad: una frase corta (máx 15 palabras) explicando por qué esa prioridad. Si es BAJA informativa, devolvé \"\".",
+  "- entidades.nombres: nombres propios de personas dichos literalmente; si no hay, [].",
+  "- entidades.fechas: fechas mencionadas; convierte las relativas (\"hoy\", \"el martes\") a fecha absoluta usando la \"Fecha del registro\"; si no hay, [].",
+  "- accionesPendientes: tareas de seguimiento dichas literalmente; si no hay, [].",
+  "Objeto datos (deja vacío lo no mencionado). NO extraigas el nombre de la persona: ya viene en los campos fijos del registro.",
+  "- datos.identificacion: edad, fechaNacimiento, genero.",
+  "- datos.consulta: motivo (por qué llega la persona), demanda (qué dice que necesita).",
+  "- datos.consumo: sustancias (lista literal de sustancias mencionadas), frecuencia, tiempo (tiempo de consumo), observaciones. Si no se menciona consumo, dejá todo vacío.",
+  "- datos.redVincular: familia (situación familiar), vinculos (vínculos significativos), habitacional (situación de vivienda).",
+  "- datos.educacionTrabajo: situacionEducativa, situacionLaboral, ingresos.",
+  "- datos.salud: fisica (salud física), mental (salud mental, malestar psíquico), tratamientosPrevios.",
+  "- datos.vulneracionDerechos: lista de derechos vulnerados mencionados (salud, vivienda, documentación, educación, trabajo…); si no hay, [].",
+  "- datos.recursosIntereses: fortalezas, intereses y recursos propios de la persona. Si no hay, \"\".",
+  "- datos.talleres: espacios (lista de talleres o actividades comunitarias en las que participa), participacion (cómo es su participación y evolución).",
+  "- datos.estrategia: hipotesis (lectura inicial del equipo), hojaDeRuta (plan de abordaje acordado), derivaciones (lista de derivaciones o articulaciones).",
+  "- datos.seguimiento: situacionActual, cambios (cambios desde el último encuentro), intervenciones (lista), articulaciones (lista de articulaciones con otros organismos), acuerdos (lista), proximosPasos (lista).",
+  "- datos.narrativa: detalles cualitativos sutiles pero valiosos (estado emocional, percepciones, vínculo con el equipo). Si no hay, \"\".",
+  "Regla crítica para listas: si un campo de tipo array no se menciona explícitamente, devolvé [] sin excepción. Nunca uses los nombres de campos como ejemplos de valores.",
+  "Responde en español. /no_think",
+];
+
+const buildDtcPrompt = (enfasis = []) =>
+  [...REGLAS_ABSOLUTAS_DTC, ...enfasis, ...ESTRUCTURA_CAMPOS_DTC].join("\n");
+
 // Claves: "<programa>" (todas las ONGs) o "<tenant>:<programa>" (override por
 // ONG). La selección en prepCode prueba "<tenant>:<programa>" → "<programa>" →
 // "generic". Para un system prompt propio de una ONG, agregá p. ej.
@@ -69,6 +151,16 @@ const PROMPTS = {
   oficios: buildSystemPrompt([
     "CONTEXTO DEL PROGRAMA — Oficios: el beneficiario es una persona ADULTA en capacitación laboral. esMenor es SIEMPRE false; nunca lo marques true.",
     "Presta especial atención y prioriza extraer, si se mencionan: el oficio que está aprendiendo, asistencia al taller de capacitación, situación laboral actual (en datos.seguimiento.situacionLaboral), ingresos (en datos.socioeconomico.ingresos), compromisos de pago si hay un microcrédito (en datos.seguimiento.compromisos) y el progreso en la capacitación.",
+  ]),
+  // DTC (SEDRONAR) — programas hpc / seguimiento / taller.
+  hpc: buildDtcPrompt([
+    "CONTEXTO — Hoja de Primer Contacto (primera escucha / diagnóstico inicial): el objetivo es construir un diagnóstico integral. Completá especialmente datos.consulta (motivo/demanda), datos.consumo, datos.redVincular, datos.educacionTrabajo, datos.salud, datos.vulneracionDerechos, datos.recursosIntereses y datos.estrategia (hipotesis/hojaDeRuta/derivaciones). Dejá vacío el bloque datos.seguimiento salvo que se mencione.",
+  ]),
+  seguimiento: buildDtcPrompt([
+    "CONTEXTO — Registro de seguimiento (escucha posterior): priorizá el bloque datos.seguimiento (situacionActual, cambios desde el último encuentro, intervenciones, articulaciones, acuerdos, proximosPasos). Completá los demás bloques solo si aparecen datos nuevos.",
+  ]),
+  taller: buildDtcPrompt([
+    "CONTEXTO — Taller / actividad comunitaria: priorizá datos.talleres (espacios y participacion) y datos.seguimiento (articulaciones, proximosPasos). El foco es la participación comunitaria y la construcción de proyecto de vida, no solo la asistencia.",
   ]),
 };
 
@@ -159,6 +251,172 @@ const EXTRACTION_JSON_SCHEMA = {
   additionalProperties: false,
 };
 
+// --- Schema de la vertical DTC ---------------------------------------------
+// SYNC: idéntico a DTC_EXTRACTION_SCHEMA en lib/reports/verticals/dtc.ts.
+const DTC_EXTRACTION_SCHEMA = {
+  type: "object",
+  properties: {
+    resumen: { type: "string" },
+    prioridad: { type: "string", enum: ["ALTA", "MEDIA", "BAJA"] },
+    motivoCriticidad: { type: "string" },
+    entidades: {
+      type: "object",
+      properties: { nombres: strArray, fechas: strArray },
+      required: ["nombres", "fechas"],
+      additionalProperties: false,
+    },
+    accionesPendientes: strArray,
+    datos: {
+      type: "object",
+      properties: {
+        identificacion: {
+          type: "object",
+          properties: {
+            edad: { type: "string" },
+            fechaNacimiento: { type: "string" },
+            genero: { type: "string" },
+          },
+          required: ["edad", "fechaNacimiento", "genero"],
+          additionalProperties: false,
+        },
+        consulta: {
+          type: "object",
+          properties: { motivo: { type: "string" }, demanda: { type: "string" } },
+          required: ["motivo", "demanda"],
+          additionalProperties: false,
+        },
+        consumo: {
+          type: "object",
+          properties: {
+            sustancias: strArray,
+            frecuencia: { type: "string" },
+            tiempo: { type: "string" },
+            observaciones: { type: "string" },
+          },
+          required: ["sustancias", "frecuencia", "tiempo", "observaciones"],
+          additionalProperties: false,
+        },
+        redVincular: {
+          type: "object",
+          properties: {
+            familia: { type: "string" },
+            vinculos: { type: "string" },
+            habitacional: { type: "string" },
+          },
+          required: ["familia", "vinculos", "habitacional"],
+          additionalProperties: false,
+        },
+        educacionTrabajo: {
+          type: "object",
+          properties: {
+            situacionEducativa: { type: "string" },
+            situacionLaboral: { type: "string" },
+            ingresos: { type: "string" },
+          },
+          required: ["situacionEducativa", "situacionLaboral", "ingresos"],
+          additionalProperties: false,
+        },
+        salud: {
+          type: "object",
+          properties: {
+            fisica: { type: "string" },
+            mental: { type: "string" },
+            tratamientosPrevios: { type: "string" },
+          },
+          required: ["fisica", "mental", "tratamientosPrevios"],
+          additionalProperties: false,
+        },
+        vulneracionDerechos: strArray,
+        recursosIntereses: { type: "string" },
+        talleres: {
+          type: "object",
+          properties: { espacios: strArray, participacion: { type: "string" } },
+          required: ["espacios", "participacion"],
+          additionalProperties: false,
+        },
+        estrategia: {
+          type: "object",
+          properties: {
+            hipotesis: { type: "string" },
+            hojaDeRuta: { type: "string" },
+            derivaciones: strArray,
+          },
+          required: ["hipotesis", "hojaDeRuta", "derivaciones"],
+          additionalProperties: false,
+        },
+        seguimiento: {
+          type: "object",
+          properties: {
+            situacionActual: { type: "string" },
+            cambios: { type: "string" },
+            intervenciones: strArray,
+            articulaciones: strArray,
+            acuerdos: strArray,
+            proximosPasos: strArray,
+          },
+          required: [
+            "situacionActual",
+            "cambios",
+            "intervenciones",
+            "articulaciones",
+            "acuerdos",
+            "proximosPasos",
+          ],
+          additionalProperties: false,
+        },
+        narrativa: { type: "string" },
+      },
+      required: [
+        "identificacion",
+        "consulta",
+        "consumo",
+        "redVincular",
+        "educacionTrabajo",
+        "salud",
+        "vulneracionDerechos",
+        "recursosIntereses",
+        "talleres",
+        "estrategia",
+        "seguimiento",
+        "narrativa",
+      ],
+      additionalProperties: false,
+    },
+  },
+  required: ["resumen", "prioridad", "motivoCriticidad", "entidades", "accionesPendientes", "datos"],
+  additionalProperties: false,
+};
+
+// Schema por tenant. El default (Pequeños Pasos / instalación de un solo
+// cliente) es EXTRACTION_JSON_SCHEMA; cada ONG con datos propios se suma acá.
+const SCHEMAS = {
+  default: EXTRACTION_JSON_SCHEMA,
+  dtcvillatranquila: DTC_EXTRACTION_SCHEMA,
+};
+
+// ── Selección: qué prompts/schemas embeber + nombre/id del workflow ──────────
+let PROMPTS_OUT, SCHEMAS_OUT, WORKFLOW_NAME, WORKFLOW_ID;
+if (TARGET_TENANT) {
+  const meta = TENANT_META[TARGET_TENANT];
+  // Fallback "generic" propio de la ONG: en un build single-tenant no debe
+  // quedar el prompt de otra vertical (p. ej. el de Pequeños Pasos en el DTC).
+  const GENERIC_BY_TENANT = {
+    pequenospasos: PROMPTS.generic,
+    dtcvillatranquila: buildDtcPrompt(),
+  };
+  PROMPTS_OUT = { generic: GENERIC_BY_TENANT[TARGET_TENANT] || PROMPTS.generic };
+  for (const p of meta.programas) if (PROMPTS[p]) PROMPTS_OUT[p] = PROMPTS[p];
+  // Single-tenant: el schema de la ONG es el default (prepCode usa SCHEMAS[tenant] || default).
+  SCHEMAS_OUT = { default: SCHEMAS[meta.schemaKey] };
+  WORKFLOW_NAME = `${meta.orgName} — registro`;
+  WORKFLOW_ID = `${TARGET_TENANT}registro`;
+} else {
+  PROMPTS_OUT = PROMPTS;
+  SCHEMAS_OUT = SCHEMAS;
+  WORKFLOW_NAME = "EstoyAi — registro de voz a informe";
+  WORKFLOW_ID = "estoyairegistro";
+}
+
 // --- jsCode de los nodos Code ---------------------------------------------
 const initCode = `// Normaliza el payload del webhook ({id, audioPath, metadata}).
 const b = $json.body ?? $json;
@@ -173,8 +431,8 @@ const DIAS = ['domingo','lunes','martes','miércoles','jueves','viernes','sábad
 const MESES = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
 function fechaLarga(ms){ const d = new Date(ms); return DIAS[d.getDay()] + ', ' + d.getDate() + ' de ' + MESES[d.getMonth()] + ' de ' + d.getFullYear(); }
 
-const PROMPTS = ${JSON.stringify(PROMPTS)};
-const EXTRACTION_JSON_SCHEMA = ${JSON.stringify(EXTRACTION_JSON_SCHEMA)};
+const PROMPTS = ${JSON.stringify(PROMPTS_OUT)};
+const SCHEMAS = ${JSON.stringify(SCHEMAS_OUT)};
 
 const transcript = (($json.text) || '').trim();
 const meta = $('init').item.json.metadata || {};
@@ -184,6 +442,8 @@ const SYSTEM_PROMPT =
   PROMPTS[meta.tenant + ':' + meta.programa] ||
   PROMPTS[meta.programa] ||
   PROMPTS.generic;
+// El JSON Schema (grammar) lo decide la vertical del tenant; SCHEMAS.default es el fallback.
+const EXTRACTION_JSON_SCHEMA = SCHEMAS[meta.tenant] || SCHEMAS.default;
 const capturedAt = typeof meta.capturedAt === 'number' ? meta.capturedAt : Date.now();
 const userMessage = 'Fecha del registro: ' + fechaLarga(capturedAt) + '.\\n\\nTranscripción:\\n' + transcript;
 const model = $env.OLLAMA_MODEL || 'qwen3:1.7b';
@@ -422,7 +682,8 @@ const connections = {
 };
 
 const workflow = {
-  name: "Pequeños Pasos — registro",
+  id: WORKFLOW_ID,
+  name: WORKFLOW_NAME,
   nodes,
   connections,
   active: false,
@@ -476,10 +737,11 @@ async function upsertInN8n() {
 
   let res;
   if (existing) {
-    // PUT actualiza nodos y conexiones; active es read-only en la API (se maneja aparte).
-    const { active: _active, tags: _tags, ...workflowBody } = workflow;
+    // PUT actualiza nodos y conexiones; active/id/tags son read-only en la API.
+    const { active: _active, tags: _tags, id: _id, ...workflowBody } = workflow;
     void _tags;
     void _active;
+    void _id;
     res = await fetch(`${base}/api/v1/workflows/${existing.id}`, {
       method: "PUT",
       headers,

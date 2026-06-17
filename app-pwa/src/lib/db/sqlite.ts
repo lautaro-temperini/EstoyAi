@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { ensureDataDirs, sqlitePath } from "./paths";
 import type { FieldReport, ReportMetadata } from "@/lib/reports/schema";
 import type { CamposConfig } from "@/lib/reports/campos";
-import { DEFAULT_CAMPOS } from "@/lib/reports/campos";
+import { defaultCamposForTenant } from "@/lib/reports/campos";
 
 /** Server-side processing lifecycle (distinct from client FieldReport.estado). */
 export type InformeEstado = "RECIBIDO" | "EXTRAIDO" | "LISTO" | "ERROR";
@@ -86,13 +86,14 @@ function parseJson<T>(raw: string | null): T | null {
 }
 
 function rowToInforme(r: InformeDbRow): InformeRow {
+  const metadata = parseJson<ReportMetadata>(r.metadata);
   return {
     id: r.id,
     estado: r.estado as InformeEstado,
     audioPath: r.audio_path,
-    metadata: parseJson<ReportMetadata>(r.metadata),
+    metadata,
     informeJson: parseJson<FieldReport>(r.informe_json),
-    campos: parseJson<CamposConfig>(r.campos) ?? DEFAULT_CAMPOS,
+    campos: parseJson<CamposConfig>(r.campos) ?? defaultCamposForTenant(metadata?.tenant),
     error: r.error,
     enviado: r.enviado === 1,
     enviadoAt: r.enviado_at,
@@ -152,7 +153,7 @@ export function insertInformeRecibido(input: {
       input.id,
       input.audioPath,
       JSON.stringify(input.metadata),
-      JSON.stringify(DEFAULT_CAMPOS),
+      JSON.stringify(defaultCamposForTenant(input.metadata.tenant)),
       now,
       now,
     );

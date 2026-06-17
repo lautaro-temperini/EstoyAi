@@ -40,12 +40,14 @@ export const TENANTS: Tenant[] = [
     orgName: "Pequeños Pasos",
     shortName: "Pequeños Pasos",
   },
-  // Plantilla para la próxima ONG — descomentar y ajustar:
-  // {
-  //   slug: "otraong",
-  //   orgName: "Otra ONG",
-  //   shortName: "Otra ONG",
-  // },
+  {
+    // DTC Villa Tranquila (Avellaneda) — modelo SEDRONAR. Su vertical define
+    // programas (HPC / Seguimiento / Taller), schema y armado del informe en
+    // lib/reports/verticals/dtc.ts.
+    slug: "dtcvillatranquila",
+    orgName: "DTC Villa Tranquila",
+    shortName: "DTC Villa Tranquila",
+  },
 ];
 
 export const DEFAULT_TENANT: Tenant = TENANTS[0];

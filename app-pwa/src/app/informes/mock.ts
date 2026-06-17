@@ -10,7 +10,7 @@ const now = Date.now();
 
 const b = (nombre: string, apellido: string, dni: string) => ({ nombre, apellido, dni });
 
-export const MOCK_ITEMS: TriageItem[] = [
+const PP_MOCK_ITEMS: TriageItem[] = [
   {
     id: "m1", estado: "LISTO", categoria: "ALTA", prioridad: "ALTA",
     motivoCriticidad: "Signos de violencia intrafamiliar; requiere intervención inmediata.",
@@ -75,3 +75,60 @@ export const MOCK_ITEMS: TriageItem[] = [
     createdAt: now - 5 * 60_000, tieneDocx: false, error: null,
   },
 ];
+
+const DTC_MOCK_ITEMS: TriageItem[] = [
+  {
+    id: "d1", estado: "LISTO", categoria: "ALTA", prioridad: "ALTA",
+    motivoCriticidad: "Consumo problemático de pasta base, sin red vincular activa.",
+    resumen: "Primer contacto espontáneo. Solicita orientación para tratamiento.",
+    beneficiario: b("Rodrigo", "Villalba", "38200100"), programa: "hpc",
+    profesional: "Fernanda Morales", accionesPendientes: ["Derivar a CPA", "Contactar referente familiar"],
+    createdAt: now - 2 * 3600_000, tieneDocx: true, error: null,
+  },
+  {
+    id: "d2", estado: "LISTO", categoria: "ALTA", prioridad: "ALTA",
+    motivoCriticidad: "Recaída tras alta hospitalaria. Sin contención familiar.",
+    resumen: "Seguimiento mensual. Requiere refuerzo de estrategia.",
+    beneficiario: b("Miriam", "Suárez", "40555666"), programa: "seguimiento",
+    profesional: "Fernanda Morales", accionesPendientes: ["Coordinar con equipo de salud", "Planificar visita domiciliaria"],
+    createdAt: now - 5 * 3600_000, tieneDocx: true, error: null,
+  },
+  {
+    id: "d3", estado: "LISTO", categoria: "MEDIA", prioridad: "MEDIA",
+    motivoCriticidad: "Baja adherencia al taller de habilidades sociales.",
+    resumen: "Taller grupal semanal. Participación irregular.",
+    beneficiario: b("Lucas", "Herrera", "41888999"), programa: "taller",
+    profesional: "Diego Romero", accionesPendientes: ["Reforzar convocatoria"],
+    createdAt: now - 1 * DAY, tieneDocx: true, error: null,
+  },
+  {
+    id: "d4", estado: "LISTO", categoria: "MEDIA", prioridad: "MEDIA",
+    motivoCriticidad: "",
+    resumen: "Evolución positiva. Mantiene vínculo con DTC.",
+    beneficiario: b("Natalia", "Castro", "39777888"), programa: "seguimiento",
+    profesional: "Diego Romero", accionesPendientes: [],
+    createdAt: now - 1 * DAY - 3 * 3600_000, tieneDocx: true, error: null,
+  },
+  {
+    id: "d5", estado: "LISTO", categoria: "BAJA", prioridad: "BAJA",
+    motivoCriticidad: "",
+    resumen: "Taller de oficios. Sin situación de riesgo identificada.",
+    beneficiario: b("Pablo", "González", "42100200"), programa: "taller",
+    profesional: "Diego Romero", accionesPendientes: [],
+    createdAt: now - 2 * DAY, tieneDocx: true, error: null,
+  },
+  {
+    id: "d6", estado: "ERROR", categoria: "error", prioridad: null,
+    motivoCriticidad: "", resumen: "",
+    beneficiario: b("Verónica", "Ríos", "43300400"), programa: "hpc",
+    profesional: "Fernanda Morales", accionesPendientes: [],
+    createdAt: now - 45 * 60_000, tieneDocx: false,
+    error: "Whisper timeout: transcripción falló (HTTP 504)",
+  },
+];
+
+export const MOCK_BY_TENANT: Record<string, TriageItem[]> = {
+  dtcvillatranquila: DTC_MOCK_ITEMS,
+};
+
+export const MOCK_ITEMS: TriageItem[] = PP_MOCK_ITEMS;

@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import type { FieldReport } from "./schema";
-import { buildReportContent } from "./content";
+import { buildReportContent } from "./verticals";
 import { filterReportContent, type CamposConfig } from "./campos";
 import { renderReportDocxBufferFromContent } from "./report-docx";
 import { docxPathFor } from "@/lib/db/paths";

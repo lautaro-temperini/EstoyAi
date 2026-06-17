@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getInforme, upsertInformeExtraido } from "@/lib/db/sqlite";
 import { assertValidId } from "@/lib/api/validate";
-import { buildReport } from "@/lib/reports/assemble";
+import { buildReport } from "@/lib/reports/build";
 import type { ReportExtraction, ReportMetadata } from "@/lib/reports/schema";
 
 export const runtime = "nodejs";

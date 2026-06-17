@@ -1,12 +1,12 @@
 # ARCHITECTURE.md — EstoyAi / Pequeños Pasos
 
-Documento único de arquitectura y diseño del sistema: topología, flujo de datos, estados, dominio e invariantes. Para operación diaria ver [CLAUDE.md](CLAUDE.md) y [README-SEDE.md](README-SEDE.md). Para tokens UI ver [DESIGN.md](DESIGN.md).
+Documento único de arquitectura y diseño del sistema: topología, flujo de datos, estados, dominio e invariantes. Para operación diaria ver [CLAUDE.md](CLAUDE.md) y `PequenosPasos/README-SEDE.md` (local). Para tokens UI ver [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md).
 
 ---
 
 ## Propósito del sistema
 
-Herramienta de campo para promotores de una ONG. El promotor elige el **programa** (Primera Infancia, Niñez y Adolescencia, Oficios), llena nombre/apellido/DNI del beneficiario, graba un mensaje de voz dictando lo que observó en la intervención, y recibe un `.docx` listo para archivar. Todo funciona sin conexión; la sincronización ocurre en segundo plano cuando hay red. El programa elegido orienta la extracción del LLM (system prompt específico).
+Herramienta de campo para promotores de una ONG. El promotor elige el **programa** (catálogo según la ONG: p. ej. Primera Infancia / Niñez y Adolescencia / Oficios en Pequeños Pasos, o HPC / Seguimiento / Taller en un DTC), llena nombre/apellido/DNI del beneficiario, graba un mensaje de voz dictando lo que observó en la intervención, y recibe un `.docx` listo para archivar. Todo funciona sin conexión; la sincronización ocurre en segundo plano cuando hay red. El programa y la ONG orientan la extracción del LLM (ver Verticales).
 
 ---
 
@@ -253,7 +253,7 @@ FieldReport
   │    ├─ tenant: string | null        (ONG que originó el registro)
   │    ├─ tipo: "individual" | "grupal" | null
   │    ├─ beneficiario: { nombre, apellido, dni } | null
-  │    ├─ programa: "primera-infancia" | "ninez-adolescencia" | "oficios" | null
+  │    ├─ programa: id de programa de la vertical | null  (PP: primera-infancia/ninez-adolescencia/oficios; DTC: hpc/seguimiento/taller)
   │    ├─ sector, unidad: string | null
   │    └─ capturedAt, durationMs
   ├─ estado: "PENDIENTE" | "CONFIRMADO"
@@ -265,14 +265,15 @@ FieldReport
        ├─ motivoCriticidad: string (≤15 palabras; "" si BAJA informativa)
        ├─ entidades: { nombres[], fechas[] }
        ├─ accionesPendientes: string[]
-       └─ datos: DatosInforme
-            ├─ demografia  (edad, fechaNacimiento, esMenor)   ← el nombre viene de campos fijos
-            ├─ metricas    (peso, talla, diagnosticos[], avanceObra)
-            ├─ socioeconomico (familia, ingresos, vivienda, vulnerabilidades[])
-            ├─ intervencion  (fecha, lugar, tipoActividad)
-            ├─ seguimiento   (compromisos[], situacionLaboral, desempenoAcademico)
-            └─ narrativa: string
+       └─ datos: unknown   ← forma definida por la VERTICAL del tenant (cada una castea a su tipo)
+            · Pequeños Pasos (DatosInforme): demografia, metricas, socioeconomico, intervencion, seguimiento, narrativa
+            · DTC (DtcDatos): identificacion, consulta, consumo, redVincular, educacionTrabajo, salud,
+                              vulneracionDerechos[], recursosIntereses, talleres, estrategia, seguimiento, narrativa
 ```
+
+El envelope (resumen, prioridad, entidades, accionesPendientes) es común a todas
+las ONGs; solo `datos` y las secciones del `.docx` cambian por vertical. Ver
+"Verticales por ONG" en [CLAUDE.md](CLAUDE.md).
 
 ### Invariantes críticos
 
@@ -280,7 +281,7 @@ FieldReport
 - **`transcripcion` es inmutable.** El LLM solo organiza; la transcripción original siempre está disponible para verificación.
 - **El UUID nace en el dispositivo.** Se genera en `enqueueRegistro()` y es la clave primaria en IndexedDB, SQLite y el filesystem (`data/audio/<id>.wav`, `data/docx/<id>.docx`). Las API routes lo validan como UUID-v4 (`assertValidId`) para evitar path traversal.
 - **n8n nunca escribe SQLite.** Solo llama endpoints HTTP de Next.js, que son el único escritor.
-- **El tenant lo decide el servidor.** El middleware resuelve la ONG por el header `Host` e inyecta `x-tenant`; el cliente no puede falsearlo. El `programa`, en cambio, viaja en la meta del upload.
+- **El tenant lo decide el servidor.** El middleware resuelve la ONG por el header `Host` e inyecta `x-tenant`; el cliente no puede falsearlo. El tenant selecciona la **vertical** (catálogo de programas, forma de `datos`, armado del `.docx`, y en n8n el prompt + schema). El `programa`, en cambio, viaja en la meta del upload y orienta el énfasis dentro de la vertical.
 
 ---
 
@@ -288,7 +289,7 @@ FieldReport
 
 ### Prompt del sistema (`assemble.ts`)
 
-`buildSystemPrompt(enfasis)` compone: reglas absolutas → énfasis del programa → estructura de campos. Hay un prompt genérico (`SYSTEM_PROMPT`) y tres variantes por programa (`SYSTEM_PROMPT_PRIMERA_INFANCIA`, `_NINEZ_ADOLESCENCIA`, `_OFICIOS`); `systemPromptForPrograma()` elige según el `programa` de la meta. El gen script replica esta selección en n8n con override por ONG (`PROMPTS["<tenant>:<programa>"]`).
+`buildSystemPrompt(enfasis)` compone: reglas absolutas → énfasis del programa → estructura de campos. Para Pequeños Pasos hay un prompt genérico (`SYSTEM_PROMPT`) y variantes por programa (`SYSTEM_PROMPT_PRIMERA_INFANCIA`, `_NINEZ_ADOLESCENCIA`, `_OFICIOS`). **El runtime real de la extracción es n8n**, no la app: `assemble.ts` es la fuente de verdad de los prompts de PP que el gen script espeja. Cada vertical tiene sus propios prompts y schema (los del DTC viven en `gen-n8n-workflow.mjs` y `verticals/dtc.ts`). En n8n la selección prueba: prompt `PROMPTS["<tenant>:<programa>"]` → `["<programa>"]` → `.generic`; schema `SCHEMAS["<tenant>"]` → `.default`.
 
 Instrucciones en español para el modelo:
 1. Extraer exclusivamente lo que dice la transcripción.
@@ -329,28 +330,28 @@ El modelo no puede emitir JSON malformado ni agregar campos no definidos.
 ```
 FieldReport
   │
-  ▼ buildReportContent()   [content.ts]
-ReportContent
+  ▼ buildReportContent()   [verticals/index.ts → dispatcher por tenant]
+ReportContent                (la vertical decide titular, secciones y orgName)
   ├─ disclaimer
   ├─ titular (Apellido Nombre, o fallback a LLM → "Actividad Grupal")
   ├─ prioridad, motivoCriticidad
   ├─ fecha, lugar
   ├─ resumenEjecutivo
-  ├─ generadoEl
-  └─ sections: Section[]  (7 secciones de cuerpo)
-       ├─ { kind: "fields", title, fields: [{label, value}] }
-       ├─ { kind: "bullets", title, items: string[] }
-       └─ { kind: "text", title, body }
+  ├─ generadoEl, orgName
+  └─ sections: Section[]  (secciones de cuerpo de la vertical; cada una con `id` estable)
+       ├─ { id?, kind: "fields", title, fields: [{label, value}] }
+       ├─ { id?, kind: "bullets", title, items: string[] }
+       └─ { id?, kind: "text", title, body }
   │
-  ▼ filterReportContent()  [campos.ts]  ← opcional, si el promotor oculta secciones
+  ▼ filterReportContent()  [campos.ts]  ← opcional, oculta secciones por `id`
   │
-  ▼ renderReportDocxBufferFromContent()  [report-docx.ts]
+  ▼ renderReportDocxBufferFromContent()  [report-docx.ts]  ← genérico (usa orgName + sections)
 Buffer (.docx)
 ```
 
 ### Invariante de secciones
 
-`buildReportContent()` **siempre** emite el encabezado fijo (disclaimer, titular, prioridad/motivo, fecha, lugar, resumen) más las **7 secciones de cuerpo**: Identificación y Demografía, Diagnósticos, Contexto Socioeconómico, Detalles de la Intervención, Seguimiento, Acciones Pendientes, Observaciones y Contexto. Ningún campo queda en blanco: valor vacío → `"—"`, array vacío → `["—"]`. Esto garantiza que el `.docx` tenga estructura consistente independientemente de qué mencionó el promotor.
+El `buildContent()` de cada vertical **siempre** emite el encabezado fijo (disclaimer, titular, prioridad/motivo, fecha, lugar, resumen) más sus secciones de cuerpo. Pequeños Pasos emite 7 (Identificación y Demografía, Diagnósticos, Contexto Socioeconómico, Detalles de la Intervención, Seguimiento, Acciones Pendientes, Observaciones y Contexto); el DTC emite secciones distintas según el programa (HPC, Seguimiento o Taller). Ningún campo queda en blanco: valor vacío → `"—"`, array vacío → `["—"]`. Esto garantiza estructura consistente independientemente de qué mencionó el promotor.
 
 `reportFileBase()` (nombre del .docx) y `beneficiarioFolder()` (carpeta para R2/Podio) derivan del beneficiario, con fallback al UUID si faltan datos.
 
@@ -375,13 +376,13 @@ Normalizado: sin acentos, espacios → `_`. Si falta algún dato → `informe-<u
 
 ## n8n workflow
 
-`n8n/workflows/registro.json` es **generado**. No editar a mano. La fuente es `scripts/gen-n8n-workflow.mjs`, que embebe copias literales de `SYSTEM_PROMPT` y `EXTRACTION_JSON_SCHEMA`.
+`n8n/workflows/registro.json` es **generado**. No editar a mano. La fuente es `scripts/gen-n8n-workflow.mjs`, que embebe los `PROMPTS` (por programa, todas las ONGs) y `SCHEMAS` (por tenant). El flujo es uno solo y adaptativo: elige prompt y schema en runtime según `meta.tenant`/`meta.programa`. Modo global (default) o single-tenant (`--tenant <slug>`, para instaladores por sede).
 
 Al cambiar el prompt o el schema:
-1. Editar `lib/reports/assemble.ts` y/o `lib/reports/schema.ts`.
-2. Actualizar las copias en `scripts/gen-n8n-workflow.mjs`.
+1. Editar la fuente de verdad: `lib/reports/assemble.ts` + `schema.ts` (PP) o `verticals/dtc.ts` (DTC).
+2. Actualizar las copias en `scripts/gen-n8n-workflow.mjs` (`PROMPTS` / `SCHEMAS`).
 3. `node scripts/gen-n8n-workflow.mjs`
-4. Reimportar en el editor n8n y reactivar el workflow.
+4. Reimportar y reactivar (`scripts/update-workflow.bat`/`.mjs` o n8n → Import from file).
 
 O en sede: `scripts/update-workflow.bat`.
 
@@ -436,11 +437,11 @@ Lista completa: `.env.example`.
 
 | Extender | Dónde |
 |---|---|
-| Nueva ONG | `tenants/config.ts`, `.env`, Cloudflare hostname |
-| Nuevo programa | `Programa` (`schema.ts`), opción en `/registrar`, prompt en `assemble.ts` + `gen-n8n-workflow.mjs` → regenerar workflow |
-| Prompt por programa / ONG | `assemble.ts` (`SYSTEM_PROMPT_*`) + `PROMPTS` en `gen-n8n-workflow.mjs` → regenerar |
+| Nueva ONG (mismo modelo de datos) | `tenants/config.ts`, `.env` (`TENANT_<SLUG>_PASSWORD`), Cloudflare hostname |
+| Nueva ONG con informe propio | + vertical en `lib/reports/verticals/<slug>.ts` (tipos, programas, mergeDatos, buildContent), registrarla en `verticals/index.ts`, prompts/schema en `gen-n8n-workflow.mjs` (+ `TENANT_META`) → regenerar |
+| Nuevo programa de una ONG | `Programa` (`schema.ts`), `programas` de la vertical, prompt en `gen-n8n-workflow.mjs` → regenerar |
+| Prompt / schema por ONG | fuente de verdad de la vertical + `PROMPTS`/`SCHEMAS` en `gen-n8n-workflow.mjs` → regenerar |
 | Integración R2/Podio | Workflows n8n + env en `docker-compose.yml` |
-| Schema de extracción | `schema.ts` (sincronizar en gen script) |
 
 ---
 
@@ -448,9 +449,9 @@ Lista completa: `.env.example`.
 
 | Documento | Contenido |
 |---|---|
-| [DESIGN.md](DESIGN.md) | Design system UI (tokens, componentes) |
+| [DESIGN-SYSTEM.md](DESIGN-SYSTEM.md) | Design system UI (tokens, componentes) |
 | [CLAUDE.md](CLAUDE.md) | Comandos y guía para agentes de código |
-| [README-SEDE.md](README-SEDE.md) | Manual operativo para coordinadores |
+| `PequenosPasos/README-SEDE.md` | Manual operativo para la sede (local, no versionado) |
 | [MULTITENANT.md](MULTITENANT.md) | Subdominios, tunnel, R2 |
 | [docs/brief.md](docs/brief.md) | Brief de producto (local) |
 | [docs/prd.md](docs/prd.md) | Requisitos de producto (local) |

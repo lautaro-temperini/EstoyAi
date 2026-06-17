@@ -4,7 +4,7 @@ import { listInformesByTenant } from "@/lib/db/sqlite";
 import { listTriageItems, countByCategoria } from "@/lib/reports/triage";
 import { AutoRefresh } from "./auto-refresh";
 import { TableroClient } from "./tablero-client";
-import { MOCK_ITEMS } from "./mock";
+import { MOCK_ITEMS, MOCK_BY_TENANT } from "./mock";
 
 // Siempre fresco: lee SQLite en cada request (estados cambian a medida que n8n procesa).
 export const dynamic = "force-dynamic";
@@ -14,9 +14,10 @@ export default async function InformesPage() {
   const tenant = tenantFromHeaders(h);
   const isDev = process.env.NODE_ENV === "development";
   // El tablero muestra SOLO lo enviado a coordinación (gate del promotor).
-  // Dev: mock (solo los "enviados" = LISTO) para ver UI/filtros sin datos.
+  // Dev: mock tenant-específico para ver UI/filtros sin datos reales.
+  const mockItems = MOCK_BY_TENANT[tenant.slug] ?? MOCK_ITEMS;
   const items = isDev
-    ? MOCK_ITEMS.filter((i) => i.estado === "LISTO")
+    ? mockItems.filter((i) => i.estado === "LISTO")
     : listTriageItems(listInformesByTenant(tenant.slug, { soloEnviados: true }));
   const counts = countByCategoria(items);
   // Borrar en coordinación: solo admin (en dev se habilita para poder probar).

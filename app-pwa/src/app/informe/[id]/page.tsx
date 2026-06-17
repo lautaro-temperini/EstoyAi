@@ -1,15 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  SECCION_IDS,
-  SECCION_TITULOS,
-  DEFAULT_CAMPOS,
-  type SeccionId,
-  type CamposConfig,
-} from "@/lib/reports/campos";
+import { DEFAULT_CAMPOS, type CamposConfig } from "@/lib/reports/campos";
 import type { FieldReport, Prioridad } from "@/lib/reports/schema";
+import { buildReportContent } from "@/lib/reports/verticals";
 import { StatusChip, ESTADO_CHIP, type EstadoChip } from "@/components/status-chip";
 import { IS_DEV, devInformeData } from "@/lib/dev-mock";
 import { ConfirmEnviarModal } from "@/components/confirm-enviar-modal";
@@ -32,7 +27,7 @@ const PRIORIDADES: Prioridad[] = ["ALTA", "MEDIA", "BAJA"];
 const PRIO_CHIP: Record<Prioridad, EstadoChip> = { ALTA: "alta", MEDIA: "media", BAJA: "baja" };
 
 /** secciones that cannot be deselected */
-const LOCKED: SeccionId[] = ["identificacion"];
+const LOCKED: string[] = ["identificacion"];
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -45,7 +40,7 @@ export default function InformePage() {
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   // Local selection state — initialised from loaded campos, defaults to all.
-  const [secciones, setSecciones] = useState<Set<SeccionId>>(
+  const [secciones, setSecciones] = useState<Set<string>>(
     new Set(DEFAULT_CAMPOS.secciones),
   );
 
@@ -106,7 +101,17 @@ export default function InformePage() {
 
   // ── Toggle section ─────────────────────────────────────────────────────────
 
-  const toggle = useCallback((sec: SeccionId) => {
+  // Secciones disponibles derivadas del propio contenido del informe: funciona
+  // para cualquier vertical (Pequeños Pasos, DTC, …) sin listas estáticas.
+  const seccionDefs = useMemo(() => {
+    const inf = data?.informe;
+    if (!inf) return [] as { id: string; titulo: string }[];
+    return buildReportContent(inf)
+      .sections.filter((s) => s.id)
+      .map((s) => ({ id: s.id as string, titulo: s.title }));
+  }, [data]);
+
+  const toggle = useCallback((sec: string) => {
     if (LOCKED.includes(sec)) return;
     setSecciones((prev) => {
       const next = new Set(prev);
@@ -356,48 +361,50 @@ export default function InformePage() {
         )}
 
         {/* Secciones a incluir */}
-        <section className="anim-enter bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md">
-          <div className="mb-stack-sm">
-            <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
-              Secciones del documento
-            </h2>
-            <p className="font-caption text-caption text-on-surface-variant mt-1">
-              Elegí qué secciones incluir en el .docx. &quot;Identificación&quot; siempre se incluye.
-            </p>
-          </div>
+        {seccionDefs.length > 0 && (
+          <section className="anim-enter bg-surface-container-lowest border border-outline-variant rounded-xl p-stack-md">
+            <div className="mb-stack-sm">
+              <h2 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wide">
+                Secciones del documento
+              </h2>
+              <p className="font-caption text-caption text-on-surface-variant mt-1">
+                Elegí qué secciones incluir en el .docx. &quot;Identificación&quot; siempre se incluye.
+              </p>
+            </div>
 
-          <ul className="divide-y divide-outline-variant">
-            {SECCION_IDS.map((sec) => {
-              const locked = LOCKED.includes(sec);
-              const checked = locked || secciones.has(sec);
-              return (
-                <li key={sec}>
-                  <label
-                    className={`flex items-center gap-3 py-3 ${locked ? "cursor-default" : "cursor-pointer hover:bg-surface-container-low rounded-lg px-2 -mx-2 transition-colors"}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      disabled={locked}
-                      onChange={() => toggle(sec)}
-                      className="w-5 h-5 accent-primary rounded shrink-0"
-                    />
-                    <span
-                      className={`font-body-md text-body-md ${locked ? "text-on-surface-variant" : checked ? "text-on-surface" : "text-on-surface-variant line-through"}`}
+            <ul className="divide-y divide-outline-variant">
+              {seccionDefs.map(({ id: sec, titulo }) => {
+                const locked = LOCKED.includes(sec);
+                const checked = locked || secciones.has(sec);
+                return (
+                  <li key={sec}>
+                    <label
+                      className={`flex items-center gap-3 py-3 ${locked ? "cursor-default" : "cursor-pointer hover:bg-surface-container-low rounded-lg px-2 -mx-2 transition-colors"}`}
                     >
-                      {SECCION_TITULOS[sec]}
-                    </span>
-                    {locked && (
-                      <span className="ml-auto font-caption text-caption text-on-surface-variant">
-                        Siempre
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={locked}
+                        onChange={() => toggle(sec)}
+                        className="w-5 h-5 accent-primary rounded shrink-0"
+                      />
+                      <span
+                        className={`font-body-md text-body-md ${locked ? "text-on-surface-variant" : checked ? "text-on-surface" : "text-on-surface-variant line-through"}`}
+                      >
+                        {titulo}
                       </span>
-                    )}
-                  </label>
-                </li>
-              );
-            })}
-          </ul>
-        </section>
+                      {locked && (
+                        <span className="ml-auto font-caption text-caption text-on-surface-variant">
+                          Siempre
+                        </span>
+                      )}
+                    </label>
+                  </li>
+                );
+              })}
+            </ul>
+          </section>
+        )}
 
         {/* Feedback */}
         {saveError && (

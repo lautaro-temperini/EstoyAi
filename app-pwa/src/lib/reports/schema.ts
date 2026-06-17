@@ -83,14 +83,30 @@ export interface ReportExtraction {
   };
   /** Pending actions (seguimientos médicos, renovaciones, …). */
   accionesPendientes: string[];
-  /** Structured one-page report body. */
-  datos: DatosInforme;
+  /**
+   * Structured report body. Su forma depende de la vertical del tenant
+   * (DatosInforme para Pequeños Pasos, DtcDatos para el DTC, …). Por eso es
+   * `unknown` acá: cada vertical castea a su tipo en mergeDatos/buildContent.
+   */
+  datos: unknown;
 }
 
 export type TipoRegistro = "individual" | "grupal";
 
-/** Programa de la ONG bajo el que se registra la intervención. */
-export type Programa = "primera-infancia" | "ninez-adolescencia" | "oficios";
+/**
+ * Programa bajo el que se registra la intervención. El catálogo activo lo define
+ * la vertical del tenant (ver lib/reports/verticals); este union reúne los
+ * programas de TODAS las verticales para mantener el tipado en el flujo de
+ * captura. Pequeños Pasos: primera-infancia / ninez-adolescencia / oficios.
+ * DTC (SEDRONAR): hpc / seguimiento / taller.
+ */
+export type Programa =
+  | "primera-infancia"
+  | "ninez-adolescencia"
+  | "oficios"
+  | "hpc"
+  | "seguimiento"
+  | "taller";
 
 /** Auto-captured context for the report (provided by the device/frontend). */
 export interface ReportMetadata {

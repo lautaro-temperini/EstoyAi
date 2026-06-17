@@ -19,7 +19,7 @@ import { execSync } from "node:child_process";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
-const WORKFLOW_NAME = "Pequeños Pasos — registro";
+const WORKFLOW_NAME = "EstoyAi — registro de voz a informe";
 const WORKFLOW_FILE = path.join(ROOT, "n8n", "workflows", "registro.json");
 // Ruta del mismo archivo VISTA DESDE DENTRO del contenedor (volumen montado).
 const WORKFLOW_IN_CONTAINER = "/home/node/workflows/registro.json";
@@ -73,7 +73,7 @@ function fail(msg, hint) {
 
 function main() {
   console.log("\n══════════════════════════════════════════════");
-  console.log("  Actualizar workflow n8n — Pequeños Pasos");
+  console.log("  Actualizar workflow n8n — EstoyAi");
   console.log("══════════════════════════════════════════════\n");
 
   // ── Paso 1: Regenerar JSON ──────────────────────────────────────────────

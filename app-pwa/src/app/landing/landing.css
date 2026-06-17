@@ -419,63 +419,7 @@ main > section {
   100% { stroke-dashoffset: 0; opacity: 0; }
 }
 
-/* ── Caso: Pequeños Pasos ── */
-
-.landing-case__status {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: var(--green);
-}
-
-.landing-case__status::before {
-  content: "";
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--green);
-}
-
-.landing-case__org {
-  font-size: clamp(2rem, 5vw, 3rem);
-  line-height: 1.02;
-  letter-spacing: -0.03em;
-  margin-top: var(--space-2);
-}
-
-.landing-case__context {
-  margin-top: var(--space-3);
-  font-size: 1.0625rem;
-  line-height: 1.6;
-  color: var(--muted);
-  max-width: 58ch;
-}
-
-.landing-case__tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-top: var(--space-4);
-}
-
-.landing-case__tag {
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--muted);
-  padding: 0.375rem 0.75rem;
-  background: var(--surface-low);
-  border: 1px solid var(--outline-variant);
-  border-radius: 999px;
-}
-
-.landing-case__tag:last-child {
-  color: var(--ink);
-  border-color: color-mix(in srgb, var(--ink) 30%, var(--outline-variant));
-}
-
-/* Comparación Antes/Ahora en filas con reglas suaves. */
+/* Comparación El patrón / El enfoque en filas con reglas suaves. */
 .landing-compare {
   margin-top: var(--space-5);
   border-top: 1px solid var(--outline-variant);
@@ -513,14 +457,6 @@ main > section {
 }
 
 .landing-compare__text strong { font-weight: 700; }
-
-.landing-case__foot {
-  margin-top: var(--space-3);
-  font-size: 0.9375rem;
-  line-height: 1.55;
-  color: var(--muted);
-  max-width: 62ch;
-}
 
 /* ── Índice 3 pasos (elemento firma) ── */
 

@@ -1,12 +1,11 @@
-import {
-  EXTRACTION_JSON_SCHEMA,
-  type DatosInforme,
-  type FieldReport,
-  type ReportExtraction,
-  type ReportMetadata,
-} from "./schema";
+import { EXTRACTION_JSON_SCHEMA } from "./schema";
 
 export { EXTRACTION_JSON_SCHEMA };
+
+// NOTA: este módulo es la FUENTE DE VERDAD de los system prompts de Pequeños
+// Pasos y debe mantenerse en sync con scripts/gen-n8n-workflow.mjs (el runtime
+// real de la extracción es n8n). El ensamblado del informe vive en build.ts y
+// el merge de `datos` en cada vertical (lib/reports/verticals).
 
 export const ASR_LANGUAGE = process.env.NEXT_PUBLIC_ASR_LANG ?? "es";
 
@@ -89,32 +88,6 @@ export function systemPromptForPrograma(programa: string | null | undefined): st
   }
 }
 
-/** Empty structured body — every field unknown until the transcript fills it. */
-export function emptyDatos(): DatosInforme {
-  return {
-    demografia: { edad: "", fechaNacimiento: "", esMenor: false },
-    metricas: { peso: "", talla: "", diagnosticos: [], avanceObra: "" },
-    socioeconomico: { familia: "", ingresos: "", vivienda: "", vulnerabilidades: [] },
-    intervencion: { fecha: "", lugar: "", tipoActividad: "" },
-    seguimiento: { compromisos: [], situacionLaboral: "", desempenoAcademico: "" },
-    narrativa: "",
-  };
-}
-
-/** Merge a (possibly partial) extracted body over the empty defaults. */
-function mergeDatos(d: Partial<DatosInforme> | undefined): DatosInforme {
-  const base = emptyDatos();
-  if (!d) return base;
-  return {
-    demografia: { ...base.demografia, ...d.demografia },
-    metricas: { ...base.metricas, ...d.metricas },
-    socioeconomico: { ...base.socioeconomico, ...d.socioeconomico },
-    intervencion: { ...base.intervencion, ...d.intervencion },
-    seguimiento: { ...base.seguimiento, ...d.seguimiento },
-    narrativa: d.narrativa ?? base.narrativa,
-  };
-}
-
 const MESES = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
@@ -140,60 +113,4 @@ export function isMeaningful(text: string): boolean {
 /** Build the user prompt with date grounding. */
 export function buildUserMessage(transcript: string, capturedAt: number): string {
   return `Fecha del registro: ${fechaLarga(capturedAt)}.\n\nTranscripción:\n${transcript}`;
-}
-
-// Guardrail para LLMs chicos (gemma3:1b en PCs de poca RAM): en vez de dejar
-// "" como pide el prompt, a veces emiten placeholders — "[No especificada]",
-// "[10 de junio de 2026]", "N/A", "No se menciona" — que terminan impresos en
-// el .docx como si fueran datos. Se limpian acá, del lado del servidor, para
-// que el resto del pipeline los trate como vacíos ("—").
-const PLACEHOLDER_RE =
-  /^\s*(?:\[[^\]]*\]|no especificad\w*|no se (?:menciona|indica|especifica)\w*|sin (?:datos|informaci[oó]n)|n\/?a|no aplica|desconocid\w*)\s*\.?\s*$/i;
-
-function cleanValue(v: unknown): unknown {
-  if (typeof v === "string") {
-    const t = v.trim();
-    return PLACEHOLDER_RE.test(t) ? "" : t;
-  }
-  if (Array.isArray(v)) {
-    return v.map(cleanValue).filter((x) => x !== "");
-  }
-  if (v && typeof v === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, val] of Object.entries(v)) out[k] = cleanValue(val);
-    return out;
-  }
-  return v;
-}
-
-/** Assemble the persisted FieldReport from the transcript + LLM extraction. */
-export function buildReport(
-  transcript: string,
-  extraction: ReportExtraction,
-  metadata: ReportMetadata,
-): FieldReport {
-  const ext = cleanValue(extraction) as ReportExtraction;
-  const resumen = ext.resumen?.trim() || transcript;
-  const datos = mergeDatos(ext.datos);
-  // Otro tic de modelos chicos: copiar el resumen entero en narrativa.
-  // La narrativa es para detalles cualitativos; duplicada no aporta nada.
-  if (datos.narrativa && datos.narrativa.trim() === resumen.trim()) {
-    datos.narrativa = "";
-  }
-  return {
-    id: crypto.randomUUID(),
-    transcripcion: transcript,
-    resumen,
-    prioridad: ext.prioridad ?? "MEDIA",
-    motivoCriticidad: ext.motivoCriticidad ?? "",
-    entidades: {
-      nombres: ext.entidades?.nombres ?? [],
-      fechas: ext.entidades?.fechas ?? [],
-    },
-    accionesPendientes: ext.accionesPendientes ?? [],
-    datos,
-    metadatos: metadata,
-    estado: "PENDIENTE",
-    createdAt: Date.now(),
-  };
 }
