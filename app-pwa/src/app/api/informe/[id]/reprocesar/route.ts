@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { getInforme, resetInformeRecibido } from "@/lib/db/sqlite";
 import { audioPathFor } from "@/lib/db/paths";
 import { assertValidId } from "@/lib/api/validate";
+import { informeBelongsToRequest } from "@/lib/api/tenant-guard";
 
 export const runtime = "nodejs";
 
@@ -13,7 +14,7 @@ type Params = { params: Promise<{ id: string }> };
  * (se subió antes de procesar; ERROR es fallo de whisper/LLM, no de subida), así
  * que alcanza con volver a disparar el webhook de n8n con el mismo id/metadata.
  */
-export async function POST(_request: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
   const { id } = await params;
   try {
     assertValidId(id);
@@ -22,7 +23,9 @@ export async function POST(_request: Request, { params }: Params) {
   }
 
   const row = getInforme(id);
-  if (!row) return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+  if (!row || !informeBelongsToRequest(row, request.headers)) {
+    return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+  }
 
   const audioPath = audioPathFor(id);
   try {

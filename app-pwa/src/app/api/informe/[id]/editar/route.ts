@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getInforme, updateInformeJson } from "@/lib/db/sqlite";
 import { generarDocxParaInforme } from "@/lib/reports/generar-docx";
 import { assertValidId } from "@/lib/api/validate";
+import { informeBelongsToRequest } from "@/lib/api/tenant-guard";
 import type { Prioridad } from "@/lib/reports/schema";
 
 export const runtime = "nodejs";
@@ -31,7 +32,10 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   const row = getInforme(id);
-  if (!row || !row.informeJson) {
+  if (!row || !informeBelongsToRequest(row, request.headers)) {
+    return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+  }
+  if (!row.informeJson) {
     return NextResponse.json({ error: "informe sin datos para editar" }, { status: 404 });
   }
   // Gate server-side: lo ya enviado a coordinación solo lo edita el admin

@@ -34,6 +34,8 @@ services:
       - N8N_WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://n8n:5678/webhook/registro}
       - N8N_R2_WEBHOOK_URL=${N8N_R2_WEBHOOK_URL:-}
       - N8N_PODIO_WEBHOOK_URL=${N8N_PODIO_WEBHOOK_URL:-}
+      # Secreto compartido que valida los callbacks internos de n8n (X-Internal-Token).
+      - N8N_CALLBACK_SECRET=${N8N_CALLBACK_SECRET:-}
       - NEXT_PUBLIC_ASR_LANG=${NEXT_PUBLIC_ASR_LANG:-es}
     volumes:
       - data:/data
@@ -65,6 +67,8 @@ services:
       - WHISPER_URL=${WHISPER_URL:-http://whisper:8000}
       - OLLAMA_URL=${OLLAMA_URL:-http://ollama:11434}
       - OLLAMA_MODEL=${OLLAMA_MODEL:-gemma3:4b}
+      # Mismo secreto que app-pwa: n8n lo manda como X-Internal-Token en los callbacks.
+      - N8N_CALLBACK_SECRET=${N8N_CALLBACK_SECRET:-}
       # n8n internals
       - N8N_HOST=0.0.0.0
       - N8N_PORT=5678

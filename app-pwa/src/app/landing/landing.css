@@ -7,7 +7,7 @@
  * en la webapp. Aislado de globals.css; misma paleta de marca.
  */
 
-@import url("https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@600;700&display=swap");
+/* Fuentes self-hosted vía globals.css (@import fonts.css). Sin googleapis. */
 
 .landing {
   /* ── Paleta de marca (compartida con globals.css de la PWA) ── */
@@ -55,7 +55,7 @@
   text-rendering: optimizeLegibility;
 
   --font-display: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
-  --font-body: var(--font-landing-body), "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 .landing *,

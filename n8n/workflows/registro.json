@@ -108,6 +108,16 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { \"transcript\": $json.transcript, \"extraction\": $json.extraction } }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Token",
+              "value": "={{ $env.N8N_CALLBACK_SECRET || '' }}"
+            }
+          ]
+        },
         "options": {
           "timeout": 60000
         }
@@ -127,6 +137,16 @@
         "method": "POST",
         "url": "={{ $env.APP_URL || 'http://app-pwa:3000' }}/api/informe/{{ $('init').item.json.id }}/generar-docx",
         "sendBody": false,
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Token",
+              "value": "={{ $env.N8N_CALLBACK_SECRET || '' }}"
+            }
+          ]
+        },
         "options": {
           "timeout": 60000
         }
@@ -148,6 +168,16 @@
         "sendBody": true,
         "specifyBody": "json",
         "jsonBody": "={{ { \"error\": ($json.error && ($json.error.message || $json.error.description)) || 'fallo en la orquestación' } }}",
+        "sendHeaders": true,
+        "specifyHeaders": "keypair",
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Token",
+              "value": "={{ $env.N8N_CALLBACK_SECRET || '' }}"
+            }
+          ]
+        },
         "options": {
           "timeout": 60000
         }

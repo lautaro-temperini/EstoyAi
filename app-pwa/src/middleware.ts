@@ -7,6 +7,47 @@ import {
   normalizeHost,
   ROOT_DOMAIN,
 } from "@/lib/tenants/config";
+import { timingSafeEqual } from "@/lib/api/internal-auth";
+
+// ── Rate-limit de Basic Auth (anti fuerza bruta) ─────────────────────────────
+// Contador de intentos FALLIDOS por IP en una ventana. En la sede corre un solo
+// proceso (next start standalone), así que este Map en memoria alcanza; no hay
+// store distribuido. Caveat: detrás de NAT/proxy todos los promotores pueden
+// compartir IP — por eso el umbral es alto (no bloquea uso legítimo) y la
+// ventana corta. Si el deploy escala a varias instancias, mover a un store.
+const RL_WINDOW_MS = 5 * 60_000;
+const RL_MAX_FAILS = 30;
+const failedAuth = new Map<string, { count: number; first: number }>();
+
+function clientIp(req: NextRequest): string {
+  const xff = req.headers.get("x-forwarded-for");
+  return (
+    req.headers.get("cf-connecting-ip") ||
+    (xff ? xff.split(",")[0].trim() : "") ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  );
+}
+
+function rateLimited(ip: string): boolean {
+  const e = failedAuth.get(ip);
+  if (!e) return false;
+  if (Date.now() - e.first > RL_WINDOW_MS) {
+    failedAuth.delete(ip);
+    return false;
+  }
+  return e.count >= RL_MAX_FAILS;
+}
+
+function recordFail(ip: string): void {
+  const now = Date.now();
+  const e = failedAuth.get(ip);
+  if (!e || now - e.first > RL_WINDOW_MS) {
+    failedAuth.set(ip, { count: 1, first: now });
+  } else {
+    e.count += 1;
+  }
+}
 
 /**
  * HTTP Basic Auth multi-tenant.
@@ -21,10 +62,11 @@ import {
  * API routes sepan qué ONG sirve esta petición (branding, system prompt).
  *
  * Rutas EXCLUIDAS (ver `config.matcher`):
- * - Callbacks de n8n: `/api/informe/[id]/(extraccion|generar-docx|error|docx)` →
- *   los llama n8n desde la red Docker (sin credenciales). El resto de
- *   `/api/informe/*` (enviar, editar, reprocesar, campos, subir-r2, podio, estado)
- *   SÍ pasa por auth: el gate de coordinación se valida server-side, no solo en UI.
+ * - Callbacks de n8n: `/api/informe/[id]/(extraccion|generar-docx|error)` →
+ *   los llama n8n desde la red Docker; van protegidos por X-Internal-Token
+ *   (N8N_CALLBACK_SECRET), no por Basic Auth. El resto de `/api/informe/*`
+ *   (docx, enviar, editar, reprocesar, campos, subir-r2, podio, estado) SÍ pasa
+ *   por auth + check de tenant: el gate se valida server-side, no solo en UI.
  * - Assets estáticos (`_next`, íconos, sw.js, manifest) → sin gatear.
  */
 export function middleware(req: NextRequest) {
@@ -73,6 +115,15 @@ export function middleware(req: NextRequest) {
     return pass("admin");
   }
 
+  // Demasiados intentos fallidos desde esta IP → frená la fuerza bruta.
+  const ip = clientIp(req);
+  if (rateLimited(ip)) {
+    return new NextResponse("Demasiados intentos. Probá de nuevo en unos minutos.", {
+      status: 429,
+      headers: { "Retry-After": "300" },
+    });
+  }
+
   const header = req.headers.get("authorization");
   if (header) {
     const [scheme, encoded] = header.split(" ");
@@ -81,10 +132,11 @@ export function middleware(req: NextRequest) {
       const decoded = atob(encoded);
       const sep = decoded.indexOf(":");
       const provided = sep === -1 ? "" : decoded.slice(sep + 1);
+      // Comparación en tiempo constante: no filtrar la contraseña por timing.
       const role =
-        adminPassword && provided === adminPassword
+        adminPassword && timingSafeEqual(provided, adminPassword)
           ? "admin"
-          : provided === password
+          : timingSafeEqual(provided, password)
           ? "user"
           : null;
       if (role) {
@@ -95,6 +147,7 @@ export function middleware(req: NextRequest) {
     }
   }
 
+  recordFail(ip);
   return new NextResponse("Autenticación requerida", {
     status: 401,
     headers: {
@@ -105,7 +158,9 @@ export function middleware(req: NextRequest) {
 
 export const config = {
   // Corre en todo excepto los callbacks de n8n y los assets estáticos.
+  // El docx GET NO está excluido: lo descarga el navegador del usuario, así que
+  // pasa por Basic Auth como el resto (n8n solo escribe, no lee el .docx).
   matcher: [
-    "/((?!api/informe/[^/]+/(?:extraccion|generar-docx|error|docx)|_next/static|_next/image|favicon.ico|icon.svg|sw.js|manifest.webmanifest).*)",
+    "/((?!api/informe/[^/]+/(?:extraccion|generar-docx|error)|_next/static|_next/image|favicon.ico|icon.svg|sw.js|manifest.webmanifest).*)",
   ],
 };

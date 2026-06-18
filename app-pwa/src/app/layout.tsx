@@ -5,14 +5,20 @@ import { ServiceWorkerRegister } from "./sw-register";
 import { QueueFlusher } from "./queue-flusher";
 import { FlowProvider } from "./flow-context";
 import { MainNav } from "@/components/main-nav";
-import { tenantFromHeaders } from "@/lib/tenants/config";
+import { tenantFromHeaders, isLandingHost, ROOT_DOMAIN } from "@/lib/tenants/config";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const tenant = tenantFromHeaders(await headers());
+  const h = await headers();
+  const tenant = tenantFromHeaders(h);
+  const landing = isLandingHost(h.get("host"));
   return {
+    metadataBase: new URL(`https://${ROOT_DOMAIN}`),
     title: `${tenant.orgName} — Registro de campo`,
     description: `Registro de campo por voz para promotores de ${tenant.orgName}.`,
     manifest: "/manifest.webmanifest",
+    // La app operativa es privada: no indexar los subdominios de ONG. La landing
+    // del apex SÍ se indexa (su metadata propia, en landing/layout.tsx, gana).
+    robots: landing ? undefined : { index: false, follow: false },
     appleWebApp: {
       capable: true,
       statusBarStyle: "black-translucent",
@@ -25,7 +31,8 @@ export const viewport: Viewport = {
   themeColor: "#f8f9ff",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  // Sin maximumScale/userScalable: bloquear el zoom viola WCAG 1.4.4 (los
+  // promotores deben poder agrandar el texto).
 };
 
 export default function RootLayout({
@@ -35,22 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className="h-full">
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap"
-          rel="stylesheet"
-        />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+      {/* Fuentes e iconos self-hosted vía @import en globals.css (sin googleapis). */}
       <body
         suppressHydrationWarning
         className="min-h-full bg-surface text-on-surface font-body-md antialiased"

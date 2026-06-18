@@ -2,12 +2,16 @@ import { NextResponse } from "next/server";
 import { getInforme } from "@/lib/db/sqlite";
 import { generarDocxParaInforme } from "@/lib/reports/generar-docx";
 import { assertValidId } from "@/lib/api/validate";
+import { assertInternalCall } from "@/lib/api/internal-auth";
 
 export const runtime = "nodejs";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function POST(_request: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
+  const unauthorized = assertInternalCall(request);
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   try {
     assertValidId(id);

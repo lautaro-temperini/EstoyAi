@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { setInformeError } from "@/lib/db/sqlite";
 import { assertValidId } from "@/lib/api/validate";
+import { assertInternalCall } from "@/lib/api/internal-auth";
+import { logEvent } from "@/lib/log";
 
 export const runtime = "nodejs";
 
@@ -13,6 +15,9 @@ type Params = { params: Promise<{ id: string }> };
  * Body: { error?: string }
  */
 export async function POST(request: Request, { params }: Params) {
+  const unauthorized = assertInternalCall(request);
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   try {
     assertValidId(id);
@@ -35,5 +40,8 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "no encontrado" }, { status: 404 });
   }
 
+  // Visible en `docker logs` para diagnosticar fallos de whisper/ollama sin
+  // entrar a n8n. El motivo también queda en SQLite (lo ve el promotor en la UI).
+  logEvent("error", "n8n", "pipeline falló", { id, motivo: msg });
   return NextResponse.json({ id, estado: "ERROR" });
 }

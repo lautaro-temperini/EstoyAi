@@ -8,8 +8,8 @@ import { useRecorder, type RecordingResult } from "@/lib/use-recorder";
 import { enqueueRegistro } from "@/lib/queue/enqueue";
 
 const WAVE_DELAYS = ["0.1s", "0.3s", "0.2s", "0.5s", "0.4s", "0.6s", "0.2s"];
-const MAX_MS = 60_000;
-const AMBER_FROM_MS = 10_000; // últimos 10 s: el ring vira a amber
+const MAX_MS = 120_000; // 2 min — alineado con lo que promete la landing
+const AMBER_FROM_MS = 15_000; // últimos 15 s: el ring vira a amber
 
 const RING_R = 82;
 const RING_C = 2 * Math.PI * RING_R;
@@ -79,6 +79,16 @@ export default function RecordingPage() {
     ? "Guardando el registro en el dispositivo…"
     : "Habla con claridad sobre la atención brindada";
 
+  // Mensaje para lectores de pantalla: anuncia las transiciones de estado
+  // (grabando / guardando / error) que de otro modo no se verbalizan.
+  const statusMessage = saving
+    ? "Guardando el registro"
+    : error || saveError
+    ? `Error: ${error ?? saveError}`
+    : recording
+    ? "Grabando"
+    : "Listo para grabar";
+
   return (
     <div className="min-h-screen flex flex-col">
       <header className="anim-fade fixed top-0 w-full z-50 flex justify-between items-center px-container-margin h-touch-target-min bg-surface border-b border-outline-variant">
@@ -94,6 +104,11 @@ export default function RecordingPage() {
       </header>
 
       <main className="flex-grow flex flex-col items-center justify-center px-container-margin pt-20 pb-24">
+        {/* Región viva: anuncia el estado de grabación a lectores de pantalla. */}
+        <p className="sr-only" role="status" aria-live="assertive">
+          {statusMessage}
+        </p>
+
         <div className="w-full max-w-md mb-stack-lg">
           <Stepper current={3} />
         </div>

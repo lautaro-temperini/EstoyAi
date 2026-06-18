@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getInforme, setInformeCampos, setInformeListo } from "@/lib/db/sqlite";
 import { assertValidId } from "@/lib/api/validate";
+import { informeBelongsToRequest } from "@/lib/api/tenant-guard";
 import { normalizeCampos } from "@/lib/reports/campos";
 import { generarDocxParaInforme } from "@/lib/reports/generar-docx";
 
@@ -16,7 +17,7 @@ export async function POST(request: Request, { params }: Params) {
     return NextResponse.json({ error: "id inválido" }, { status: 400 });
   }
   const row = getInforme(id);
-  if (!row) {
+  if (!row || !informeBelongsToRequest(row, request.headers)) {
     return NextResponse.json({ error: "no encontrado" }, { status: 404 });
   }
   if (!row.informeJson) {

@@ -3,6 +3,7 @@ import { getInforme } from "@/lib/db/sqlite";
 import { docxPathFor } from "@/lib/db/paths";
 import { reportFileBase, beneficiarioFolder } from "@/lib/reports/content";
 import { assertValidId } from "@/lib/api/validate";
+import { informeBelongsToRequest } from "@/lib/api/tenant-guard";
 
 export const runtime = "nodejs";
 
@@ -17,7 +18,7 @@ type Params = { params: Promise<{ id: string }> };
  *
  * Si el webhook no está configurado, devuelve 501 para que la UI lo informe.
  */
-export async function POST(_request: Request, { params }: Params) {
+export async function POST(request: Request, { params }: Params) {
   const { id } = await params;
   try {
     assertValidId(id);
@@ -26,7 +27,7 @@ export async function POST(_request: Request, { params }: Params) {
   }
 
   const row = getInforme(id);
-  if (!row) {
+  if (!row || !informeBelongsToRequest(row, request.headers)) {
     return NextResponse.json({ error: "no encontrado" }, { status: 404 });
   }
   if (row.estado !== "LISTO" || !row.informeJson) {

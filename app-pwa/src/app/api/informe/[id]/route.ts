@@ -3,12 +3,13 @@ import { NextResponse } from "next/server";
 import { getInforme, deleteInforme } from "@/lib/db/sqlite";
 import { audioPathFor, docxPathFor } from "@/lib/db/paths";
 import { assertValidId } from "@/lib/api/validate";
+import { informeBelongsToRequest } from "@/lib/api/tenant-guard";
 
 export const runtime = "nodejs";
 
 type Params = { params: Promise<{ id: string }> };
 
-export async function GET(_request: Request, { params }: Params) {
+export async function GET(request: Request, { params }: Params) {
   const { id } = await params;
   try {
     assertValidId(id);
@@ -16,7 +17,7 @@ export async function GET(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "id inválido" }, { status: 400 });
   }
   const row = getInforme(id);
-  if (!row) {
+  if (!row || !informeBelongsToRequest(row, request.headers)) {
     return NextResponse.json({ error: "no encontrado" }, { status: 404 });
   }
 
@@ -39,7 +40,7 @@ export async function GET(_request: Request, { params }: Params) {
  * (e.g. the registro never finished uploading), so the client can always
  * clear its local copy.
  */
-export async function DELETE(_request: Request, { params }: Params) {
+export async function DELETE(request: Request, { params }: Params) {
   const { id } = await params;
   try {
     assertValidId(id);
@@ -47,9 +48,15 @@ export async function DELETE(_request: Request, { params }: Params) {
     return NextResponse.json({ error: "id inválido" }, { status: 400 });
   }
 
+  // Aislamiento: si la fila existe pero es de otro tenant, no la tocamos (404).
+  // Si no existe, el borrado es idempotente (el cliente limpia su copia local).
+  const row = getInforme(id);
+  if (row && !informeBelongsToRequest(row, request.headers)) {
+    return NextResponse.json({ error: "no encontrado" }, { status: 404 });
+  }
+
   // Gate: lo ya enviado a coordinación no lo borra el promotor; solo el admin
   // (vía /api/admin/informe/[id]). El cliente igual limpia su copia local.
-  const row = getInforme(id);
   if (row?.enviado) {
     return NextResponse.json(
       { error: "el informe ya está en coordinación", enviado: true },

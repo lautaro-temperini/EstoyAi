@@ -491,6 +491,18 @@ function httpJsonBody(expr) {
 const APP = "={{ $env.APP_URL || 'http://app-pwa:3000' }}";
 const idExpr = "{{ $('init').item.json.id }}";
 
+// Header de autenticación de los callbacks internos. La app valida
+// X-Internal-Token contra N8N_CALLBACK_SECRET (ver lib/api/internal-auth.ts).
+// Si la env no está seteada se manda vacío y la app, también sin secreto, deja
+// pasar (dev / pre-migración). En producción ambos lados deben tenerla.
+const callbackAuthHeaders = {
+  sendHeaders: true,
+  specifyHeaders: "keypair",
+  headerParameters: {
+    parameters: [{ name: "X-Internal-Token", value: "={{ $env.N8N_CALLBACK_SECRET || '' }}" }],
+  },
+};
+
 const nodes = [
   {
     parameters: {
@@ -575,6 +587,7 @@ const nodes = [
       specifyBody: "json",
       jsonBody:
         '={{ { "transcript": $json.transcript, "extraction": $json.extraction } }}',
+      ...callbackAuthHeaders,
       options: { timeout: 60000 },
     },
     id: "node-extraccion",
@@ -589,6 +602,7 @@ const nodes = [
       method: "POST",
       url: `${APP}/api/informe/${idExpr}/generar-docx`,
       sendBody: false,
+      ...callbackAuthHeaders,
       options: { timeout: 60000 },
     },
     id: "node-docx",
@@ -606,6 +620,7 @@ const nodes = [
       specifyBody: "json",
       jsonBody:
         "={{ { \"error\": ($json.error && ($json.error.message || $json.error.description)) || 'fallo en la orquestación' } }}",
+      ...callbackAuthHeaders,
       options: { timeout: 60000 },
     },
     id: "node-marcar-error",

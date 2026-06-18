@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getInforme, upsertInformeExtraido } from "@/lib/db/sqlite";
 import { assertValidId } from "@/lib/api/validate";
+import { assertInternalCall } from "@/lib/api/internal-auth";
 import { buildReport } from "@/lib/reports/build";
 import type { ReportExtraction, ReportMetadata } from "@/lib/reports/schema";
 
@@ -29,6 +30,9 @@ const FALLBACK_META: ReportMetadata = {
  * the metadata captured at RECIBIDO.
  */
 export async function POST(request: Request, { params }: Params) {
+  const unauthorized = assertInternalCall(request);
+  if (unauthorized) return unauthorized;
+
   const { id } = await params;
   try {
     assertValidId(id);

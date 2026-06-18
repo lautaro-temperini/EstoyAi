@@ -1,4 +1,7 @@
 @import "tailwindcss";
+/* Fuentes e iconos self-hosted (ver scripts/vendor-fonts.mjs). Sin googleapis:
+   cumple offline + soberanía de datos. */
+@import "./fonts.css";
 
 /*
  * "Supportive Insight" design system. Tailwind v4 generates utilities from these
@@ -113,7 +116,7 @@ body {
   font-family: var(--font-body-md);
 }
 
-/* Google Material Symbols (loaded via <link> in layout) */
+/* Material Symbols (self-hosted en /fonts, ver fonts.css) */
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
   font-weight: normal;

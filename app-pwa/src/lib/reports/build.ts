@@ -1,5 +1,20 @@
-import type { FieldReport, ReportExtraction, ReportMetadata } from "./schema";
+import type { FieldReport, Prioridad, ReportExtraction, ReportMetadata } from "./schema";
 import { verticalForTenant } from "./verticals";
+
+const PRIORIDADES: Prioridad[] = ["ALTA", "MEDIA", "BAJA"];
+
+/** Normaliza la prioridad del LLM al enum; cualquier otra cosa → "MEDIA". */
+function coercePrioridad(v: unknown): Prioridad {
+  return typeof v === "string" && (PRIORIDADES as string[]).includes(v.toUpperCase())
+    ? (v.toUpperCase() as Prioridad)
+    : "MEDIA";
+}
+
+/** Garantiza una lista de strings no vacíos (el LLM a veces manda no-arrays). */
+function coerceStringArray(v: unknown): string[] {
+  if (!Array.isArray(v)) return [];
+  return v.filter((x): x is string => typeof x === "string" && x.trim() !== "").map((x) => x.trim());
+}
 
 /**
  * Ensamblado del FieldReport persistido a partir de la transcripción + la
@@ -44,13 +59,13 @@ export function buildReport(
     id: crypto.randomUUID(),
     transcripcion: transcript,
     resumen,
-    prioridad: ext.prioridad ?? "MEDIA",
-    motivoCriticidad: ext.motivoCriticidad ?? "",
+    prioridad: coercePrioridad(ext.prioridad),
+    motivoCriticidad: typeof ext.motivoCriticidad === "string" ? ext.motivoCriticidad : "",
     entidades: {
-      nombres: ext.entidades?.nombres ?? [],
-      fechas: ext.entidades?.fechas ?? [],
+      nombres: coerceStringArray(ext.entidades?.nombres),
+      fechas: coerceStringArray(ext.entidades?.fechas),
     },
-    accionesPendientes: ext.accionesPendientes ?? [],
+    accionesPendientes: coerceStringArray(ext.accionesPendientes),
     datos,
     metadatos: metadata,
     estado: "PENDIENTE",

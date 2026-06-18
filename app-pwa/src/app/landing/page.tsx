@@ -239,8 +239,24 @@ const FAQS = [
 export default function LandingPage() {
   const year = new Date().getFullYear();
 
+  // GEO/SEO: structured data FAQPage para que buscadores y motores generativos
+  // puedan citar las respuestas. Se arma desde el mismo array FAQS (una fuente).
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((f) => ({
+      "@type": "Question",
+      name: f.q,
+      acceptedAnswer: { "@type": "Answer", text: f.a },
+    })),
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
       <header className="landing-header">
         <div className="landing__container landing-header__inner">
           <Link href="/" className="landing-logo" aria-label="EstoyAi — inicio">
