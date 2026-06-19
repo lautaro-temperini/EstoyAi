@@ -246,7 +246,7 @@ export function TableroClient({
               >
                 <div className="flex items-stretch">
                   <Link
-                    href={`/informe/${i.id}/preview`}
+                    href={`/preview/${i.id}`}
                     className="flex-grow min-w-0 block p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                   >
                     <div className="flex items-start justify-between gap-2">

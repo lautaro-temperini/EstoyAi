@@ -118,7 +118,7 @@ export default function EstadoPage() {
   // Cuando el informe queda listo, llevar directo a la Vista del informe.
   // La antigua pantalla "listo" (descargar/editar) quedó obsoleta.
   useEffect(() => {
-    if (estado === "listo") router.replace(`/informe/${id}/preview`);
+    if (estado === "listo") router.replace(`/preview/${id}`);
   }, [estado, id, router]);
 
   // En "listo" no mostramos nada: redirigimos a la vista del informe.

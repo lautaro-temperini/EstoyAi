@@ -212,7 +212,7 @@ export default function RegistrosPage() {
                   <div className="flex items-stretch">
                     <button
                       onClick={() =>
-                        router.push(r.estado === "listo" ? `/informe/${r.id}/preview` : `/estado/${r.id}`)
+                        router.push(r.estado === "listo" ? `/preview/${r.id}` : `/estado/${r.id}`)
                       }
                       className="flex-grow min-w-0 text-left p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                     >

@@ -70,7 +70,7 @@ export function PreviewActions({
       {error && <p className="font-caption text-caption text-error mb-2">{error}</p>}
       <div className="flex gap-3">
         <Link
-          href={`/informe/${id}`}
+          href={`/preview/${id}/editar`}
           className={`h-14 rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform ${
             showEnviar
               ? "px-4 bg-surface-container-low border border-outline-variant text-primary"
