@@ -115,7 +115,14 @@ export default function EstadoPage() {
     await requestFlush();
   }, [id]);
 
-  if (loading) {
+  // Cuando el informe queda listo, llevar directo a la Vista del informe.
+  // La antigua pantalla "listo" (descargar/editar) quedó obsoleta.
+  useEffect(() => {
+    if (estado === "listo") router.replace(`/informe/${id}/preview`);
+  }, [estado, id, router]);
+
+  // En "listo" no mostramos nada: redirigimos a la vista del informe.
+  if (loading || estado === "listo") {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="material-symbols-outlined text-primary text-[36px] animate-spin">
@@ -131,11 +138,7 @@ export default function EstadoPage() {
   const isOffline = estado === "encolado";
 
   const iconColor =
-    estado === "error"
-      ? "text-error"
-      : estado === "listo" || isOffline
-      ? "text-secondary"
-      : "text-primary";
+    estado === "error" ? "text-error" : isOffline ? "text-secondary" : "text-primary";
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -201,29 +204,6 @@ export default function EstadoPage() {
                   Podés cerrar la app. El registro queda guardado y lo vas a encontrar en &quot;Mis registros&quot;.
                 </p>
               </>
-            )}
-
-            {/* ── Listo ────────────────────────────────────────────────────── */}
-            {estado === "listo" && (
-              <div className="w-full grid grid-cols-1 gap-3 mt-stack-md">
-                <a
-                  href={`/api/informe/${id}/docx`}
-                  className="h-14 bg-primary text-on-primary rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
-                >
-                  <span className="material-symbols-outlined">description</span>
-                  Descargar informe (.docx)
-                </a>
-                <button
-                  onClick={() => router.push(`/informe/${id}`)}
-                  className="h-14 bg-surface-container-low text-primary border border-outline-variant rounded-lg font-label-md text-label-md flex items-center justify-center gap-2 active:scale-[0.97] transition-transform"
-                >
-                  <span className="material-symbols-outlined">tune</span>
-                  Editar campos del informe
-                </button>
-                <p className="font-caption text-caption text-yellow-600 text-center">
-                  Revisá el documento antes de usarlo — fue generado automáticamente.
-                </p>
-              </div>
             )}
 
             {/* ── Error ────────────────────────────────────────────────────── */}

@@ -246,7 +246,7 @@ export function TableroClient({
               >
                 <div className="flex items-stretch">
                   <Link
-                    href={`/informe/${i.id}/preview?ctx=coord`}
+                    href={`/informe/${i.id}/preview`}
                     className="flex-grow min-w-0 block p-4 hover:bg-surface-container-low transition-colors active:scale-[0.99]"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -257,6 +257,7 @@ export function TableroClient({
                     </div>
                     <p className="mt-0.5 font-caption text-caption text-outline">
                       {programaLabel(i.programa)} · {fmtFecha(i.createdAt)}
+                      {i.profesional?.trim() && <> · Registró {i.profesional.trim()}</>}
                     </p>
 
                     {(i.motivoCriticidad || i.resumen) && (

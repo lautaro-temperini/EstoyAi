@@ -48,22 +48,29 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const persist = (next: FlowState) => {
-    setState(next);
-    try {
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* ignore */
-    }
+  // Update funcional: parte del estado previo, no de un `state` capturado en el
+  // render. Clave cuando dos setters se llaman en el mismo handler (p. ej.
+  // setProfesional + setBeneficiario en la pantalla de beneficiario): con valores
+  // capturados, el segundo pisaba al primero y se perdía `profesional`.
+  const update = (patch: Partial<FlowState>) => {
+    setState((prev) => {
+      const next = { ...prev, ...patch };
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        /* ignore */
+      }
+      return next;
+    });
   };
 
   const value: FlowContextValue = {
     ...state,
-    setTipo: (tipo) => persist({ ...state, tipo }),
-    setPrograma: (programa) => persist({ ...state, programa }),
-    setBeneficiario: (beneficiario) => persist({ ...state, beneficiario }),
+    setTipo: (tipo) => update({ tipo }),
+    setPrograma: (programa) => update({ programa }),
+    setBeneficiario: (beneficiario) => update({ beneficiario }),
     setProfesional: (profesional) => {
-      persist({ ...state, profesional });
+      update({ profesional });
       try {
         localStorage.setItem(PROFESIONAL_KEY, profesional);
       } catch {
@@ -77,7 +84,7 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
         /* ignore */
       }
       // Conserva el profesional recordado para el siguiente registro.
-      setState({ ...EMPTY, profesional: state.profesional });
+      setState((prev) => ({ ...EMPTY, profesional: prev.profesional }));
     },
   };
 

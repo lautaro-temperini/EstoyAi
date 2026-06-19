@@ -298,8 +298,10 @@ export default function RegistrosPage() {
               </h2>
             </div>
             <p className="font-body-md text-body-md text-on-surface-variant mb-1">
-              {confirmTarget ? `"${confirmTarget.titular}"` : "Este registro"} se eliminará
-              de forma permanente.
+              {confirmTarget
+                ? `"${confirmTarget.titular} · ${fmtFecha(confirmTarget.createdAt)}"`
+                : "Este registro"}{" "}
+              se eliminará de tus registros de forma permanente.
             </p>
             <p className="font-body-md text-body-md text-error font-semibold mb-stack-lg">
               Esta acción no se puede deshacer.

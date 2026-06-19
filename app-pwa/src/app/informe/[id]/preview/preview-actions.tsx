@@ -20,20 +20,20 @@ export function PreviewBack() {
 }
 
 /**
- * Acciones del preview, según contexto + estado:
- *  - Coordinación (ctx="coord", desde /tablero): solo Editar.
- *  - Promotor borrador (no enviado): Editar + Enviar a coordinación.
- *  - Promotor ya enviado: sin opciones (solo lectura) → no se renderiza barra.
+ * Acciones del preview, derivadas de estado + rol (NO de un query param: el
+ * prefetch / Router Cache de Next puede perder los search params y dejar el
+ * informe sin permisos por accidente):
+ *  - Borrador (no enviado): Editar + Enviar a coordinación (promotor).
+ *  - Enviado + admin: solo Editar (coordinación).
+ *  - Enviado + no admin: solo lectura → no se renderiza barra.
  */
 export function PreviewActions({
   id,
   enviado,
-  ctx,
   isAdmin,
 }: {
   id: string;
   enviado: boolean;
-  ctx?: string;
   isAdmin: boolean;
 }) {
   const router = useRouter();
@@ -41,12 +41,10 @@ export function PreviewActions({
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
 
-  const isCoord = ctx === "coord";
-  // Promotor sobre un informe ya enviado: solo lectura, sin barra de acciones.
-  if (!isCoord && enviado) return null;
-  // Coordinación: solo el admin edita; el resto es lectura (sin barra).
-  if (isCoord && !isAdmin) return null;
-  const showEnviar = !isCoord && !enviado;
+  // Borrador: cualquiera lo manda a coordinación. Ya enviado: solo el admin edita.
+  const showEnviar = !enviado;
+  const canEdit = !enviado || isAdmin;
+  if (!canEdit && !showEnviar) return null;
 
   async function enviar() {
     setEnviando(true);
