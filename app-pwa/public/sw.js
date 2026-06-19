@@ -9,7 +9,7 @@
 // Plain classic worker (no imports) — reads IndexedDB directly. The store shape
 // must match src/lib/queue/db.ts.
 
-const CACHE = "pp-shell-v2";
+const CACHE = "pp-shell-v3";
 const SHELL = ["/", "/manifest.webmanifest", "/icon.svg"];
 const SYNC_TAG = "upload-audio";
 const DB_NAME = "pp-registros";
@@ -32,14 +32,20 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const { request } = event;
-  // Never cache API calls or non-GET requests.
-  if (request.method !== "GET" || new URL(request.url).pathname.startsWith("/api/")) {
+  const url = new URL(request.url);
+  // Nunca cachear: no-GET, API, o pedidos RSC (los datos de navegación de Next:
+  // traen el header "RSC" o el query "_rsc"). Si se cachean, las páginas
+  // dinámicas (/informes, /registros) quedan congeladas al navegar client-side
+  // y solo se refrescan con reload duro. Dejarlos pasar a la red siempre.
+  const isRsc = request.headers.has("RSC") || url.searchParams.has("_rsc");
+  if (request.method !== "GET" || url.pathname.startsWith("/api/") || isRsc) {
     return;
   }
   if (request.mode === "navigate") {
     event.respondWith(fetch(request).catch(() => caches.match("/").then((r) => r ?? Response.error())));
     return;
   }
+  // Cache-first solo para assets estáticos inmutables (hasheados en /_next/static, íconos…).
   event.respondWith(
     caches.match(request).then(
       (cached) =>
