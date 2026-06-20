@@ -42,6 +42,8 @@ export function FlowProvider({ children }: { children: React.ReactNode }) {
       const raw = sessionStorage.getItem(STORAGE_KEY);
       const base = raw ? (JSON.parse(raw) as FlowState) : EMPTY;
       const profesional = base.profesional ?? localStorage.getItem(PROFESIONAL_KEY);
+      // Hidratación única desde sessionStorage/localStorage; setState acá es intencional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setState({ ...base, profesional });
     } catch {
       /* ignore */

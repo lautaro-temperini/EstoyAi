@@ -15,6 +15,8 @@ export default function BeneficiaryPage() {
 
   // El profesional se recuerda entre registros (localStorage); prellenar al hidratar.
   useEffect(() => {
+    // Hidratación única desde localStorage; setState acá es intencional.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (profesional && !prof) setProf(profesional);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profesional]);

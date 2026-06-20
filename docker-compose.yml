@@ -102,7 +102,7 @@ services:
   # ── LLM local (Ollama) ─────────────────────────────────────────────────────
   # Solo interno — no expone puerto al host.
   # Primer uso: docker compose exec ollama ollama pull gemma3:4b
-  # Fallback CPU lento: docker compose exec ollama ollama pull gemma3:1b
+  # Opcional (PC potente ≥24 GB): docker compose exec ollama ollama pull gemma3:12b
   ollama:
     image: ollama/ollama:0.30.5
     restart: unless-stopped

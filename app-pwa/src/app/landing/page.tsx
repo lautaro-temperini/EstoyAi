@@ -210,7 +210,7 @@ const BENEFITS: {
   { icon: "money_off", title: "Gratuito", text: "Sin licencias, sin suscripciones, sin costos por uso. Una ONG lo instala, lo usa y lo escala sin pagar nada." },
   { icon: "code", title: "Código abierto", text: "El código es público. Cualquier organización o equipo técnico puede auditarlo, adaptarlo o mejorarlo." },
   { icon: "cloud_off", title: "Funciona sin internet", text: "El promotor graba en zona sin señal. El audio se encola en el celular y sube solo cuando hay conexión." },
-  { icon: "memory", title: "Corre en hardware modesto", text: "Funciona en PCs con 8GB de RAM, del tipo que las ONGs reciben como donación. La IA corre localmente." },
+  { icon: "memory", title: "Corre en hardware estándar", text: "Funciona en una PC de escritorio estándar (16 GB de RAM), sin servidores en la nube ni GPU. La IA corre localmente en la sede." },
   { icon: "tune", title: "Adaptable a cualquier ONG", text: "Programas, campos del informe y estructura de datos se configuran por organización. Es configuración, no código." },
 ];
 
@@ -231,7 +231,7 @@ const FAQS = [
   { q: "¿Necesito un equipo técnico para instalarlo?", a: "No. La instalación está pensada para equipos sin experiencia técnica: un asistente paso a paso, guías en castellano y soporte para la puesta en marcha. Si la organización tiene alguien con conocimientos básicos de computación, es suficiente." },
   { q: "¿Funciona sin internet en el barrio?", a: "Sí. El promotor graba en zona sin señal; el audio se encola en el celular y sube solo cuando hay conexión, sin que tenga que hacer nada." },
   { q: "¿Dónde quedan los datos de los beneficiarios?", a: "En la sede de tu organización. Transcripción, procesamiento con IA y almacenamiento corren localmente. Ningún audio ni dato sale a servidores externos." },
-  { q: "¿Qué hardware necesito?", a: "Una computadora de escritorio común, del tipo que las ONGs suelen recibir como donación. Sin servidores en la nube ni equipos especiales; todo corre en la sede de la organización." },
+  { q: "¿Qué hardware necesito?", a: "Una PC de escritorio estándar con 16 GB de RAM y virtualización activada. Sin servidores en la nube ni GPU; todo corre en la sede de la organización." },
   { q: "¿Sirve para mi tipo de organización?", a: "Probablemente. El sistema no está atado a un tipo de intervención: programas, campos del informe y estructura de datos se configuran por ONG. Lo que hoy registra visitas domiciliarias se adapta a otro seguimiento sin tocar código." },
   { q: "¿Hay organizaciones usándolo hoy?", a: "Todavía no en producción. EstoyAi se construyó en Halketon (junio 2026) como MVP funcional, basado en investigación con 16 organizaciones. Buscamos las primeras para un piloto real; si tu equipo trabaja en territorio, escribinos." },
 ];

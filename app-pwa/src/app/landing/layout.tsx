@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   metadataBase: new URL(`https://${ROOT_DOMAIN}`),
   title: "EstoyAi — Registro de campo por voz para ONGs",
   description:
-    "El promotor dicta dos minutos; tu sede genera un informe .docx estructurado. Funciona sin internet en campo, corre en hardware modesto y los datos de beneficiarios nunca salen de la organización.",
+    "El promotor dicta dos minutos; tu sede genera un informe .docx estructurado. Funciona sin internet en campo, corre en hardware estándar y los datos de beneficiarios nunca salen de la organización.",
   keywords: [
     "registro de campo por voz",
     "software para ONG",

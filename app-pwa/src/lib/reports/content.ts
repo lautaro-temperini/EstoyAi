@@ -112,7 +112,11 @@ export function buildPpReportContent(report: FieldReport): ReportContent {
         (meta.tipo === "grupal" ? "Actividad Grupal" : "Beneficiario");
 
   const lugar = val(d.intervencion.lugar || [meta.sector, meta.unidad].filter(Boolean).join(", ") || "");
-  const fecha = d.intervencion.fecha?.trim() ? d.intervencion.fecha : fmtFecha(report.createdAt);
+  // La fecha del informe es SIEMPRE la de captura (createdAt): el LLM a veces
+  // devuelve fechas erróneas (un mes mencionado en el audio — "agosto" —, un
+  // formato ISO, o el literal "{Fecha del registro}" del prompt). El sistema ya
+  // captura la fecha de forma confiable, así que no dependemos del modelo.
+  const fecha = fmtFecha(report.createdAt);
 
   const sections: Section[] = [];
 

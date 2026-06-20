@@ -31,7 +31,7 @@ Todo corre en la PC de la sede. Sin APIs externas, sin suscripciones, sin GPU re
 | **Costo**        | Gratis, sin licencias                   |
 | **Datos**        | Quedan en la sede de la ONG             |
 | **Conectividad** | Funciona sin señal en campo             |
-| **Hardware**     | PC con 8GB RAM (donación típica de ONG) |
+| **Hardware**     | PC de escritorio con 16GB RAM           |
 | **IA**           | Local: Whisper + Ollama (gemma3:4b)     |
 | **Multi-ONG**    | Multi-tenant por subdominio             |
 
