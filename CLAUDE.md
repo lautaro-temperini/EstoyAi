@@ -132,14 +132,14 @@ Al cambiar prompts o schema de una ONG, actualizá su fuente de verdad **y** la 
 
 Ver `.env.example`. Las más importantes al desarrollar:
 
-| Variable                            | Efecto                                                                       |
-| ----------------------------------- | ---------------------------------------------------------------------------- |
-| `DATA_DIR`                          | Directorio de audio, docx y sqlite (default: `../data`)                      |
-| `N8N_WEBHOOK_URL`                   | URL del webhook n8n (default: `http://n8n:5678/webhook/registro`)            |
-| `OLLAMA_MODEL`                      | Modelo LLM (default: `gemma3:4b`; alternativa lenta: `qwen3:1.7b`)           |
-| `N8N_BLOCK_ENV_ACCESS_IN_NODE`      | Debe ser `false` para que n8n lea env vars en Code nodes                     |
-| `TENANT_<SLUG>_PASSWORD`            | Contraseña Basic Auth de esa ONG (fallback `SITE_PASSWORD`). Ej: `TENANT_DTCVILLATRANQUILA_PASSWORD` |
-| `TENANT_<SLUG>_ADMIN_PASSWORD`      | Contraseña admin de esa ONG (habilita editar/borrar en coordinación)         |
+| Variable                       | Efecto                                                                                               |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `DATA_DIR`                     | Directorio de audio, docx y sqlite (default: `../data`)                                              |
+| `N8N_WEBHOOK_URL`              | URL del webhook n8n (default: `http://n8n:5678/webhook/registro`)                                    |
+| `OLLAMA_MODEL`                 | Modelo LLM (default: `gemma3:4b`; alternativa lenta: `qwen3:1.7b`)                                   |
+| `N8N_BLOCK_ENV_ACCESS_IN_NODE` | Debe ser `false` para que n8n lea env vars en Code nodes                                             |
+| `TENANT_<SLUG>_PASSWORD`       | Contraseña Basic Auth de esa ONG (fallback `SITE_PASSWORD`). Ej: `TENANT_DTCVILLATRANQUILA_PASSWORD` |
+| `TENANT_<SLUG>_ADMIN_PASSWORD` | Contraseña admin de esa ONG (habilita editar/borrar en coordinación)                                 |
 
 ---
 

@@ -2,7 +2,7 @@
 
 > La ONG hace el trabajo. EstoyAi lo deja escrito.
 
-PWA offline-first para promotores de campo: graban un mensaje de voz al salir del domicilio, el audio viaja a la sede de la organización, y en menos de 5 minutos hay un informe Word (.docx) listo para archivar. La transcripción, el procesamiento con IA y el almacenamiento corren localmente — ningún audio ni dato sale a servidores externos.
+PWA offline-first para promotores de campo: graban un mensaje de voz al salir del domicilio, el audio viaja a la sede de la organización, y en menos de 5 minutos hay un informe Word (.docx) listo para archivar. Y no termina ahí: cada informe llega a coordinación clasificado por criticidad y con sus puntos accionables, para ver qué atender primero sin leer todo. La transcripción, el procesamiento con IA y el almacenamiento corren localmente — ningún audio ni dato sale a servidores externos.
 
 **Gratis · Código abierto · Sin conexión en campo · IA local**
 
@@ -10,7 +10,7 @@ PWA offline-first para promotores de campo: graban un mensaje de voz al salir de
 
 ## El problema
 
-Las ONGs que trabajan en territorio acumulan evidencia en cuadernos, grupos de WhatsApp y planillas de Excel. Cada paso entre ellos es una transcripción a mano. Cuando un financiador pide evidencia, el equipo reconstruye el año entero desde cero. 13 de 16 organizaciones entrevistadas en Halketon (jun 2026) enfrentaban este patrón.
+Las ONGs que trabajan en territorio registran en cuadernos, grupos de WhatsApp y planillas de Excel. Después, alguien tiene que pasar todo eso a la computadora a mano —horas de trabajo— y aun así es casi imposible ver qué caso necesita atención primero entre pilas de papeles. 13 de 16 organizaciones entrevistadas en Halketon (jun 2026) no lograban ver de forma ordenada lo que pasaba en territorio.
 
 ## Cómo funciona
 
@@ -19,7 +19,8 @@ Promotor dicta 2 min en el celular (sin señal está bien)
   → audio se encola en IndexedDB
   → sube a la sede cuando hay red
   → Whisper transcribe → Ollama extrae campos → se genera el .docx
-  → promotor descarga el informe desde su celular
+  → el promotor revisa, descarga y lo envía a coordinación
+  → coordinación lo ve en /informes: priorizado por criticidad + accionables
 ```
 
 Todo corre en la PC de la sede. Sin APIs externas, sin suscripciones, sin GPU requerida.
@@ -33,6 +34,7 @@ Todo corre en la PC de la sede. Sin APIs externas, sin suscripciones, sin GPU re
 | **Conectividad** | Funciona sin señal en campo             |
 | **Hardware**     | PC de escritorio con 16GB RAM           |
 | **IA**           | Local: Whisper + Ollama (gemma3:4b)     |
+| **Coordinación** | Tablero con triaje por criticidad + accionables |
 | **Multi-ONG**    | Multi-tenant por subdominio             |
 
 ## Estructura

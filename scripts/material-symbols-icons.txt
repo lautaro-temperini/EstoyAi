@@ -18,11 +18,13 @@ error
 expand_more
 fact_check
 fingerprint
+flag
 groups
 hiking
 history
 home
 hub
+insights
 lock
 mail
 manage_accounts

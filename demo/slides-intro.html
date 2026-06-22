@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EstoyAi — Intro (demo)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible+Next:ital,wght@0,400;0,600;0,700;0,800;1,700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  /* ── Tokens de marca (espejo de landing.css · DESIGN-SYSTEM.md) ──── */
+  :root {
+    --ink: #0040a1;
+    --ink-bright: #0056d2;
+    --ink-deep: #0d1c2e;
+    --paper: #f8f9ff;
+    --paper-2: #eef1fb;
+    --muted: #424654;
+    --outline-variant: #c3c6d6;
+    --outline: #737785;
+    --surface: #ffffff;
+
+    --display: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+    --body: "Inter", system-ui, sans-serif;
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--ink-deep); font-family: var(--body); overflow: hidden; }
+
+  #stage { position: fixed; inset: 0; overflow: hidden; font-size: clamp(10px, min(1.6vw, 2.85vh), 32px); }
+
+  /* ── Temas por slide ────────────────────────────────────────────── */
+  .slide {
+    --bg: var(--paper); --fg: var(--ink-deep); --fg-muted: var(--muted);
+    --rule: var(--outline-variant); --hl: var(--ink);
+  }
+  .t-dark {
+    --bg: var(--ink-deep); --fg: #ffffff; --fg-muted: rgba(255,255,255,.64);
+    --rule: rgba(255,255,255,.16); --hl: #5b9bff;
+  }
+  .t-blue {
+    --bg: var(--ink); --fg: #ffffff; --fg-muted: rgba(255,255,255,.74);
+    --rule: rgba(255,255,255,.22); --hl: #ffffff;
+  }
+
+  /* ── Slide ──────────────────────────────────────────────────────── */
+  .slide {
+    position: absolute; inset: 0; display: none;
+    flex-direction: column; justify-content: center;
+    padding: 7% 8.5%;
+    background: var(--bg); color: var(--fg);
+  }
+  .slide.active { display: flex; }
+
+  /* Atmósfera: gradiente de spotlight (oscuros/azul) o tinte suave (claro) */
+  .slide::before { content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0; }
+  .t-dark::before {
+    background:
+      radial-gradient(120% 90% at 18% 8%, rgba(0,86,210,.30), transparent 55%),
+      radial-gradient(90% 80% at 95% 100%, rgba(0,86,210,.10), transparent 60%);
+  }
+  .t-blue::before {
+    background:
+      radial-gradient(110% 90% at 85% 10%, rgba(255,255,255,.12), transparent 55%),
+      radial-gradient(120% 100% at 0% 100%, rgba(0,0,0,.30), transparent 60%);
+  }
+  .slide:not(.t-dark):not(.t-blue)::before {
+    background: radial-gradient(90% 70% at 12% 0%, var(--paper-2), transparent 60%);
+  }
+
+  .content { position: relative; z-index: 2; max-width: 34em; }
+
+  /* ── Eyebrow ────────────────────────────────────────────────────── */
+  .eyebrow { display: flex; align-items: center; gap: 0.7em; margin-bottom: 1.4em; }
+  .eyebrow .num {
+    font-family: var(--display); font-weight: 800; font-size: 1.7em;
+    color: var(--hl); line-height: 1; font-variant-numeric: tabular-nums;
+  }
+  .eyebrow .bar { flex: 0 0 2.6em; height: 2px; background: var(--hl); transform-origin: left; }
+  .eyebrow .lbl { font-size: 0.95em; font-weight: 600; letter-spacing: 0.01em; color: var(--fg-muted); }
+
+  /* ── Tipografía ─────────────────────────────────────────────────── */
+  h1 {
+    font-family: var(--display); font-weight: 800; letter-spacing: -0.035em;
+    line-height: 1.0; color: var(--fg); font-size: 4em;
+  }
+  h1 .accent { color: var(--hl); }
+  .lead { margin-top: 1em; font-size: 1.2em; line-height: 1.5; color: var(--fg-muted); max-width: 24em; font-weight: 400; }
+
+  /* Filas hairline */
+  .rows { margin-top: 1.9em; max-width: 24em; }
+  .row {
+    display: flex; align-items: center; gap: 0.85em;
+    padding: 0.72em 0; border-top: 1px solid var(--rule);
+    font-size: 1.05em; color: var(--fg); font-weight: 500;
+  }
+  .row:last-child { border-bottom: 1px solid var(--rule); }
+  .row .dot { flex: 0 0 0.5em; height: 0.5em; border-radius: 999px; background: var(--outline); }
+
+  /* ── Layout dos columnas (problema + diferencial) ───────────────── */
+  .split { display: grid; grid-template-columns: 1.15fr 0.85fr; gap: 2.8em; align-items: center; }
+  .slide.problema, .slide.solucion { padding-block: 5.5%; }
+  .problema h1 { font-size: 3.2em; }
+  .problema .content, .solucion .content { max-width: none; width: 100%; }
+
+  /* Stat (escala fusionada en el problema) */
+  .stat { display: flex; align-items: baseline; gap: 0.1em;
+    font-family: var(--display); font-weight: 800; color: var(--fg);
+    letter-spacing: -0.045em; line-height: .82; font-variant-numeric: tabular-nums; font-size: 8.6em; }
+  .stat .of { color: var(--fg-muted); opacity: .55; }
+  .stat-label { margin-top: 0.45em; font-size: 1.2em; font-weight: 600; color: var(--fg); max-width: 12em; line-height: 1.25; }
+  .aside-foot { margin-top: 1em; padding-top: .85em; border-top: 1px solid var(--rule);
+    font-size: .9em; color: var(--fg-muted); max-width: 16em; }
+
+  /* ── Reveal de marca ────────────────────────────────────────────── */
+  .reveal .overline { font-size: 1.35em; font-weight: 500; color: var(--fg-muted); }
+  .reveal .wordmark { font-family: var(--display); font-weight: 800; font-size: 8.5em;
+    letter-spacing: -0.045em; color: var(--ink); line-height: .95; margin-top: .04em; }
+  .reveal .lead { font-size: 1.4em; margin-top: 0.85em; max-width: 22em; }
+
+  /* ── Diferencial: panel de coordinación ─────────────────────────── */
+  .solucion h1 { font-size: 2.55em; }
+  .sol-left { max-width: 21em; }
+  .sol-left .lead { font-size: 1.05em; margin-top: .85em; max-width: none; }
+
+  .panel-label { font-size: .85em; color: var(--fg-muted); margin-bottom: .9em; }
+  .mockcard { background: #fff; color: var(--ink-deep); border: 1px solid var(--outline-variant);
+    border-radius: .75rem; padding: 1.1em 1.2em; box-shadow: 0 26px 64px -30px rgba(0,0,0,.65); }
+  .mc-head { display: flex; align-items: flex-start; justify-content: space-between; gap: .8em; }
+  .mc-title { font-weight: 600; font-size: 1em; line-height: 1.25; }
+  .mc-meta { font-size: .78em; color: var(--outline); margin-top: .35em; }
+  .mc-insight { font-size: .9em; line-height: 1.45; margin-top: .8em; color: #243042; }
+  .mc-actions { list-style: none; margin: .7em 0 0; padding: 0; display: grid; gap: .35em; }
+  .mc-actions li { font-size: .9em; color: #243042; display: flex; gap: .5em; }
+  .mc-actions li::before { content: "•"; color: var(--outline); font-weight: 700; }
+
+  .chip { display: inline-flex; align-items: center; font-size: .72em; font-weight: 700;
+    border-radius: 999px; padding: .3em .7em; letter-spacing: .03em; white-space: nowrap; }
+  .chip--alta  { background: #fce7f3; color: #be185d; }
+  .chip--media { background: #ffedd5; color: #c2410c; }
+  .chip--baja  { background: #fef9c3; color: #854d0e; }
+  .triage { display: flex; align-items: center; flex-wrap: wrap; gap: .5em; margin-top: 1.1em; }
+  .triage .t-lbl { font-size: .8em; color: var(--fg-muted); }
+
+  /* ── URL / CTA ──────────────────────────────────────────────────── */
+  .url { margin-top: 2em; display: flex; align-items: center; gap: 0.9em; flex-wrap: wrap; }
+  .url .domain { font-family: var(--display); font-weight: 800; font-size: 2em; color: var(--fg); letter-spacing: -0.02em; }
+  .url .tag { display: inline-flex; align-items: center; font-size: 0.85em; font-weight: 600;
+    color: var(--fg); border: 1px solid var(--rule); border-radius: 999px; padding: 0.45em 0.95em; }
+  .cierre h1 { font-size: 3.4em; }
+
+  /* ── Footer / chrome ────────────────────────────────────────────── */
+  .foot { position: absolute; z-index: 3; left: 8.5%; right: 8.5%; bottom: 5.5%;
+    display: flex; justify-content: space-between; align-items: center; font-size: 0.8em; color: var(--fg-muted); }
+  .foot .b { color: var(--fg); font-weight: 600; }
+
+  #dots { position: absolute; z-index: 5; right: 8.5%; bottom: calc(5.5% + 2.4em); display: flex; gap: 0.5em; }
+  #dots button { width: 9px; height: 9px; border-radius: 999px; border: 0; padding: 0; cursor: pointer;
+    background: var(--outline); opacity: .4; transition: opacity .2s, transform .2s, background .2s; }
+  #dots button.on { opacity: 1; transform: scale(1.2); background: var(--hl); }
+
+  .hint { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%); font-size: 11px; color: #5a6473; z-index: 20; transition: opacity .6s; }
+
+  /* ── Motion (opt-in: base = visible) ─────────────────────────────── */
+  @media (prefers-reduced-motion: no-preference) {
+    .slide.active .r { opacity: 0; animation: rise .62s var(--ease) forwards; animation-delay: var(--d, 0s); }
+    .slide.active .eyebrow .bar { transform: scaleX(0); animation: draw .55s var(--ease) .15s forwards; }
+    .slide.active .stat { animation: pop .6s var(--ease) both; }
+  }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+  .r { transform: translateY(14px); }
+  @keyframes draw { to { transform: scaleX(1); } }
+  @keyframes pop { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) { .r { transform: none; } }
+</style>
+</head>
+<body>
+  <div id="stage">
+
+    <!-- 01 · El problema (+ escala fusionada) -->
+    <section class="slide problema t-dark">
+      <div class="content">
+        <div class="split">
+          <div>
+            <div class="eyebrow"><span class="num r" style="--d:.05s">01</span><span class="bar"></span><span class="lbl r" style="--d:.1s">El problema</span></div>
+            <h1 class="r" style="--d:.16s">Se documenta <span class="accent">de memoria.</span><br>O en papel.</h1>
+            <div class="rows">
+              <div class="row r" style="--d:.34s"><span class="dot"></span>Cuaderno físico</div>
+              <div class="row r" style="--d:.42s"><span class="dot"></span>WhatsApp</div>
+              <div class="row r" style="--d:.5s"><span class="dot"></span>Planilla de Excel desactualizada</div>
+            </div>
+          </div>
+          <div class="aside">
+            <div class="stat"><span>13</span><span class="of">/16</span></div>
+            <div class="stat-label r" style="--d:.3s">organizaciones no pueden medir su impacto</div>
+            <div class="aside-foot r" style="--d:.42s">Sus datos de campo no están sistematizados. Investigación Halketon · 16 ONGs.</div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span class="b">EstoyAi</span><span>el problema</span></div>
+    </section>
+
+    <!-- 02 · La solución → reveal de marca -->
+    <section class="slide reveal">
+      <div class="content">
+        <div class="eyebrow"><span class="num r" style="--d:.05s">02</span><span class="bar"></span><span class="lbl r" style="--d:.1s">La solución</span></div>
+        <p class="overline r" style="--d:.16s">Por eso creamos</p>
+        <div class="wordmark r" style="--d:.24s">EstoyAi</div>
+        <p class="lead r" style="--d:.34s">La voz del promotor se vuelve un informe estructurado. Sin redactar, sin conexión, sin nube.</p>
+      </div>
+      <div class="foot"><span class="b">EstoyAi</span><span>la solución</span></div>
+    </section>
+
+    <!-- 03 · El diferencial -->
+    <section class="slide solucion t-dark">
+      <div class="content">
+        <div class="split">
+          <div class="sol-left">
+            <div class="eyebrow"><span class="num r" style="--d:.05s">03</span><span class="bar"></span><span class="lbl r" style="--d:.1s">El diferencial</span></div>
+            <h1 class="r" style="--d:.16s">No termina en el informe.<br>Termina en la <span class="accent">decisión.</span></h1>
+            <p class="lead r" style="--d:.28s">Cada registro llega a coordinación clasificado por criticidad y con sus puntos accionables ya extraídos. El equipo sabe qué atender primero, sin leer todo.</p>
+          </div>
+          <div class="sol-panel r" style="--d:.34s">
+            <div class="panel-label">Lo que ve coordinación</div>
+            <div class="mockcard">
+              <div class="mc-head">
+                <span class="mc-title">Visita — seguimiento nutricional</span>
+                <span class="chip chip--alta">ALTA</span>
+              </div>
+              <div class="mc-meta">Primera Infancia · hoy</div>
+              <p class="mc-insight">Control de salud no está al día; la familia necesita acompañamiento prioritario.</p>
+              <ul class="mc-actions">
+                <li>Coordinar turno pediátrico</li>
+                <li>Próxima visita en 7 días</li>
+              </ul>
+            </div>
+            <div class="triage">
+              <span class="t-lbl">Triaje:</span>
+              <span class="chip chip--alta">ALTA</span>
+              <span class="chip chip--media">MEDIA</span>
+              <span class="chip chip--baja">BAJA</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="foot"><span class="b">EstoyAi</span><span>el diferencial</span></div>
+    </section>
+
+    <!-- 04 · Cierre -->
+    <section class="slide cierre t-blue">
+      <div class="content">
+        <h1 class="r" style="--d:.05s">Código abierto.<br>Adaptable a cualquier ONG.</h1>
+        <p class="lead r" style="--d:.2s">Los programas, los campos y los informes se configuran sin programar. Si tu organización trabaja en territorio, lo podés usar hoy.</p>
+        <div class="url r" style="--d:.32s">
+          <span class="domain">estoyai.com</span>
+          <span class="tag">Gratis · Código abierto</span>
+        </div>
+      </div>
+      <div class="foot"><span class="b">EstoyAi</span><span>código abierto · MIT</span></div>
+    </section>
+
+  </div>
+
+  <div id="dots"></div>
+  <div class="hint">← →  ·  click  ·  F pantalla completa</div>
+
+  <script>
+    const slides = Array.from(document.querySelectorAll('.slide'));
+    const dotsWrap = document.getElementById('dots');
+    let i = 0;
+    slides.forEach((_, idx) => {
+      const b = document.createElement('button');
+      b.addEventListener('click', (e) => { e.stopPropagation(); go(idx); });
+      dotsWrap.appendChild(b);
+    });
+    const dots = Array.from(dotsWrap.children);
+
+    function go(n) {
+      i = Math.max(0, Math.min(slides.length - 1, n));
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+      dots.forEach((d, idx) => d.classList.toggle('on', idx === i));
+    }
+    const next = () => go(i + 1), prev = () => go(i - 1);
+
+    document.addEventListener('keydown', (e) => {
+      if (['ArrowRight',' ','PageDown'].includes(e.key)) { e.preventDefault(); next(); }
+      else if (['ArrowLeft','PageUp'].includes(e.key)) { e.preventDefault(); prev(); }
+      else if (e.key === 'Home') go(0);
+      else if (e.key === 'End') go(slides.length - 1);
+      else if (e.key.toLowerCase() === 'f') {
+        document.fullscreenElement ? document.exitFullscreen() : document.documentElement.requestFullscreen();
+      }
+    });
+    document.getElementById('stage').addEventListener('click', next);
+    setTimeout(() => { document.querySelector('.hint').style.opacity = '0'; }, 4500);
+    go(0);
+  </script>
+</body>
+</html>

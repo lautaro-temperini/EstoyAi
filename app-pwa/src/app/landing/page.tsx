@@ -191,12 +191,12 @@ const PROBLEMS = [
   {
     icon: "hub",
     title: "El historial está fragmentado",
-    text: "Una misma persona tiene datos en un cuaderno, un grupo de WhatsApp y una planilla que nadie actualiza hace meses. Seguir su evolución en el tiempo (lo que piden los financiadores) se vuelve imposible.",
+    text: "Una misma persona tiene datos en un cuaderno, un grupo de WhatsApp y una planilla que nadie actualiza hace meses. Seguir su evolución se vuelve imposible, y la coordinación no tiene una vista clara de lo que pasa en territorio.",
   },
   {
     icon: "description",
-    title: "Los informes cuestan más de lo que valen",
-    text: "Cada informe es una reconstrucción manual hecha por alguien que no estuvo en campo. Horas de trabajo para producir un documento inconsistente que no refleja lo que pasó.",
+    title: "Digitalizar lo de campo consume horas",
+    text: "Pasar a la computadora lo que se anotó en papel es trabajo manual de alguien que no estuvo en la visita. Horas que se van en transcribir en vez de acompañar — y aun así, lo urgente queda enterrado entre documentos.",
   },
 ];
 
@@ -207,23 +207,24 @@ const BENEFITS: {
   accent?: boolean;
 }[] = [
   { icon: "shield_lock", title: "Los datos no salen", text: "Transcripción, procesamiento y almacenamiento corren en la sede. El audio y los datos de menores y familias nunca pasan por servidores externos ni por IA en la nube." },
+  { icon: "flag", title: "Prioriza lo urgente", text: "Cada informe llega a coordinación clasificado por criticidad (alta, media o baja) y con sus puntos accionables ya extraídos. El equipo ve qué necesita atención primero, sin leer todo." },
   { icon: "money_off", title: "Gratuito", text: "Sin licencias, sin suscripciones, sin costos por uso. Una ONG lo instala, lo usa y lo escala sin pagar nada." },
   { icon: "code", title: "Código abierto", text: "El código es público. Cualquier organización o equipo técnico puede auditarlo, adaptarlo o mejorarlo." },
   { icon: "cloud_off", title: "Funciona sin internet", text: "El promotor graba en zona sin señal. El audio se encola en el celular y sube solo cuando hay conexión." },
   { icon: "memory", title: "Corre en hardware estándar", text: "Funciona en una PC de escritorio estándar (16 GB de RAM), sin servidores en la nube ni GPU. La IA corre localmente en la sede." },
-  { icon: "tune", title: "Adaptable a cualquier ONG", text: "Programas, campos del informe y estructura de datos se configuran por organización. Es configuración, no código." },
+  { icon: "tune", title: "Adaptable a cualquier ONG", text: "Programas, campos del informe y estructura de datos se configuran por organización. Es configuración, no código: hoy ya está adaptado a dos intervenciones muy distintas, primera infancia y tratamiento de consumos. Y se integra con el sistema que ya uses para que los datos se sincronicen solos." },
 ];
 
 const NOT_FOR = [
-  { icon: "manage_accounts", text: "Un CRM o sistema integral de seguimiento y gestión de casos de beneficiarios." },
+  { icon: "manage_accounts", text: "Un CRM completo de gestión de casos: perfiles, historiales y administración integral de cada beneficiario." },
   { icon: "calculate", text: "Herramientas de administración, contabilidad o gestión institucional." },
   { icon: "cloud", text: "Plataformas pensadas para organizaciones que prefieren operar íntegramente en la nube." },
 ];
 
 const AUDIENCES = [
   { icon: "hiking", title: "Promotores y trabajadores de campo", text: "Necesitan algo que funcione rápido, en cualquier celular, aunque no haya señal. No quieren aprender software nuevo ni escribir informes al volver a casa." },
-  { icon: "fact_check", title: "Coordinadores de sede", text: "Consolidan la información y rinden cuentas. Necesitan informes completos, con estructura consistente, sin depender de que cada promotor los redacte distinto." },
-  { icon: "verified", title: "Organizaciones con financiamiento externo", text: "Tienen que demostrar impacto con datos. Necesitan evidencia estructurada, no reconstrucciones manuales de fin de año.", accent: true },
+  { icon: "fact_check", title: "Coordinadores de sede", text: "Consolidan la información y necesitan ver qué pasa en territorio sin depender de que cada promotor se siente a redactar. Buscan estructura consistente y poder detectar a tiempo los casos que requieren atención." },
+  { icon: "insights", title: "Organizaciones que quieren sistematizar", text: "Las que hoy pierden horas pasando papel a la computadora y no tienen una vista clara de lo que pasa en territorio. Quieren ordenar su seguimiento y ver lo urgente a tiempo, sin montar un sistema enorme.", accent: true },
 ];
 
 const FAQS = [
@@ -232,7 +233,8 @@ const FAQS = [
   { q: "¿Funciona sin internet en el barrio?", a: "Sí. El promotor graba en zona sin señal; el audio se encola en el celular y sube solo cuando hay conexión, sin que tenga que hacer nada." },
   { q: "¿Dónde quedan los datos de los beneficiarios?", a: "En la sede de tu organización. Transcripción, procesamiento con IA y almacenamiento corren localmente. Ningún audio ni dato sale a servidores externos." },
   { q: "¿Qué hardware necesito?", a: "Una PC de escritorio estándar con 16 GB de RAM y virtualización activada. Sin servidores en la nube ni GPU; todo corre en la sede de la organización." },
-  { q: "¿Sirve para mi tipo de organización?", a: "Probablemente. El sistema no está atado a un tipo de intervención: programas, campos del informe y estructura de datos se configuran por ONG. Lo que hoy registra visitas domiciliarias se adapta a otro seguimiento sin tocar código." },
+  { q: "¿Sirve para mi tipo de organización?", a: "Probablemente. El sistema no está atado a un tipo de intervención: programas, campos del informe y estructura de datos se configuran por ONG. Hoy ya está configurado para dos intervenciones muy distintas —primera infancia y tratamiento de consumos—, lo que muestra que se adapta sin tocar código." },
+  { q: "¿Y si necesito el historial de cada persona o conectar con mi CRM?", a: "EstoyAi se enfoca en capturar y priorizar lo de campo, no en reemplazar tu gestión de casos. Pero ya trae puntos de integración para sincronizar automáticamente con el sistema que tu organización use —por ejemplo Podio o una planilla—. Y si hace falta, se pueden sumar fichas con el historial por persona o un panel de métricas, configurados según la necesidad de cada ONG. Es una decisión de alcance, no un límite técnico." },
   { q: "¿Hay organizaciones usándolo hoy?", a: "Todavía no en producción. EstoyAi se construyó en Halketon (junio 2026) como MVP funcional, basado en investigación con 16 organizaciones. Buscamos las primeras para un piloto real; si tu equipo trabaja en territorio, escribinos." },
 ];
 
@@ -333,9 +335,9 @@ export default function LandingPage() {
               El problema no está en la intervención. Está en cómo se registra.
             </h2>
             <p className="landing__lead">
-              Las ONGs que trabajan en territorio hacen trabajo valioso pero no pueden
-              demostrarlo. El financiamiento queda en riesgo no por falta de impacto,
-              sino por falta de evidencia.
+              Las ONGs que trabajan en territorio hacen un trabajo enorme, pero queda
+              atrapado en papel. Alguien tiene que digitalizarlo a mano, y mientras tanto
+              la coordinación no ve lo que pasa en el barrio hasta que es tarde.
             </p>
 
             <div className="landing-problem" data-stagger>
@@ -359,7 +361,7 @@ export default function LandingPage() {
             </h2>
             <p className="landing__lead">
               Tres pasos. Sin formularios en la calle. El archivo sigue siendo Word,
-              el que ya usás para rendir cuentas.
+              el mismo que ya usás.
             </p>
 
             <ol className="landing-index" style={{ listStyle: "none", margin: 0, padding: 0 }} data-stagger>
@@ -387,10 +389,11 @@ export default function LandingPage() {
               <li className="landing-index__row">
                 <span className="landing-index__num" aria-hidden="true">03</span>
                 <div className="landing-index__body">
-                  <h3 className="landing-index__title">Descargá el Word y archivá</h3>
+                  <h3 className="landing-index__title">El coordinador revisa y prioriza</h3>
                   <p className="landing-index__text">
-                    En menos de 5 minutos hay un .docx listo para que el coordinador lo
-                    revise. Secciones fijas, la misma estructura para todos los promotores.
+                    En menos de 5 minutos hay un informe listo, clasificado por criticidad
+                    y con sus puntos accionables. El coordinador ve qué atender primero, lo
+                    revisa y descarga el .docx con estructura fija.
                   </p>
                 </div>
               </li>
@@ -406,9 +409,10 @@ export default function LandingPage() {
               Del audio al informe, sin pasar por el teclado
             </h2>
             <p className="landing__lead">
-              El promotor habla; el sistema escucha, ordena y escribe. Lo que llega a
-              la sede no es un audio suelto: es un .docx con la misma estructura para
-              todo el equipo, listo para revisar y archivar.
+              El promotor habla; el sistema escucha, ordena y prioriza. Lo que llega a
+              coordinación no es un audio suelto: es un informe estructurado, clasificado
+              por criticidad y con los puntos accionables listos, para que el equipo sepa
+              qué atender primero.
             </p>
             <div className="landing-media__full">
               {DEMO_SRC ? (
@@ -510,7 +514,7 @@ export default function LandingPage() {
           <div className="landing__container">
             <p className="landing__eyebrow" data-index="04"><span>Para quién es</span></p>
             <h2 id="audience-heading" className="landing__h2">
-              Equipos de campo, coordinadores de sede y ONGs que rinden cuentas
+              Equipos de campo, coordinadores de sede y organizaciones que quieren ordenar su trabajo
             </h2>
 
             <div className="landing-aud" data-stagger>
@@ -562,7 +566,9 @@ export default function LandingPage() {
                     {f.q}
                     <span className="landing-faq__icon"><Icon name="expand_more" /></span>
                   </summary>
-                  <p className="landing-faq__a">{f.a}</p>
+                  <div className="landing-faq__a-wrap">
+                    <p className="landing-faq__a">{f.a}</p>
+                  </div>
                 </details>
               ))}
             </div>
@@ -589,8 +595,8 @@ export default function LandingPage() {
                 <span className="landing-compare__label landing-compare__label--before">El patrón</span>
                 <p className="landing-compare__text">
                   Cuadernos, grupos de WhatsApp y planillas de Excel. Cada paso entre ellos
-                  es una transcripción a mano. Cuando un financiador pide evidencia, el
-                  equipo reconstruye el año entero desde cero.
+                  es una transcripción a mano, y lo urgente se pierde entre papeles. Cuando
+                  hay que ver qué pasó, alguien reconstruye el año entero desde cero.
                 </p>
               </div>
               <div className="landing-compare__row">

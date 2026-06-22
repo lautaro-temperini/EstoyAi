@@ -637,13 +637,17 @@ main > section {
   background: var(--surface);
   transition:
     border-color var(--dur) var(--ease-out),
-    background-color var(--dur) var(--ease-out);
+    background-color var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
 }
 
 @media (hover: hover) {
   .landing-aud__cell:hover {
     border-color: color-mix(in srgb, var(--ink) 28%, var(--outline-variant));
     background: var(--surface-low);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 64, 161, 0.08);
   }
 }
 
@@ -975,6 +979,18 @@ main > section {
   border-top: 3px solid var(--tertiary);
   border-radius: var(--radius-xl);
   background: var(--surface);
+  transition:
+    border-color var(--dur) var(--ease-out),
+    background-color var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+}
+
+@media (hover: hover) {
+  .landing-problem__cell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 64, 161, 0.08);
+  }
 }
 
 .landing-problem__icon {
@@ -1029,11 +1045,14 @@ main > section {
   flex-direction: column;
   padding: var(--space-3);
   border: 1px solid var(--outline-variant);
+  will-change: transform;
   border-radius: var(--radius-xl);
   background: var(--surface);
   transition:
     border-color var(--dur) var(--ease-out),
-    background-color var(--dur) var(--ease-out);
+    background-color var(--dur) var(--ease-out),
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
 }
 
 .landing-why__cell--accent {
@@ -1045,6 +1064,8 @@ main > section {
   .landing-why__cell:hover {
     border-color: color-mix(in srgb, var(--ink) 28%, var(--outline-variant));
     background: var(--surface-low);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 64, 161, 0.08);
   }
 }
 
@@ -1123,7 +1144,19 @@ main > section {
   transform: rotate(180deg);
 }
 
+/* Wrapper para animar la altura del acordeón con el grid trick */
+.landing-faq__a-wrap {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows var(--dur) var(--ease-out);
+}
+
+.landing-faq__item[open] .landing-faq__a-wrap {
+  grid-template-rows: 1fr;
+}
+
 .landing-faq__a {
+  overflow: hidden;
   padding-bottom: var(--space-3);
   font-size: 1rem;
   line-height: 1.6;
@@ -1519,4 +1552,5 @@ main > section {
   .landing-rule { transform: scaleX(1); }
   .landing-flow__pulse { opacity: 0.6; stroke-dashoffset: 0; }
   .landing-aud__cell { transition: none; }
+  .landing-faq__a-wrap { transition: none; }
 }
